@@ -1,0 +1,368 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>테니스 클럽 친선전 스케줄 및 순위표</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="font-sans bg-gray-100">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // 초기 스코어 데이터 (localStorage에서 로드)
+    const initialScores = JSON.parse(localStorage.getItem('tennisScores')) || {};
+
+    // 선수 목록
+    const malePlayers = [
+      '정래민', '권혁이', '기훈', '김덕헌', '김명수', '김석준', '김수동', '노민영', '백건재', '강동혁',
+      '박상원', '상우', '안종현', '이범주', '전우식', '정수현', '정현두', '지민석', '최준호', '강기훈', '김정보'
+    ];
+    const femalePlayers = ['김나경', '김유하', '이은지', '이지화', '김지원', '남정주', '최창민'];
+
+    // 스케줄 데이터
+    const schedule = {
+      '6:00~6:25': [
+        { court: 4, match: '김나경 & 김유하 vs 이은지 & 이지화', type: 'female' },
+        { court: 5, match: '정수현 & 최준호 vs 기훈 & 김정보', type: 'male' },
+        { court: 6, match: '권혁이 & 김명수 vs 김수동 & 노민영', type: 'male' },
+        { court: 7, match: '박상원 & 상우 vs 안종현 & 전우식', type: 'male' },
+        { court: 8, match: '김석준 & 지민석 vs 강기훈 & 김덕헌', type: 'male' },
+      ],
+      '6:25~6:50': [
+        { court: 4, match: '이범주 & 김덕헌 vs 김명수 & 상우', type: 'male' },
+        { court: 5, match: '정래민 & 백건재 vs 강동혁 & 정현두', type: 'male' },
+        { court: 6, match: '기훈 & 노민영 vs 박상원 & 전우식', type: 'male' },
+        { court: 7, match: '권혁이 & 김수동 vs 정수현 & 강기훈', type: 'male' },
+        { court: 8, match: '김석준 & 지민석 vs 안종현 & 최준호', type: 'male' },
+      ],
+      '6:50~7:15': [
+        { court: 4, match: '이은지 & 남정주 vs 김유하 & 최창민', type: 'female' },
+        { court: 5, match: '정수현 & 지민석 vs 백건재 & 정현두', type: 'male' },
+        { court: 6, match: '정래민 & 기훈 vs 박상원 & 전우식', type: 'male' },
+        { court: 7, match: '김수동 & 상우 vs 안종현 & 노민영', type: 'male' },
+        { court: 8, match: '권혁이 & 최준호 vs 김명수 & 강기훈', type: 'male' },
+      ],
+      '7:15~7:40': [
+        { court: 4, match: '노민영 & 전우식 vs 박상원 & 김수동', type: 'male' },
+        { court: 5, match: '안종현 & 백건재 vs 김석준 & 강동혁', type: 'male' },
+        { court: 6, match: '정래민 & 이범주 vs 정수현 & 김명수', type: 'male' },
+        { court: 7, match: '기훈 & 상우 vs 권혁이 & 지민석', type: 'male' },
+        { court: 8, match: '강기훈 & 정현두 vs 최준호 & 김덕헌', type: 'male' },
+      ],
+      '7:40~8:05': [
+        { court: 4, match: '김나경 & 이지화 vs 김유하 & 최창민', type: 'female' },
+        { court: 5, match: '권혁이 & 노민영 vs 전우식 & 백건재', type: 'male' },
+        { court: 6, match: '김석준 & 김명수 vs 강동혁 & 최준호', type: 'male' },
+        { court: 7, match: '정래민 & 안종현 vs 김수동 & 김덕헌', type: 'male' },
+        { court: 8, match: '기훈 & 박상원 vs 이범주 & 지민석', type: 'male' },
+      ],
+      '8:05~8:30': [
+        { court: 4, match: '김지원 & 이은지 vs 이지화 & 최창민', type: 'female' },
+        { court: 5, match: '노민영 & 전우식 vs 정현두 & 강기훈', type: 'male' },
+        { court: 6, match: '이범주 & 최준호 vs 박상원 & 정래민', type: 'male' },
+      ],
+      '8:30~8:55': [
+        { court: 4, match: '김지원 & 김나경 vs 남정주 & 최창민', type: 'female' },
+        { court: 5, match: '권혁이 & 정수현 vs 백건재 & 안종현', type: 'male' },
+        { court: 6, match: '김명수 & 강동혁 vs 상우 & 노민영', type: 'male' },
+      ],
+      '8:55~9:20': [
+        { court: 4, match: '김지원 & 이은지 vs 이지화 & 남정주', type: 'female' },
+        { court: 5, match: '기훈 & 김석준 vs 정래민 & 김정보', type: 'male' },
+        { court: 6, match: '박상원 & 전우식 vs 정수현 & 지민석', type: 'male' },
+      ],
+      '9:20~9:45': [
+        { court: 4, match: '김지원 & 김유하 vs 김나경 & 남정주', type: 'female' },
+        { court: 5, match: '안종현 & 백건재 vs 강동혁 & 강기훈', type: 'male' },
+        { court: 6, match: '이범주 & 노민영 vs 김수동 & 상우', type: 'male' },
+      ],
+    };
+
+    const App = () => {
+      const [scores, setScores] = useState(initialScores);
+
+      // 스코어 저장 시 localStorage 업데이트
+      useEffect(() => {
+        localStorage.setItem('tennisScores', JSON.stringify(scores));
+      }, [scores]);
+
+      // 스코어 입력 핸들러
+      const handleScoreChange = (time, court, score) => {
+        setScores((prev) => ({
+          ...prev,
+          [`${time}-${court}`]: score,
+        }));
+      };
+
+      // 순위 계산
+      const calculateRankings = (players, type) => {
+        const rankings = players.map((player) => ({
+          name: player,
+          wins: 0,
+          losses: 0,
+          gameDiff: 0,
+        }));
+
+        Object.entries(schedule).forEach(([time, matches]) => {
+          matches.forEach(({ court, match, type: matchType }) => {
+            if (matchType !== type) return;
+            const score = scores[`${time}-${court}`] || '';
+            if (!score.match(/^\d+-\d+$/)) return;
+
+            const [team1Score, team2Score] = score.split('-').map(Number);
+            const [team1, team2] = match.split(' vs ').map((t) => t.split(' & '));
+            const team1Win = team1Score > team2Score;
+
+            team1.forEach((p) => {
+              const rank = rankings.find((r) => r.name === p);
+              if (rank) {
+                rank.wins += team1Win ? 1 : 0;
+                rank.losses += team1Win ? 0 : 1;
+                rank.gameDiff += team1Score - team2Score;
+              }
+            });
+
+            team2.forEach((p) => {
+              const rank = rankings.find((r) => r.name === p);
+              if (rank) {
+                rank.wins += team1Win ? 0 : 1;
+                rank.losses += team1Win ? 1 : 0;
+                rank.gameDiff += team2Score - team1Score;
+              }
+            });
+          });
+        });
+
+        return rankings.sort((a, b) => {
+          if (a.wins !== b.wins) return b.wins - a.wins;
+          return b.gameDiff - a.gameDiff;
+        });
+      };
+
+      const maleRankings = calculateRankings(malePlayers, 'male');
+      const femaleRankings = calculateRankings(femalePlayers, 'female');
+
+      return (
+        <div className="container mx-auto p-4">
+          <h1 className="text-3xl font-bold text-center mb-4">테니스 클럽 친선전 스케줄 및 순위표</h1>
+
+          {/* 대회 정보 */}
+          <div className="mb-4">
+            <p><strong>날짜:</strong> 2025년 6월 7일 토요일</p>
+            <p><strong>시간:</strong> 오후 6:00 ~ 오후 9:45</p>
+            <p><strong>경기 형식:</strong> 1세트, 6게임제, 노애드 스코어링, 경기당 25분</p>
+            <p><strong>코트:</strong> 6:00~8:00: 4, 5, 6, 7, 8번 / 8:05~9:45: 4, 5, 6번</p>
+          </div>
+
+          {/* 여자 복식 정보 */}
+          <div className="mb-4">
+            <h2 className="text-xl font-bold">여자 복식 (7명, 파트너 로테이션)</h2>
+            <p><strong>참가자:</strong> 김나경, 김유하, 이은지, 이지화, 김지원, 남정주, 최창민</p>
+            <p><strong>형식:</strong> 1인당 4경기, 총 7경기, 시간대별 분산</p>
+          </div>
+
+          {/* 남자 복식 정보 */}
+          <div className="mb-4">
+            <h2 className="text-xl font-bold">남자 복식 (21명, 티어 균형 파트너)</h2>
+            <p><strong>T1 참가자 (상):</strong> 정수현, 권혁이, 박상원, 기훈, 김석준, 이범주, 백건재, 안종현</p>
+            <p><strong>T2 참가자 (중):</strong> 김수동, 노민영, 전우식, 강동혁, 강기훈, 정래민, 정현두</p>
+            <p><strong>T3 참가자 (하):</strong> 최준호, 김정보, 지민석, 상우, 김명수, 김덕헌</p>
+            <p><strong>형식:</strong> 1인당 5경기, 총 30경기, 티어 균형, 시간대 분산, 동일 팀 2회 이상 금지</p>
+          </div>
+
+          {/* 참고 */}
+          <div className="mb-4">
+            <h2 className="text-xl font-bold">참고</h2>
+            <p>- 코트 외: 30경기 (여자 7경기, 남자 23경기) 기록만</p>
+            <p>- 순위는 승리 게임 수, 게임득실 순으로 결정 (게임득실 = 획득 게임 - 실점 게임)</p>
+            <p>- 티어: T1 (상), T2 (중), T3 (하), 팀 티어 합 균등 배치</p>
+          </div>
+
+          {/* 스케줄 표 (6:00~8:05) */}
+          <h2 className="text-2xl font-bold mb-2">스케줄 (6:00~8:05)</h2>
+          <table className="table-auto w-full text-sm border-collapse mb-4">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="border px-2 py-1 w-[80px]">시간</th>
+                <th className="border px-2 py-1">4번 코트</th>
+                <th className="border px-2 py-1">5번 코트</th>
+                <th className="border px-2 py-1">6번 코트</th>
+                <th className="border px-2 py-1">7번 코트</th>
+                <th className="border px-2 py-1">8번 코트</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(schedule).filter(([time]) => time <= '7:40~8:05').map(([time, matches]) => (
+                <tr key={time}>
+                  <td className="border px-2 py-1 text-center">{time}</td>
+                  {[4, 5, 6, 7, 8].map((court) => {
+                    const match = matches.find((m) => m.court === court);
+                    return (
+                      <td key={court} className="border px-2 py-1">
+                        {match ? (
+                          <>
+                            <div>{match.match}</div>
+                            <div className="flex items-center mt-1">
+                              <input
+                                type="text"
+                                className="border rounded px-1 py-0.5 w-20 text-sm"
+                                placeholder="스코어 (예: 6-4)"
+                                value={scores[`${time}-${court}`] || ''}
+                                onChange={(e) => handleScoreChange(time, court, e.target.value)}
+                              />
+                            </div>
+                          </>
+                        ) : ''}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* 스케줄 표 (8:05~9:45) */}
+          <h2 className="text-2xl font-bold mb-2">스케줄 (8:05~9:45)</h2>
+          <table className="table-auto w-full text-sm border-collapse mb-4">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="border px-2 py-1 w-[80px]">시간</th>
+                <th className="border px-2 py-1">4번 코트</th>
+                <th className="border px-2 py-1">5번 코트</th>
+                <th className="border px-2 py-1">6번 코트</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(schedule).filter(([time]) => time > '7:40~8:05').map(([time, matches]) => (
+                <tr key={time}>
+                  <td className="border px-2 py-1 text-center">{time}</td>
+                  {[4, 5, 6].map((court) => {
+                    const match = matches.find((m) => m.court === court);
+                    return (
+                      <td key={court} className="border px-2 py-1">
+                        {match ? (
+                          <>
+                            <div>{match.match}</div>
+                            <div className="flex items-center mt-1">
+                              <input
+                                type="text"
+                                className="border rounded px-1 py-0.5 w-20 text-sm"
+                                placeholder="스코어 (예: 6-4)"
+                                value={scores[`${time}-${court}`] || ''}
+                                onChange={(e) => handleScoreChange(time, court, e.target.value)}
+                              />
+                            </div>
+                          </>
+                        ) : ''}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* 남자 복식 순위표 */}
+          <div className="break-before-page">
+            <h2 className="text-2xl font-bold mb-2 text-center">남자 복식 순위표</h2>
+            <p className="mb-2"><strong>참가자:</strong> {malePlayers.join(', ')}</p>
+            <table className="table-auto w-full text-lg border-collapse">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border px-4 py-2">선수</th>
+                  <th className="border px-4 py-2">승</th>
+                  <th className="border px-4 py-2">패</th>
+                  <th className="border px-4 py-2">게임득실</th>
+                </tr>
+              </thead>
+              <tbody>
+                {maleRankings.map((rank) => (
+                  <tr key={rank.name}>
+                    <td className="border px-4 py-2">{rank.name}</td>
+                    <td className="border px-4 py-2">{rank.wins}</td>
+                    <td className="border px-4 py-2">{rank.losses}</td>
+                    <td className="border px-4 py-2">{rank.gameDiff}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 여자 복식 순위표 */}
+          <div className="break-before-page">
+            <h2 className="text-2xl font-bold mb-2 text-center">여자 복식 순위표</h2>
+            <p className="mb-2"><strong>참가자:</strong> {femalePlayers.join(', ')}</p>
+            <table className="table-auto w-full text-lg border-collapse">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border px-4 py-2">선수</th>
+                  <th className="border px-4 py-2">승</th>
+                  <th className="border px-4 py-2">패</th>
+                  <th className="border px-4 py-2">게임득실</th>
+                </tr>
+              </thead>
+              <tbody>
+                {femaleRankings.map((rank) => (
+                  <tr key={rank.name}>
+                    <td className="border px-4 py-2">{rank.name}</td>
+                    <td className="border px-4 py-2">{rank.wins}</td>
+                    <td className="border px-4 py-2">{rank.losses}</td>
+                    <td className="border px-4 py-2">{rank.gameDiff}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
