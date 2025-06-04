@@ -42,327 +42,389 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>테니스 클럽 친선전 스케줄 및 순위표</title>
-  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>지붕위 테니스 클럽 친선전</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #000;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    /* 남자 복식 순위표 스타일 (3배) */
+    .men-doubles-table th, .men-doubles-table td {
+      font-size: 27px; /* 기본 9pt의 3배 */
+      padding: 24px; /* 기본 8px의 3배 */
+    }
+    /* 여자 복식 순위표 스타일 (3배) */
+    .women-doubles-table th, .women-doubles-table td {
+      font-size: 27px; /* 기본 9pt의 3배 */
+      padding: 24px; /* 기본 8px의 3배 */
+    }
+    input[type="number"] {
+      width: 40px;
+      text-align: center;
+    }
+  </style>
 </head>
-<body class="font-sans bg-gray-100">
-  <div id="root"></div>
+<body>
+  <h1>지붕위 테니스 클럽 친선전 스케줄 및 개인 순위표</h1>
+  <h2>2025년 6월 7일</h2>
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+  <h2>대회 정보</h2>
+  <ul>
+    <li><strong>날짜:</strong> 2025년 6월 7일 토요일</li>
+    <li><strong>시간:</strong> 오후 6:00 ~ 오후 9:45</li>
+    <li><strong>경기 형식:</strong> 1세트, 6게임제, 노애드 스코어링, 경기당 25분</li>
+    <li><strong>코트:</strong> 6:00~8:00: 4, 5, 6, 7, 8번 / 8:05~9:45: 4, 5, 6번</li>
+  </ul>
 
-    // 초기 스코어 데이터 (localStorage에서 로드)
-    const initialScores = JSON.parse(localStorage.getItem('tennisScores')) || {};
+  <h2>여자 복식 정보</h2>
+  <ul>
+    <li><strong>참가자:</strong> 김나경, 김유하, 이은지, 이지화, 김지원, 남정주, 최창민</li>
+    <li><strong>형식:</strong> 1인당 4경기, 총 7경기, 시간대별 분산, 6번 코트 고정 (단, 6:25~6:50은 남자 복식 사용)</li>
+  </ul>
 
-    // 선수 목록
-    const malePlayers = [
-      '정래민', '권혁이', '기훈', '김덕헌', '김명수', '김석준', '김수동', '노민영', '백건재', '강동혁',
-      '박상원', '상우', '안종현', '이범주', '전우식', '정수현', '정현두', '지민석', '최준호', '강기훈', '김정보'
+  <h2>남자 복식 정보</h2>
+  <ul>
+    <li><strong>참가자:</strong> 정수현, 권혁이, 박상원, 기훈, 김석준, 이범주, 백건재, 안종현, 김수동, 노민영, 전우식, 강동혁, 강기훈, 정래민, 정현두, 최준호, 김정보, 지민석, 상우, 김명수, 김덕헌</li>
+    <li><strong>형식:</strong> 1인당 4~5경기, 총 30경기, 티어 균형, 시간대 분산</li>
+  </ul>
+
+  <h2>참고</h2>
+  <ul>
+    <li>코트 외: 30경기 (여자 7경기, 남자 23경기) 기록만</li>
+    <li>순위는 승리 게임 수, 게임득실 순으로 결정 (게임득실 = 획득 게임 - 실점 게임)</li>
+    <li>티어: 팀 티어 합 균등 배치</li>
+  </ul>
+
+  <h2>스케줄 (6:00~8:05)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>시간</th>
+        <th>4번 코트</th>
+        <th>5번 코트</th>
+        <th>6번 코트</th>
+        <th>7번 코트</th>
+        <th>8번 코트</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>6:00~6:25</td>
+        <td>권혁이&김명수 vs 노민영&강기훈<br><input type="number" id="score-600-4-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-600-4-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>최준호&기훈 vs 정수현&김석준<br><input type="number" id="score-600-5-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-600-5-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>김나경&김유하 vs 이은지&이지화<br><input type="number" id="score-600-6-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-600-6-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>상우&안종현 vs 지민석&김정보<br><input type="number" id="score-600-7-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-600-7-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>강동혁&김석준 vs 백건재&김수동<br><input type="number" id="score-600-8-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-600-8-team2" min="0" max="6" onchange="updateScores()"></td>
+      </tr>
+      <tr>
+        <td>6:25~6:50</td>
+        <td>김명수&안종현 vs 강기훈&김수동<br><input type="number" id="score-625-4-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-625-4-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>권혁이&지민석 vs 백건재&상우<br><input type="number" id="score-625-5-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-625-5-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>박상원&이범주 vs 정래민&강동혁<br><input type="number" id="score-625-6-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-625-6-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>정수현&김석준 vs 전우식&최준호<br><input type="number" id="score-625-7-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-625-7-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>김덕헌&기훈 vs 김정보&노민영<br><input type="number" id="score-625-8-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-625-8-team2" min="0" max="6" onchange="updateScores()"></td>
+      </tr>
+      <tr>
+        <td>6:50~7:15</td>
+        <td>박상원&정현두 vs 정래민&백건재<br><input type="number" id="score-650-4-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-650-4-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>기훈&강기훈 vs 지민석&이범주<br><input type="number" id="score-650-5-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-650-5-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>이은지&남정주 vs 김유하&최창민<br><input type="number" id="score-650-6-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-650-6-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>김수동&전우식 vs 강동혁&노민영<br><input type="number" id="score-650-7-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-650-7-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>김덕헌&상우 vs 김정보&김명수<br><input type="number" id="score-650-8-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-650-8-team2" min="0" max="6" onchange="updateScores()"></td>
+      </tr>
+      <tr>
+        <td>7:15~7:40</td>
+        <td>이범주&김덕헌 vs 전우식&정현두<br><input type="number" id="score-715-4-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-715-4-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>정래민&박상원 vs 강동혁&안종현<br><input type="number" id="score-715-5-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-715-5-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>-</td>
+        <td>김석준&기훈 vs 정수현&권혁이<br><input type="number" id="score-715-7-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-715-7-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>김정보&백건재 vs 지민석&최준호<br><input type="number" id="score-715-8-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-715-8-team2" min="0" max="6" onchange="updateScores()"></td>
+      </tr>
+      <tr>
+        <td>7:40~8:05</td>
+        <td>권혁이&정현두 vs 전우식&노민영<br><input type="number" id="score-740-4-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-740-4-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>-</td>
+        <td>김나경&이지화 vs 김유하&최창민<br><input type="number" id="score-740-6-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-740-6-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>최준호&정래민 vs 박상원&강기훈<br><input type="number" id="score-740-7-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-740-7-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>김명수&정수현 vs 강동혁&김수동<br><input type="number" id="score-740-8-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-740-8-team2" min="0" max="6" onchange="updateScores()"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>스케줄 (8:05~9:45)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>시간</th>
+        <th>4번 코트</th>
+        <th>5번 코트</th>
+        <th>6번 코트</th>
+        <th>7번 코트</th>
+        <th>8번 코트</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>8:05~8:30</td>
+        <td>정현두&강기훈 vs 노민영&전우식<br><input type="number" id="score-805-4-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-805-4-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>정래민&상우 vs 안종현&지민석<br><input type="number" id="score-805-5-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-805-5-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>김지원&이은지 vs 이지화&최창민<br><input type="number" id="score-805-6-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-805-6-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>8:30~8:55</td>
+        <td>강동혁&김덕헌 vs 상우&기훈<br><input type="number" id="score-830-4-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-830-4-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>권혁이&정수현 vs 정현두&노민영<br><input type="number" id="score-830-5-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-830-5-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>김지원&김나경 vs 남정주&최창민<br><input type="number" id="score-830-6-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-830-6-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>8:55~9:20</td>
+        <td>김석준&김명수 vs 안종현&김정보<br><input type="number" id="score-855-4-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-855-4-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>이범주&최준호 vs 김덕헌&김수동<br><input type="number" id="score-855-5-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-855-5-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>김지원&이은지 vs 이지화&남정주<br><input type="number" id="score-855-6-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-855-6-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>9:20~9:45</td>
+        <td>박상원&이범주 vs 백건재&김석준<br><input type="number" id="score-920-4-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-920-4-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>-</td>
+        <td>김지원&김유하 vs 김나경&남정주<br><input type="number" id="score-920-6-team1" min="0" max="6" onchange="updateScores()"> : <input type="number" id="score-920-6-team2" min="0" max="6" onchange="updateScores()"></td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>남자 복식 순위표</h2>
+  <table class="men-doubles-table">
+    <thead>
+      <tr>
+        <th>선수</th>
+        <th>승</th>
+        <th>패</th>
+        <th>게임득실</th>
+      </tr>
+    </thead>
+    <tbody id="men-doubles-rankings">
+      <tr><td>정래민</td><td id="wins-정래민">0</td><td id="losses-정래민">0</td><td id="game-diff-정래민">0</td></tr>
+      <tr><td>권혁이</td><td id="wins-권혁이">0</td><td id="losses-권혁이">0</td><td id="game-diff-권혁이">0</td></tr>
+      <tr><td>기훈</td><td id="wins-기훈">0</td><td id="losses-기훈">0</td><td id="game-diff-기훈">0</td></tr>
+      <tr><td>김명수</td><td id="wins-김명수">0</td><td id="losses-김명수">0</td><td id="game-diff-김명수">0</td></tr>
+      <tr><td>김석준</td><td id="wins-김석준">0</td><td id="losses-김석준">0</td><td id="game-diff-김석준">0</td></tr>
+      <tr><td>김수동</td><td id="wins-김수동">0</td><td id="losses-김수동">0</td><td id="game-diff-김수동">0</td></tr>
+      <tr><td>노민영</td><td id="wins-노민영">0</td><td id="losses-노민영">0</td><td id="game-diff-노민영">0</td></tr>
+      <tr><td>백건재</td><td id="wins-백건재">0</td><td id="losses-백건재">0</td><td id="game-diff-백건재">0</td></tr>
+      <tr><td>강동혁</td><td id="wins-강동혁">0</td><td id="losses-강동혁">0</td><td id="game-diff-강동혁">0</td></tr>
+      <tr><td>박상원</td><td id="wins-박상원">0</td><td id="losses-박상원">0</td><td id="game-diff-박상원">0</td></tr>
+      <tr><td>상우</td><td id="wins-상우">0</td><td id="losses-상우">0</td><td id="game-diff-상우">0</td></tr>
+      <tr><td>안종현</td><td id="wins-안종현">0</td><td id="losses-안종현">0</td><td id="game-diff-안종현">0</td></tr>
+      <tr><td>이범주</td><td id="wins-이범주">0</td><td id="losses-이범주">0</td><td id="game-diff-이범주">0</td></tr>
+      <tr><td>전우식</td><td id="wins-전우식">0</td><td id="losses-전우식">0</td><td id="game-diff-전우식">0</td></tr>
+      <tr><td>정수현</td><td id="wins-정수현">0</td><td id="losses-정수현">0</td><td id="game-diff-정수현">0</td></tr>
+      <tr><td>정현두</td><td id="wins-정현두">0</td><td id="losses-정현두">0</td><td id="game-diff-정현두">0</td></tr>
+      <tr><td>지민석</td><td id="wins-지민석">0</td><td id="losses-지민석">0</td><td id="game-diff-지민석">0</td></tr>
+      <tr><td>최준호</td><td id="wins-최준호">0</td><td id="losses-최준호">0</td><td id="game-diff-최준호">0</td></tr>
+      <tr><td>강기훈</td><td id="wins-강기훈">0</td><td id="losses-강기훈">0</td><td id="game-diff-강기훈">0</td></tr>
+      <tr><td>김정보</td><td id="wins-김정보">0</td><td id="losses-김정보">0</td><td id="game-diff-김정보">0</td></tr>
+    </tbody>
+  </table>
+
+  <h2>여자 복식 순위표</h2>
+  <table class="women-doubles-table">
+    <thead>
+      <tr>
+        <th>선수</th>
+        <th>승</th>
+        <th>패</th>
+        <th>게임득실</th>
+      </tr>
+    </thead>
+    <tbody id="women-doubles-rankings">
+      <tr><td>김나경</td><td id="wins-김나경">0</td><td id="losses-김나경">0</td><td id="game-diff-김나경">0</td></tr>
+      <tr><td>김유하</td><td id="wins-김유하">0</td><td id="losses-김유하">0</td><td id="game-diff-김유하">0</td></tr>
+      <tr><td>이은지</td><td id="wins-이은지">0</td><td id="losses-이은지">0</td><td id="game-diff-이은지">0</td></tr>
+      <tr><td>이지화</td><td id="wins-이지화">0</td><td id="losses-이지화">0</td><td id="game-diff-이지화">0</td></tr>
+      <tr><td>김지원</td><td id="wins-김지원">0</td><td id="losses-김지원">0</td><td id="game-diff-김지원">0</td></tr>
+      <tr><td>남정주</td><td id="wins-남정주">0</td><td id="losses-남정주">0</td><td id="game-diff-남정주">0</td></tr>
+      <tr><td>최창민</td><td id="wins-최창민">0</td><td id="losses-최창민">0</td><td id="game-diff-최창민">0</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    // 경기 정보 (시간-코트-팀1&팀2)
+    const matches = [
+      { time: "600", court: "4", team1: ["권혁이", "김명수"], team2: ["노민영", "강기훈"] },
+      { time: "600", court: "5", team1: ["최준호", "기훈"], team2: ["정수현", "김석준"] },
+      { time: "600", court: "6", team1: ["김나경", "김유하"], team2: ["이은지", "이지화"], isWomen: true },
+      { time: "600", court: "7", team1: ["상우", "안종현"], team2: ["지민석", "김정보"] },
+      { time: "600", court: "8", team1: ["강동혁", "김석준"], team2: ["백건재", "김수동"] },
+      { time: "625", court: "4", team1: ["김명수", "안종현"], team2: ["강기훈", "김수동"] },
+      { time: "625", court: "5", team1: ["권혁이", "지민석"], team2: ["백건재", "상우"] },
+      { time: "625", court: "6", team1: ["박상원", "이범주"], team2: ["정래민", "강동혁"] },
+      { time: "625", court: "7", team1: ["정수현", "김석준"], team2: ["전우식", "최준호"] },
+      { time: "625", court: "8", team1: ["김덕헌", "기훈"], team2: ["김정보", "노민영"] },
+      { time: "650", court: "4", team1: ["박상원", "정현두"], team2: ["정래민", "백건재"] },
+      { time: "650", court: "5", team1: ["기훈", "강기훈"], team2: ["지민석", "이범주"] },
+      { time: "650", court: "6", team1: ["이은지", "남정주"], team2: ["김유하", "최창민"], isWomen: true },
+      { time: "650", court: "7", team1: ["김수동", "전우식"], team2: ["강동혁", "노민영"] },
+      { time: "650", court: "8", team1: ["김덕헌", "상우"], team2: ["김정보", "김명수"] },
+      { time: "715", court: "4", team1: ["이범주", "김덕헌"], team2: ["전우식", "정현두"] },
+      { time: "715", court: "5", team1: ["정래민", "박상원"], team2: ["강동혁", "안종현"] },
+      { time: "715", court: "7", team1: ["김석준", "기훈"], team2: ["정수현", "권혁이"] },
+      { time: "715", court: "8", team1: ["김정보", "백건재"], team2: ["지민석", "최준호"] },
+      { time: "740", court: "4", team1: ["권혁이", "정현두"], team2: ["전우식", "노민영"] },
+      { time: "740", court: "6", team1: ["김나경", "이지화"], team2: ["김유하", "최창민"], isWomen: true },
+      { time: "740", court: "7", team1: ["최준호", "정래민"], team2: ["박상원", "강기훈"] },
+      { time: "740", court: "8", team1: ["김명수", "정수현"], team2: ["강동혁", "김수동"] },
+      { time: "805", court: "4", team1: ["정현두", "강기훈"], team2: ["노민영", "전우식"] },
+      { time: "805", court: "5", team1: ["정래민", "상우"], team2: ["안종현", "지민석"] },
+      { time: "805", court: "6", team1: ["김지원", "이은지"], team2: ["이지화", "최창민"], isWomen: true },
+      { time: "830", court: "4", team1: ["강동혁", "김덕헌"], team2: ["상우", "기훈"] },
+      { time: "830", court: "5", team1: ["권혁이", "정수현"], team2: ["정현두", "노민영"] },
+      { time: "830", court: "6", team1: ["김지원", "김나경"], team2: ["남정주", "최창민"], isWomen: true },
+      { time: "855", court: "4", team1: ["김석준", "김명수"], team2: ["안종현", "김정보"] },
+      { time: "855", court: "5", team1: ["이범주", "최준호"], team2: ["김덕헌", "김수동"] },
+      { time: "855", court: "6", team1: ["김지원", "이은지"], team2: ["이지화", "남정주"], isWomen: true },
+      { time: "920", court: "4", team1: ["박상원", "이범주"], team2: ["백건재", "김석준"] },
+      { time: "920", court: "6", team1: ["김지원", "김유하"], team2: ["김나경", "남정주"], isWomen: true },
     ];
-    const femalePlayers = ['김나경', '김유하', '이은지', '이지화', '김지원', '남정주', '최창민'];
 
-    // 스케줄 데이터
-    const schedule = {
-      '6:00~6:25': [
-        { court: 4, match: '김나경 & 김유하 vs 이은지 & 이지화', type: 'female' },
-        { court: 5, match: '정수현 & 최준호 vs 기훈 & 김정보', type: 'male' },
-        { court: 6, match: '권혁이 & 김명수 vs 김수동 & 노민영', type: 'male' },
-        { court: 7, match: '박상원 & 상우 vs 안종현 & 전우식', type: 'male' },
-        { court: 8, match: '김석준 & 지민석 vs 강기훈 & 김덕헌', type: 'male' },
-      ],
-      '6:25~6:50': [
-        { court: 4, match: '이범주 & 김덕헌 vs 김명수 & 상우', type: 'male' },
-        { court: 5, match: '정래민 & 백건재 vs 강동혁 & 정현두', type: 'male' },
-        { court: 6, match: '기훈 & 노민영 vs 박상원 & 전우식', type: 'male' },
-        { court: 7, match: '권혁이 & 김수동 vs 정수현 & 강기훈', type: 'male' },
-        { court: 8, match: '김석준 & 지민석 vs 안종현 & 최준호', type: 'male' },
-      ],
-      '6:50~7:15': [
-        { court: 4, match: '이은지 & 남정주 vs 김유하 & 최창민', type: 'female' },
-        { court: 5, match: '정수현 & 지민석 vs 백건재 & 정현두', type: 'male' },
-        { court: 6, match: '정래민 & 기훈 vs 박상원 & 전우식', type: 'male' },
-        { court: 7, match: '김수동 & 상우 vs 안종현 & 노민영', type: 'male' },
-        { court: 8, match: '권혁이 & 최준호 vs 김명수 & 강기훈', type: 'male' },
-      ],
-      '7:15~7:40': [
-        { court: 4, match: '노민영 & 전우식 vs 박상원 & 김수동', type: 'male' },
-        { court: 5, match: '안종현 & 백건재 vs 김석준 & 강동혁', type: 'male' },
-        { court: 6, match: '정래민 & 이범주 vs 정수현 & 김명수', type: 'male' },
-        { court: 7, match: '기훈 & 상우 vs 권혁이 & 지민석', type: 'male' },
-        { court: 8, match: '강기훈 & 정현두 vs 최준호 & 김덕헌', type: 'male' },
-      ],
-      '7:40~8:05': [
-        { court: 4, match: '김나경 & 이지화 vs 김유하 & 최창민', type: 'female' },
-        { court: 5, match: '권혁이 & 노민영 vs 전우식 & 백건재', type: 'male' },
-        { court: 6, match: '김석준 & 김명수 vs 강동혁 & 최준호', type: 'male' },
-        { court: 7, match: '정래민 & 안종현 vs 김수동 & 김덕헌', type: 'male' },
-        { court: 8, match: '기훈 & 박상원 vs 이범주 & 지민석', type: 'male' },
-      ],
-      '8:05~8:30': [
-        { court: 4, match: '김지원 & 이은지 vs 이지화 & 최창민', type: 'female' },
-        { court: 5, match: '노민영 & 전우식 vs 정현두 & 강기훈', type: 'male' },
-        { court: 6, match: '이범주 & 최준호 vs 박상원 & 정래민', type: 'male' },
-      ],
-      '8:30~8:55': [
-        { court: 4, match: '김지원 & 김나경 vs 남정주 & 최창민', type: 'female' },
-        { court: 5, match: '권혁이 & 정수현 vs 백건재 & 안종현', type: 'male' },
-        { court: 6, match: '김명수 & 강동혁 vs 상우 & 노민영', type: 'male' },
-      ],
-      '8:55~9:20': [
-        { court: 4, match: '김지원 & 이은지 vs 이지화 & 남정주', type: 'female' },
-        { court: 5, match: '기훈 & 김석준 vs 정래민 & 김정보', type: 'male' },
-        { court: 6, match: '박상원 & 전우식 vs 정수현 & 지민석', type: 'male' },
-      ],
-      '9:20~9:45': [
-        { court: 4, match: '김지원 & 김유하 vs 김나경 & 남정주', type: 'female' },
-        { court: 5, match: '안종현 & 백건재 vs 강동혁 & 강기훈', type: 'male' },
-        { court: 6, match: '이범주 & 노민영 vs 김수동 & 상우', type: 'male' },
-      ],
-    };
+    // 선수별 기록 저장
+    let menStats = {};
+    let womenStats = {};
 
-    const App = () => {
-      const [scores, setScores] = useState(initialScores);
+    // 초기화
+    function initializeStats() {
+      const men = ["정래민", "권혁이", "기훈", "김명수", "김석준", "김수동", "노민영", "백건재", "강동혁", "박상원", "상우", "안종현", "이범주", "전우식", "정수현", "정현두", "지민석", "최준호", "강기훈", "김정보"];
+      const women = ["김나경", "김유하", "이은지", "이지화", "김지원", "남정주", "최창민"];
 
-      // 스코어 저장 시 localStorage 업데이트
-      useEffect(() => {
-        localStorage.setItem('tennisScores', JSON.stringify(scores));
-      }, [scores]);
+      men.forEach(player => {
+        menStats[player] = { wins: 0, losses: 0, gameDiff: 0 };
+      });
 
-      // 스코어 입력 핸들러
-      const handleScoreChange = (time, court, score) => {
-        setScores((prev) => ({
-          ...prev,
-          [`${time}-${court}`]: score,
-        }));
-      };
+      women.forEach(player => {
+        womenStats[player] = { wins: 0, losses: 0, gameDiff: 0 };
+      });
+    }
 
-      // 순위 계산
-      const calculateRankings = (players, type) => {
-        const rankings = players.map((player) => ({
-          name: player,
-          wins: 0,
-          losses: 0,
-          gameDiff: 0,
-        }));
+    // 스코어 업데이트 함수
+    function updateScores() {
+      // 기록 초기화
+      initializeStats();
 
-        Object.entries(schedule).forEach(([time, matches]) => {
-          matches.forEach(({ court, match, type: matchType }) => {
-            if (matchType !== type) return;
-            const score = scores[`${time}-${court}`] || '';
-            if (!score.match(/^\d+-\d+$/)) return;
+      // 모든 경기 스코어 처리
+      matches.forEach(match => {
+        const score1 = parseInt(document.getElementById(`score-${match.time}-${match.court}-team1`).value) || 0;
+        const score2 = parseInt(document.getElementById(`score-${match.time}-${match.court}-team2`).value) || 0;
 
-            const [team1Score, team2Score] = score.split('-').map(Number);
-            const [team1, team2] = match.split(' vs ').map((t) => t.split(' & '));
-            const team1Win = team1Score > team2Score;
+        if (score1 === 0 && score2 === 0) return; // 스코어가 입력되지 않은 경우 무시
 
-            team1.forEach((p) => {
-              const rank = rankings.find((r) => r.name === p);
-              if (rank) {
-                rank.wins += team1Win ? 1 : 0;
-                rank.losses += team1Win ? 0 : 1;
-                rank.gameDiff += team1Score - team2Score;
-              }
-            });
+        const stats = match.isWomen ? womenStats : menStats;
+        const team1 = match.team1;
+        const team2 = match.team2;
 
-            team2.forEach((p) => {
-              const rank = rankings.find((r) => r.name === p);
-              if (rank) {
-                rank.wins += team1Win ? 0 : 1;
-                rank.losses += team1Win ? 1 : 0;
-                rank.gameDiff += team2Score - team1Score;
-              }
-            });
+        // 승/패 계산
+        if (score1 > score2) {
+          team1.forEach(player => {
+            stats[player].wins += 1;
           });
+          team2.forEach(player => {
+            stats[player].losses += 1;
+          });
+        } else if (score2 > score1) {
+          team2.forEach(player => {
+            stats[player].wins += 1;
+          });
+          team1.forEach(player => {
+            stats[player].losses += 1;
+          });
+        }
+
+        // 게임득실 계산
+        const gameDiff = score1 - score2;
+        team1.forEach(player => {
+          stats[player].gameDiff += gameDiff;
         });
-
-        return rankings.sort((a, b) => {
-          if (a.wins !== b.wins) return b.wins - a.wins;
-          return b.gameDiff - a.gameDiff;
+        team2.forEach(player => {
+          stats[player].gameDiff -= gameDiff;
         });
-      };
+      });
 
-      const maleRankings = calculateRankings(malePlayers, 'male');
-      const femaleRankings = calculateRankings(femalePlayers, 'female');
+      // 순위표 업데이트
+      updateRankings();
+    }
 
-      return (
-        <div className="container mx-auto p-4">
-          <h1 className="text-3xl font-bold text-center mb-4">테니스 클럽 친선전 스케줄 및 순위표</h1>
+    // 순위표 업데이트 및 정렬
+    function updateRankings() {
+      // 남자 복식 정렬
+      const menRankings = Object.entries(menStats).map(([player, stats]) => ({
+        player,
+        wins: stats.wins,
+        losses: stats.losses,
+        gameDiff: stats.gameDiff
+      })).sort((a, b) => b.wins - a.wins || b.gameDiff - a.gameDiff);
 
-          {/* 대회 정보 */}
-          <div className="mb-4">
-            <p><strong>날짜:</strong> 2025년 6월 7일 토요일</p>
-            <p><strong>시간:</strong> 오후 6:00 ~ 오후 9:45</p>
-            <p><strong>경기 형식:</strong> 1세트, 6게임제, 노애드 스코어링, 경기당 25분</p>
-            <p><strong>코트:</strong> 6:00~8:00: 4, 5, 6, 7, 8번 / 8:05~9:45: 4, 5, 6번</p>
-          </div>
+      const menTableBody = document.getElementById("men-doubles-rankings");
+      menTableBody.innerHTML = "";
+      menRankings.forEach(({ player, wins, losses, gameDiff }) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${player}</td>
+          <td id="wins-${player}">${wins}</td>
+          <td id="losses-${player}">${losses}</td>
+          <td id="game-diff-${player}">${gameDiff}</td>
+        `;
+        menTableBody.appendChild(row);
+      });
 
-          {/* 여자 복식 정보 */}
-          <div className="mb-4">
-            <h2 className="text-xl font-bold">여자 복식 (7명, 파트너 로테이션)</h2>
-            <p><strong>참가자:</strong> 김나경, 김유하, 이은지, 이지화, 김지원, 남정주, 최창민</p>
-            <p><strong>형식:</strong> 1인당 4경기, 총 7경기, 시간대별 분산</p>
-          </div>
+      // 여자 복식 정렬
+      const womenRankings = Object.entries(womenStats).map(([player, stats]) => ({
+        player,
+        wins: stats.wins,
+        losses: stats.losses,
+        gameDiff: stats.gameDiff
+      })).sort((a, b) => b.wins - a.wins || b.gameDiff - a.gameDiff);
 
-          {/* 남자 복식 정보 */}
-          <div className="mb-4">
-            <h2 className="text-xl font-bold">남자 복식 (21명, 티어 균형 파트너)</h2>
-            <p><strong>T1 참가자 (상):</strong> 정수현, 권혁이, 박상원, 기훈, 김석준, 이범주, 백건재, 안종현</p>
-            <p><strong>T2 참가자 (중):</strong> 김수동, 노민영, 전우식, 강동혁, 강기훈, 정래민, 정현두</p>
-            <p><strong>T3 참가자 (하):</strong> 최준호, 김정보, 지민석, 상우, 김명수, 김덕헌</p>
-            <p><strong>형식:</strong> 1인당 5경기, 총 30경기, 티어 균형, 시간대 분산, 동일 팀 2회 이상 금지</p>
-          </div>
+      const womenTableBody = document.getElementById("women-doubles-rankings");
+      womenTableBody.innerHTML = "";
+      womenRankings.forEach(({ player, wins, losses, gameDiff }) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${player}</td>
+          <td id="wins-${player}">${wins}</td>
+          <td id="losses-${player}">${losses}</td>
+          <td id="game-diff-${player}">${gameDiff}</td>
+        `;
+        womenTableBody.appendChild(row);
+      });
+    }
 
-          {/* 참고 */}
-          <div className="mb-4">
-            <h2 className="text-xl font-bold">참고</h2>
-            <p>- 코트 외: 30경기 (여자 7경기, 남자 23경기) 기록만</p>
-            <p>- 순위는 승리 게임 수, 게임득실 순으로 결정 (게임득실 = 획득 게임 - 실점 게임)</p>
-            <p>- 티어: T1 (상), T2 (중), T3 (하), 팀 티어 합 균등 배치</p>
-          </div>
-
-          {/* 스케줄 표 (6:00~8:05) */}
-          <h2 className="text-2xl font-bold mb-2">스케줄 (6:00~8:05)</h2>
-          <table className="table-auto w-full text-sm border-collapse mb-4">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border px-2 py-1 w-[80px]">시간</th>
-                <th className="border px-2 py-1">4번 코트</th>
-                <th className="border px-2 py-1">5번 코트</th>
-                <th className="border px-2 py-1">6번 코트</th>
-                <th className="border px-2 py-1">7번 코트</th>
-                <th className="border px-2 py-1">8번 코트</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(schedule).filter(([time]) => time <= '7:40~8:05').map(([time, matches]) => (
-                <tr key={time}>
-                  <td className="border px-2 py-1 text-center">{time}</td>
-                  {[4, 5, 6, 7, 8].map((court) => {
-                    const match = matches.find((m) => m.court === court);
-                    return (
-                      <td key={court} className="border px-2 py-1">
-                        {match ? (
-                          <>
-                            <div>{match.match}</div>
-                            <div className="flex items-center mt-1">
-                              <input
-                                type="text"
-                                className="border rounded px-1 py-0.5 w-20 text-sm"
-                                placeholder="스코어 (예: 6-4)"
-                                value={scores[`${time}-${court}`] || ''}
-                                onChange={(e) => handleScoreChange(time, court, e.target.value)}
-                              />
-                            </div>
-                          </>
-                        ) : ''}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* 스케줄 표 (8:05~9:45) */}
-          <h2 className="text-2xl font-bold mb-2">스케줄 (8:05~9:45)</h2>
-          <table className="table-auto w-full text-sm border-collapse mb-4">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border px-2 py-1 w-[80px]">시간</th>
-                <th className="border px-2 py-1">4번 코트</th>
-                <th className="border px-2 py-1">5번 코트</th>
-                <th className="border px-2 py-1">6번 코트</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(schedule).filter(([time]) => time > '7:40~8:05').map(([time, matches]) => (
-                <tr key={time}>
-                  <td className="border px-2 py-1 text-center">{time}</td>
-                  {[4, 5, 6].map((court) => {
-                    const match = matches.find((m) => m.court === court);
-                    return (
-                      <td key={court} className="border px-2 py-1">
-                        {match ? (
-                          <>
-                            <div>{match.match}</div>
-                            <div className="flex items-center mt-1">
-                              <input
-                                type="text"
-                                className="border rounded px-1 py-0.5 w-20 text-sm"
-                                placeholder="스코어 (예: 6-4)"
-                                value={scores[`${time}-${court}`] || ''}
-                                onChange={(e) => handleScoreChange(time, court, e.target.value)}
-                              />
-                            </div>
-                          </>
-                        ) : ''}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* 남자 복식 순위표 */}
-          <div className="break-before-page">
-            <h2 className="text-2xl font-bold mb-2 text-center">남자 복식 순위표</h2>
-            <p className="mb-2"><strong>참가자:</strong> {malePlayers.join(', ')}</p>
-            <table className="table-auto w-full text-lg border-collapse">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border px-4 py-2">선수</th>
-                  <th className="border px-4 py-2">승</th>
-                  <th className="border px-4 py-2">패</th>
-                  <th className="border px-4 py-2">게임득실</th>
-                </tr>
-              </thead>
-              <tbody>
-                {maleRankings.map((rank) => (
-                  <tr key={rank.name}>
-                    <td className="border px-4 py-2">{rank.name}</td>
-                    <td className="border px-4 py-2">{rank.wins}</td>
-                    <td className="border px-4 py-2">{rank.losses}</td>
-                    <td className="border px-4 py-2">{rank.gameDiff}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* 여자 복식 순위표 */}
-          <div className="break-before-page">
-            <h2 className="text-2xl font-bold mb-2 text-center">여자 복식 순위표</h2>
-            <p className="mb-2"><strong>참가자:</strong> {femalePlayers.join(', ')}</p>
-            <table className="table-auto w-full text-lg border-collapse">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border px-4 py-2">선수</th>
-                  <th className="border px-4 py-2">승</th>
-                  <th className="border px-4 py-2">패</th>
-                  <th className="border px-4 py-2">게임득실</th>
-                </tr>
-              </thead>
-              <tbody>
-                {femaleRankings.map((rank) => (
-                  <tr key={rank.name}>
-                    <td className="border px-4 py-2">{rank.name}</td>
-                    <td className="border px-4 py-2">{rank.wins}</td>
-                    <td className="border px-4 py-2">{rank.losses}</td>
-                    <td className="border px-4 py-2">{rank.gameDiff}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      );
-    };
-
-    ReactDOM.render(<App />, document.getElementById('root'));
+    // 페이지 로드 시 초기화
+    initializeStats();
   </script>
 </body>
 </html>
