@@ -47,6 +47,7 @@
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
+      font-size: 16px;
     }
     h1, h2 {
       text-align: center;
@@ -68,12 +69,11 @@
     th {
       background-color: #f2f2f2;
     }
-    /* 남자 복식 순위표 스타일 (3배) */
+    /* 기본 스타일: 데스크톱 */
     .men-doubles-table th, .men-doubles-table td {
       font-size: 27px; /* 기본 9pt의 3배 */
       padding: 24px; /* 기본 8px의 3배 */
     }
-    /* 여자 복식 순위표 스타일 (3배) */
     .women-doubles-table th, .women-doubles-table td {
       font-size: 27px; /* 기본 9pt의 3배 */
       padding: 24px; /* 기본 8px의 3배 */
@@ -81,6 +81,44 @@
     input[type="number"] {
       width: 40px;
       text-align: center;
+    }
+    /* 모바일 스타일: 768px 이하 */
+    @media (max-width: 768px) {
+      body {
+        margin: 10px;
+        font-size: 14px;
+      }
+      table {
+        font-size: 12px;
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+      th, td {
+        padding: 4px;
+      }
+      .men-doubles-table th, .men-doubles-table td {
+        font-size: 16px; /* 모바일에서는 작게 조정 */
+        padding: 8px;
+      }
+      .women-doubles-table th, .women-doubles-table td {
+        font-size: 16px; /* 모바일에서는 작게 조정 */
+        padding: 8px;
+      }
+      input[type="number"] {
+        width: 30px;
+        font-size: 12px;
+        padding: 2px;
+      }
+      h1 {
+        font-size: 20px;
+      }
+      h2 {
+        font-size: 16px;
+      }
+      ul li {
+        font-size: 12px;
+      }
     }
   </style>
 </head>
