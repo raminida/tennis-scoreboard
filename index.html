@@ -314,16 +314,16 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
   <script>
-    // Firebase 설정 (Firebase 콘솔에서 복사한 설정 값 입력)
+    // Firebase 설정 (형이 제공한 설정 값 입력)
     const firebaseConfig = {
-      // 여기에 Firebase 콘솔에서 복사한 설정 값을 붙여넣어
-      // 예: 
-      // apiKey: "YOUR_API_KEY",
-      // authDomain: "YOUR_AUTH_DOMAIN",
-      // projectId: "YOUR_PROJECT_ID",
-      // storageBucket: "YOUR_STORAGE_BUCKET",
-      // messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      // appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
+      authDomain: "tennis-plan-jibung.firebaseapp.com",
+      databaseURL: "https://tennis-plan-jibung-default-rtdb.firebaseio.com",
+      projectId: "tennis-plan-jibung",
+      storageBucket: "tennis-plan-jibung.firebasestorage.app",
+      messagingSenderId: "491083537160",
+      appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd",
+      measurementId: "G-4CSJLPFJD6"
     };
 
     // Firebase 초기화
@@ -333,7 +333,7 @@
       db = firebase.firestore();
     } catch (error) {
       console.error("Firebase 초기화 실패: ", error);
-      alert("Firebase 설정을 확인해주세요. firebaseConfig에 올바른 값을 입력해야 합니다.");
+      alert("Firebase 설정을 확인해주세요. firebaseConfig에 올바른 값을 입력했는지 확인하세요.");
     }
 
     // 경기 정보 (시간-코트-팀1&팀2)
