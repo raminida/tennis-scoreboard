@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -80,6 +41,12 @@
     input[type="number"] {
       width: 40px;
       text-align: center;
+    }
+    .highlight {
+      background-color: yellow; /* 하이라이트 색상 */
+    }
+    .player-name {
+      cursor: pointer; /* 터치 가능 표시 */
     }
     @media (max-width: 768px) {
       body {
@@ -272,27 +239,27 @@
       </tr>
     </thead>
     <tbody id="men-doubles-rankings">
-      <tr><td>정래민</td><td id="wins-정래민">0</td><td id="losses-정래민">0</td><td id="game-diff-정래민">0</td></tr>
-      <tr><td>권혁이</td><td id="wins-권혁이">0</td><td id="losses-권혁이">0</td><td id="game-diff-권혁이">0</td></tr>
-      <tr><td>기훈</td><td id="wins-기훈">0</td><td id="losses-기훈">0</td><td id="game-diff-기훈">0</td></tr>
-      <tr><td>김명수</td><td id="wins-김명수">0</td><td id="losses-김명수">0</td><td id="game-diff-김명수">0</td></tr>
-      <tr><td>김석준</td><td id="wins-김석준">0</td><td id="losses-김석준">0</td><td id="game-diff-김석준">0</td></tr>
-      <tr><td>김수동</td><td id="wins-김수동">0</td><td id="losses-김수동">0</td><td id="game-diff-김수동">0</td></tr>
-      <tr><td>노민영</td><td id="wins-노민영">0</td><td id="losses-노민영">0</td><td id="game-diff-노민영">0</td></tr>
-      <tr><td>백건재</td><td id="wins-백건재">0</td><td id="losses-백건재">0</td><td id="game-diff-백건재">0</td></tr>
-      <tr><td>강동혁</td><td id="wins-강동혁">0</td><td id="losses-강동혁">0</td><td id="game-diff-강동혁">0</td></tr>
-      <tr><td>박상원</td><td id="wins-박상원">0</td><td id="losses-박상원">0</td><td id="game-diff-박상원">0</td></tr>
-      <tr><td>상우</td><td id="wins-상우">0</td><td id="losses-상우">0</td><td id="game-diff-상우">0</td></tr>
-      <tr><td>안종현</td><td id="wins-안종현">0</td><td id="losses-안종현">0</td><td id="game-diff-안종현">0</td></tr>
-      <tr><td>이범주</td><td id="wins-이범주">0</td><td id="losses-이범주">0</td><td id="game-diff-이범주">0</td></tr>
-      <tr><td>전우식</td><td id="wins-전우식">0</td><td id="losses-전우식">0</td><td id="game-diff-전우식">0</td></tr>
-      <tr><td>정수현</td><td id="wins-정수현">0</td><td id="losses-정수현">0</td><td id="game-diff-정수현">0</td></tr>
-      <tr><td>정현두</td><td id="wins-정현두">0</td><td id="losses-정현두">0</td><td id="game-diff-정현두">0</td></tr>
-      <tr><td>지민석</td><td id="wins-지민석">0</td><td id="losses-지민석">0</td><td id="game-diff-지민석">0</td></tr>
-      <tr><td>최준호</td><td id="wins-최준호">0</td><td id="losses-최준호">0</td><td id="game-diff-최준호">0</td></tr>
-      <tr><td>강기훈</td><td id="wins-강기훈">0</td><td id="losses-강기훈">0</td><td id="game-diff-강기훈">0</td></tr>
-      <tr><td>김정보</td><td id="wins-김정보">0</td><td id="losses-김정보">0</td><td id="game-diff-김정보">0</td></tr>
-      <tr><td>김덕헌</td><td id="wins-김덕헌">0</td><td id="losses-김덕헌">0</td><td id="game-diff-김덕헌">0</td></tr>
+      <tr><td class="player-name" data-player="정래민">정래민</td><td id="wins-정래민">0</td><td id="losses-정래민">0</td><td id="game-diff-정래민">0</td></tr>
+      <tr><td class="player-name" data-player="권혁이">권혁이</td><td id="wins-권혁이">0</td><td id="losses-권혁이">0</td><td id="game-diff-권혁이">0</td></tr>
+      <tr><td class="player-name" data-player="기훈">기훈</td><td id="wins-기훈">0</td><td id="losses-기훈">0</td><td id="game-diff-기훈">0</td></tr>
+      <tr><td class="player-name" data-player="김명수">김명수</td><td id="wins-김명수">0</td><td id="losses-김명수">0</td><td id="game-diff-김명수">0</td></tr>
+      <tr><td class="player-name" data-player="김석준">김석준</td><td id="wins-김석준">0</td><td id="losses-김석준">0</td><td id="game-diff-김석준">0</td></tr>
+      <tr><td class="player-name" data-player="김수동">김수동</td><td id="wins-김수동">0</td><td id="losses-김수동">0</td><td id="game-diff-김수동">0</td></tr>
+      <tr><td class="player-name" data-player="노민영">노민영</td><td id="wins-노민영">0</td><td id="losses-노민영">0</td><td id="game-diff-노민영">0</td></tr>
+      <tr><td class="player-name" data-player="백건재">백건재</td><td id="wins-백건재">0</td><td id="losses-백건재">0</td><td id="game-diff-백건재">0</td></tr>
+      <tr><td class="player-name" data-player="강동혁">강동혁</td><td id="wins-강동혁">0</td><td id="losses-강동혁">0</td><td id="game-diff-강동혁">0</td></tr>
+      <tr><td class="player-name" data-player="박상원">박상원</td><td id="wins-박상원">0</td><td id="losses-박상원">0</td><td id="game-diff-박상원">0</td></tr>
+      <tr><td class="player-name" data-player="상우">상우</td><td id="wins-상우">0</td><td id="losses-상우">0</td><td id="game-diff-상우">0</td></tr>
+      <tr><td class="player-name" data-player="안종현">안종현</td><td id="wins-안종현">0</td><td id="losses-안종현">0</td><td id="game-diff-안종현">0</td></tr>
+      <tr><td class="player-name" data-player="이범주">이범주</td><td id="wins-이범주">0</td><td id="losses-이범주">0</td><td id="game-diff-이범주">0</td></tr>
+      <tr><td class="player-name" data-player="전우식">전우식</td><td id="wins-전우식">0</td><td id="losses-전우식">0</td><td id="game-diff-전우식">0</td></tr>
+      <tr><td class="player-name" data-player="정수현">정수현</td><td id="wins-정수현">0</td><td id="losses-정수현">0</td><td id="game-diff-정수현">0</td></tr>
+      <tr><td class="player-name" data-player="정현두">정현두</td><td id="wins-정현두">0</td><td id="losses-정현두">0</td><td id="game-diff-정현두">0</td></tr>
+      <tr><td class="player-name" data-player="지민석">지민석</td><td id="wins-지민석">0</td><td id="losses-지민석">0</td><td id="game-diff-지민석">0</td></tr>
+      <tr><td class="player-name" data-player="최준호">최준호</td><td id="wins-최준호">0</td><td id="losses-최준호">0</td><td id="game-diff-최준호">0</td></tr>
+      <tr><td class="player-name" data-player="강기훈">강기훈</td><td id="wins-강기훈">0</td><td id="losses-강기훈">0</td><td id="game-diff-강기훈">0</td></tr>
+      <tr><td class="player-name" data-player="김정보">김정보</td><td id="wins-김정보">0</td><td id="losses-김정보">0</td><td id="game-diff-김정보">0</td></tr>
+      <tr><td class="player-name" data-player="김덕헌">김덕헌</td><td id="wins-김덕헌">0</td><td id="losses-김덕헌">0</td><td id="game-diff-김덕헌">0</td></tr>
     </tbody>
   </table>
 
@@ -307,13 +274,13 @@
       </tr>
     </thead>
     <tbody id="women-doubles-rankings">
-      <tr><td>김나경</td><td id="wins-김나경">0</td><td id="losses-김나경">0</td><td id="game-diff-김나경">0</td></tr>
-      <tr><td>김유하</td><td id="wins-김유하">0</td><td id="losses-김유하">0</td><td id="game-diff-김유하">0</td></tr>
-      <tr><td>이은지</td><td id="wins-이은지">0</td><td id="losses-이은지">0</td><td id="game-diff-이은지">0</td></tr>
-      <tr><td>이지화</td><td id="wins-이지화">0</td><td id="losses-이지화">0</td><td id="game-diff-이지화">0</td></tr>
-      <tr><td>김지원</td><td id="wins-김지원">0</td><td id="losses-김지원">0</td><td id="game-diff-김지원">0</td></tr>
-      <tr><td>남정주</td><td id="wins-남정주">0</td><td id="losses-남정주">0</td><td id="game-diff-남정주">0</td></tr>
-      <tr><td>최창민</td><td id="wins-최창민">0</td><td id="losses-최창민">0</td><td id="game-diff-최창민">0</td></tr>
+      <tr><td class="player-name" data-player="김나경">김나경</td><td id="wins-김나경">0</td><td id="losses-김나경">0</td><td id="game-diff-김나경">0</td></tr>
+      <tr><td class="player-name" data-player="김유하">김유하</td><td id="wins-김유하">0</td><td id="losses-김유하">0</td><td id="game-diff-김유하">0</td></tr>
+      <tr><td class="player-name" data-player="이은지">이은지</td><td id="wins-이은지">0</td><td id="losses-이은지">0</td><td id="game-diff-이은지">0</td></tr>
+      <tr><td class="player-name" data-player="이지화">이지화</td><td id="wins-이지화">0</td><td id="losses-이지화">0</td><td id="game-diff-이지화">0</td></tr>
+      <tr><td class="player-name" data-player="김지원">김지원</td><td id="wins-김지원">0</td><td id="losses-김지원">0</td><td id="game-diff-김지원">0</td></tr>
+      <tr><td class="player-name" data-player="남정주">남정주</td><td id="wins-남정주">0</td><td id="losses-남정주">0</td><td id="game-diff-남정주">0</td></tr>
+      <tr><td class="player-name" data-player="최창민">최창민</td><td id="wins-최창민">0</td><td id="losses-최창민">0</td><td id="game-diff-최창민">0</td></tr>
     </tbody>
   </table>
 
@@ -431,6 +398,92 @@
       });
     }
 
+    // 순위표 업데이트 및 정렬
+    function updateRankings() {
+      const menRankings = Object.entries(menStats).map(([player, stats]) => ({
+        player,
+        wins: stats.wins,
+        losses: stats.losses,
+        gameDiff: stats.gameDiff
+      })).sort((a, b) => b.wins - a.wins || b.gameDiff - a.gameDiff);
+
+      const menTableBody = document.getElementById("men-doubles-rankings");
+      menTableBody.innerHTML = "";
+      menRankings.forEach(({ player, wins, losses, gameDiff }) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="player-name" data-player="${player}">${player}</td>
+          <td id="wins-${player}">${wins}</td>
+          <td id="losses-${player}">${losses}</td>
+          <td id="game-diff-${player}">${gameDiff}</td>
+        `;
+        menTableBody.appendChild(row);
+      });
+
+      const womenRankings = Object.entries(womenStats).map(([player, stats]) => ({
+        player,
+        wins: stats.wins,
+        losses: stats.losses,
+        gameDiff: stats.gameDiff
+      })).sort((a, b) => b.wins - a.wins || b.gameDiff - a.gameDiff);
+
+      const womenTableBody = document.getElementById("women-doubles-rankings");
+      womenTableBody.innerHTML = "";
+      womenRankings.forEach(({ player, wins, losses, gameDiff }) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="player-name" data-player="${player}">${player}</td>
+          <td id="wins-${player}">${wins}</td>
+          <td id="losses-${player}">${losses}</td>
+          <td id="game-diff-${player}">${gameDiff}</td>
+        `;
+        womenTableBody.appendChild(row);
+      });
+
+      // 선수 이름에 이벤트 리스너 추가 (업데이트 후에도 적용되도록)
+      setupPlayerHighlight();
+    }
+
+    // 선수 이름 클릭/터치 시 경기 하이라이트 함수
+    function setupPlayerHighlight() {
+      const playerNames = document.querySelectorAll('.player-name');
+      playerNames.forEach(player => {
+        const handleHighlight = (event) => {
+          event.preventDefault(); // 터치 시 스크롤 방지
+          const playerName = player.getAttribute('data-player');
+          const isHighlighted = player.classList.contains('highlight');
+
+          // 모든 하이라이트 제거
+          document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+
+          // 하이라이트 토글
+          if (!isHighlighted) {
+            // 해당 선수의 경기 셀 하이라이트
+            matches.forEach(match => {
+              const { time, court, team1, team2, isWomen } = match;
+              if ((team1.includes(playerName) || team2.includes(playerName)) && !matchCellEmpty(time, court)) {
+                const cell = document.getElementById(`score-${time}-${court}-team1`).parentElement;
+                cell.classList.add('highlight');
+              }
+            });
+            player.classList.add('highlight'); // 선수 이름도 하이라이트
+          }
+        };
+
+        // 터치 및 클릭 이벤트 추가
+        player.addEventListener('touchstart', handleHighlight);
+        player.addEventListener('click', handleHighlight);
+      });
+    }
+
+    // 셀이 비어 있는지 확인
+    function matchCellEmpty(time, court) {
+      const cell = document.getElementById(`score-${time}-${court}-team1`);
+      if (!cell) return true;
+      const text = cell.parentElement.textContent.trim();
+      return text === '-' || text === '';
+    }
+
     // 스코어 업데이트 함수
     function updateScores() {
       initializeStats();
@@ -471,49 +524,6 @@
       });
 
       updateRankings();
-    }
-
-    // 순위표 업데이트 및 정렬
-    function updateRankings() {
-      const menRankings = Object.entries(menStats).map(([player, stats]) => ({
-        player,
-        wins: stats.wins,
-        losses: stats.losses,
-        gameDiff: stats.gameDiff
-      })).sort((a, b) => b.wins - a.wins || b.gameDiff - a.gameDiff);
-
-      const menTableBody = document.getElementById("men-doubles-rankings");
-      menTableBody.innerHTML = "";
-      menRankings.forEach(({ player, wins, losses, gameDiff }) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${player}</td>
-          <td id="wins-${player}">${wins}</td>
-          <td id="losses-${player}">${losses}</td>
-          <td id="game-diff-${player}">${gameDiff}</td>
-        `;
-        menTableBody.appendChild(row);
-      });
-
-      const womenRankings = Object.entries(womenStats).map(([player, stats]) => ({
-        player,
-        wins: stats.wins,
-        losses: stats.losses,
-        gameDiff: stats.gameDiff
-      })).sort((a, b) => b.wins - a.wins || b.gameDiff - a.gameDiff);
-
-      const womenTableBody = document.getElementById("women-doubles-rankings");
-      womenTableBody.innerHTML = "";
-      womenRankings.forEach(({ player, wins, losses, gameDiff }) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${player}</td>
-          <td id="wins-${player}">${wins}</td>
-          <td id="losses-${player}">${losses}</td>
-          <td id="game-diff-${player}">${gameDiff}</td>
-        `;
-        womenTableBody.appendChild(row);
-      });
     }
 
     // 페이지 로드 시 초기화
