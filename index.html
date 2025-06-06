@@ -64,14 +64,31 @@
       border-collapse: collapse;
       margin-top: 20px;
       border: 1px solid #B0BEC5;
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
     }
     th, td {
       border: 1px solid #B0BEC5;
       padding: 12px;
       text-align: center;
+      min-width: 100px; /* 코트 열 최소 너비 */
     }
     th {
       background-color: #2E7D32;
+      color: white;
+    }
+    /* 시간대 열 고정 스타일 */
+    th:first-child, td:first-child {
+      position: sticky;
+      left: 0;
+      background-color: #E8F5E9; /* 고정 열 배경색 */
+      z-index: 1; /* 다른 열 위에 표시 */
+      min-width: 80px; /* 시간대 열 너비 */
+      border-right: 2px solid #B0BEC5; /* 구분선 강화 */
+    }
+    th:first-child {
+      background-color: #2E7D32; /* 헤더는 원래 색상 유지 */
       color: white;
     }
     .men-doubles-table th, .men-doubles-table td {
@@ -119,12 +136,13 @@
       }
       table {
         font-size: 14px;
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
       }
       th, td {
         padding: 6px;
+        min-width: 80px; /* 모바일에서 코트 열 너비 축소 */
+      }
+      th:first-child, td:first-child {
+        min-width: 60px; /* 모바일에서 시간대 열 너비 축소 */
       }
       .men-doubles-table th, .men-doubles-table td {
         font-size: 18px;
