@@ -249,7 +249,7 @@
       <tr>
         <td>6:00~6:25</td>
         <td><span class="match-pair">최준호&@기훈 vs 정수현&김석준</span><br><div class="score-input-container"><input type="number" id="score-600-3-team1" min="0" max="6" value="0"> : <input type="number" id="score-600-3-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-600-3"></span></div><span id="completed-600-3" class="completed"></span></td>
-        <td><span class="match-pair">권혁이&김명수 vs 백건재&강기훈</span><br><div class="score-input-container"><input type="number" id="score-600-4-team1" min="0" max="6" value="0"> : <input type="number" id="score-600-4-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-600-4"></span></div><span id="completed-600-4" class="completed"></span></td>
+        <td>-</td>
         <td>-</td>
         <td><span class="match-pair">김나경&김유하 vs 이은지&이지화</span><br><div class="score-input-container"><input type="number" id="score-600-6-team1" min="0" max="6" value="0"> : <input type="number" id="score-600-6-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-600-6"></span></div><span id="completed-600-6" class="completed"></span></td>
         <td>-</td>
@@ -377,7 +377,46 @@
   <!-- Firebase SDK 추가 -->
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-  <script>
+  <script type="text/javascript">
+    var gk_isXlsx = false;
+    var gk_xlsxFileLookup = {};
+    var gk_fileData = {};
+    function filledCell(cell) {
+      return cell !== '' && cell != null;
+    }
+    function loadFileData(filename) {
+      if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+        try {
+          var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+          var firstSheetName = workbook.SheetNames[0];
+          var worksheet = workbook.Sheets[firstSheetName];
+
+          // Convert sheet to JSON to filter blank rows
+          var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+          // Filter out blank rows (rows where all cells are empty, null, or undefined)
+          var filteredData = jsonData.filter(row => row.some(filledCell));
+
+          // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+          var headerRowIndex = filteredData.findIndex((row, index) =>
+            row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+          );
+          // Fallback
+          if (headerRowIndex === -1 || headerRowIndex > 25) {
+            headerRowIndex = 0;
+          }
+
+          // Convert filtered JSON back to CSV
+          var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+          csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+          return csv;
+        } catch (e) {
+          console.error(e);
+          return "";
+        }
+      }
+      return gk_fileData[filename] || "";
+    }
+
     // Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
@@ -403,7 +442,6 @@
     // 경기 정보
     const matches = [
       { time: "600", court: "3", team1: ["최준호", "@기훈"], team2: ["정수현", "김석준"] },
-      { time: "600", court: "4", team1: ["권혁이", "김명수"], team2: ["백건재", "강기훈"] },
       { time: "600", court: "6", team1: ["김나경", "김유하"], team2: ["이은지", "이지화"], isWomen: true },
       { time: "600", court: "8", team1: ["상우", "안종현"], team2: ["지민석", "김정보"] },
       { time: "625", court: "3", team1: ["김명수", "안종현"], team2: ["강기훈", "김수동"] },
