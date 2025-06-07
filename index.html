@@ -114,6 +114,20 @@
       border-radius: 3px;
       padding: 2px;
     }
+    input[type="text"] {
+      width: 60px;
+      text-align: center;
+      border: 1px solid #B0BEC5;
+      border-radius: 3px;
+      padding: 2px;
+      font-size: 12px;
+    }
+    select {
+      border: 1px solid #B0BEC5;
+      border-radius: 3px;
+      padding: 2px;
+      font-size: 12px;
+    }
     .match-pair.highlight {
       background-color: #AEEA00;
       color: #1B5E20;
@@ -155,6 +169,19 @@
     .hidden {
       display: none;
     }
+    .free-court-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 5px;
+    }
+    .free-court-inputs {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
     @media (max-width: 768px) {
       body {
         margin: 10px;
@@ -175,10 +202,13 @@
         font-size: 16px;
         padding: 10px;
       }
-      input[type="number"] {
+      input[type="number"], input[type="text"], select {
         width: 25px;
         font-size: 12px;
         padding: 1px;
+      }
+      input[type="text"] {
+        width: 50px;
       }
       h1 {
         font-size: 18px;
@@ -208,7 +238,7 @@
     <li><strong>날짜:</strong> 2025년 6월 7일 토요일</li>
     <li><strong>시간:</strong> 오후 6:00 ~ 오후 9:45</li>
     <li><strong>경기 형식:</strong> 1세트, 6게임제, 노애드 스코어링, 경기당 25분</li>
-    <li><strong>코트:</strong> 6:00~8:00: 3, 4, 5, 6, 7, 8번 / 8:05~9:45: 4, 5, 6번</li>
+    <li><strong>코트:</strong> 6:00~8:00: 3, 4, 5, 6, 7, 8, 9번 / 8:05~9:45: 4, 5, 6, 9번 (9번은 자유 코트)</li>
   </ul>
 
   <h2>여자 복식 정보</h2>
@@ -226,6 +256,7 @@
   <h2>참고</h2>
   <ul>
     <li>코트 외: 30경기 (여자 7경기, 남자 23경기) 기록만</li>
+    <li>9번 코트: 자유 코트로 임의 복식 경기 가능, 결과는 순위에 반영</li>
     <li>순위는 승리 게임 수, 게임득실 순으로 결정 (게임득실 = 획득 게임 - 실점 게임)</li>
     <li>티어: 팀 티어 합 균등 배치</li>
   </ul>
@@ -243,6 +274,7 @@
         <th>6번 코트</th>
         <th>7번 코트</th>
         <th>8번 코트</th>
+        <th>9번 코트 (자유)</th>
       </tr>
     </thead>
     <tbody>
@@ -254,6 +286,7 @@
         <td><span class="match-pair">김나경&김유하 vs 이은지&이지화</span><br><div class="score-input-container"><input type="number" id="score-600-6-team1" min="0" max="6" value="0"> : <input type="number" id="score-600-6-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-600-6"></span></div><span id="completed-600-6" class="completed"></span></td>
         <td>-</td>
         <td><span class="match-pair">상우&안종현 vs 지민석&김정보</span><br><div class="score-input-container"><input type="number" id="score-600-8-team1" min="0" max="6" value="0"> : <input type="number" id="score-600-8-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-600-8"></span></div><span id="completed-600-8" class="completed"></span></td>
+        <td><div class="free-court-container"><select id="gender-600-9"><option value="men">남자</option><option value="women">여자</option></select><div class="free-court-inputs"><input type="text" id="team1-player1-600-9" placeholder="팀1 플레이어1"><input type="text" id="team1-player2-600-9" placeholder="팀1 플레이어2"> vs <input type="text" id="team2-player1-600-9" placeholder="팀2 플레이어1"><input type="text" id="team2-player2-600-9" placeholder="팀2 플레이어2"></div><div class="score-input-container"><input type="number" id="score-600-9-team1" min="0" max="6" value="0"> : <input type="number" id="score-600-9-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-600-9"></span></div><span id="completed-600-9" class="completed"></span></div></td>
       </tr>
       <tr>
         <td>6:25~6:50</td>
@@ -263,6 +296,7 @@
         <td><span class="match-pair">박상원&이범주 vs 정래민&강동혁</span><br><div class="score-input-container"><input type="number" id="score-625-6-team1" min="0" max="6" value="0"> : <input type="number" id="score-625-6-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-625-6"></span></div><span id="completed-625-6" class="completed"></span></td>
         <td><span class="match-pair">정수현&김석준 vs 전우식&최준호</span><br><div class="score-input-container"><input type="number" id="score-625-7-team1" min="0" max="6" value="0"> : <input type="number" id="score-625-7-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-625-7"></span></div><span id="completed-625-7" class="completed"></span></td>
         <td><span class="match-pair">김덕헌&@기훈 vs 김정보&노민영</span><br><div class="score-input-container"><input type="number" id="score-625-8-team1" min="0" max="6" value="0"> : <input type="number" id="score-625-8-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-625-8"></span></div><span id="completed-625-8" class="completed"></span></td>
+        <td><div class="free-court-container"><select id="gender-625-9"><option value="men">남자</option><option value="women">여자</option></select><div class="free-court-inputs"><input type="text" id="team1-player1-625-9" placeholder="팀1 플레이어1"><input type="text" id="team1-player2-625-9" placeholder="팀1 플레이어2"> vs <input type="text" id="team2-player1-625-9" placeholder="팀2 플레이어1"><input type="text" id="team2-player2-625-9" placeholder="팀2 플레이어2"></div><div class="score-input-container"><input type="number" id="score-625-9-team1" min="0" max="6" value="0"> : <input type="number" id="score-625-9-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-625-9"></span></div><span id="completed-625-9" class="completed"></span></div></td>
       </tr>
       <tr>
         <td>6:50~7:15</td>
@@ -272,6 +306,7 @@
         <td><span class="match-pair">이은지&남정주 vs 김유하&최창민</span><br><div class="score-input-container"><input type="number" id="score-650-6-team1" min="0" max="6" value="0"> : <input type="number" id="score-650-6-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-650-6"></span></div><span id="completed-650-6" class="completed"></span></td>
         <td><span class="match-pair">김수동&전우식 vs 강동혁&노민영</span><br><div class="score-input-container"><input type="number" id="score-650-7-team1" min="0" max="6" value="0"> : <input type="number" id="score-650-7-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-650-7"></span></div><span id="completed-650-7" class="completed"></span></td>
         <td><span class="match-pair">김덕헌&상우 vs 김정보&김명수</span><br><div class="score-input-container"><input type="number" id="score-650-8-team1" min="0" max="6" value="0"> : <input type="number" id="score-650-8-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-650-8"></span></div><span id="completed-650-8" class="completed"></span></td>
+        <td><div class="free-court-container"><select id="gender-650-9"><option value="men">남자</option><option value="women">여자</option></select><div class="free-court-inputs"><input type="text" id="team1-player1-650-9" placeholder="팀1 플레이어1"><input type="text" id="team1-player2-650-9" placeholder="팀1 플레이어2"> vs <input type="text" id="team2-player1-650-9" placeholder="팀2 플레이어1"><input type="text" id="team2-player2-650-9" placeholder="팀2 플레이어2"></div><div class="score-input-container"><input type="number" id="score-650-9-team1" min="0" max="6" value="0"> : <input type="number" id="score-650-9-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-650-9"></span></div><span id="completed-650-9" class="completed"></span></div></td>
       </tr>
       <tr>
         <td>7:15~7:40</td>
@@ -281,6 +316,7 @@
         <td>-</td>
         <td><span class="match-pair">김석준&@기훈 vs 정수현&권혁이</span><br><div class="score-input-container"><input type="number" id="score-715-7-team1" min="0" max="6" value="0"> : <input type="number" id="score-715-7-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-715-7"></span></div><span id="completed-715-7" class="completed"></span></td>
         <td><span class="match-pair">이범주&김덕헌 vs 전우식&정현두</span><br><div class="score-input-container"><input type="number" id="score-715-8-team1" min="0" max="6" value="0"> : <input type="number" id="score-715-8-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-715-8"></span></div><span id="completed-715-8" class="completed"></span></td>
+        <td><div class="free-court-container"><select id="gender-715-9"><option value="men">남자</option><option value="women">여자</option></select><div class="free-court-inputs"><input type="text" id="team1-player1-715-9" placeholder="팀1 플레이어1"><input type="text" id="team1-player2-715-9" placeholder="팀1 플레이어2"> vs <input type="text" id="team2-player1-715-9" placeholder="팀2 플레이어1"><input type="text" id="team2-player2-715-9" placeholder="팀2 플레이어2"></div><div class="score-input-container"><input type="number" id="score-715-9-team1" min="0" max="6" value="0"> : <input type="number" id="score-715-9-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-715-9"></span></div><span id="completed-715-9" class="completed"></span></div></td>
       </tr>
       <tr>
         <td>7:40~8:05</td>
@@ -290,6 +326,7 @@
         <td><span class="match-pair">김나경&이지화 vs 김유하&최창민</span><br><div class="score-input-container"><input type="number" id="score-740-6-team1" min="0" max="6" value="0"> : <input type="number" id="score-740-6-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-740-6"></span></div><span id="completed-740-6" class="completed"></span></td>
         <td><span class="match-pair">최준호&정래민 vs 박상원&강기훈</span><br><div class="score-input-container"><input type="number" id="score-740-7-team1" min="0" max="6" value="0"> : <input type="number" id="score-740-7-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-740-7"></span></div><span id="completed-740-7" class="completed"></span></td>
         <td>-</td>
+        <td><div class="free-court-container"><select id="gender-740-9"><option value="men">남자</option><option value="women">여자</option></select><div class="free-court-inputs"><input type="text" id="team1-player1-740-9" placeholder="팀1 플레이어1"><input type="text" id="team1-player2-740-9" placeholder="팀1 플레이어2"> vs <input type="text" id="team2-player1-740-9" placeholder="팀2 플레이어1"><input type="text" id="team2-player2-740-9" placeholder="팀2 플레이어2"></div><div class="score-input-container"><input type="number" id="score-740-9-team1" min="0" max="6" value="0"> : <input type="number" id="score-740-9-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-740-9"></span></div><span id="completed-740-9" class="completed"></span></div></td>
       </tr>
     </tbody>
   </table>
@@ -304,6 +341,7 @@
         <th>6번 코트</th>
         <th>7번 코트</th>
         <th>8번 코트</th>
+        <th>9번 코트 (자유)</th>
       </tr>
     </thead>
     <tbody>
@@ -314,6 +352,7 @@
         <td><span class="match-pair">김지원&이은지 vs 이지화&최창민</span><br><div class="score-input-container"><input type="number" id="score-805-6-team1" min="0" max="6" value="0"> : <input type="number" id="score-805-6-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-805-6"></span></div><span id="completed-805-6" class="completed"></span></td>
         <td>-</td>
         <td>-</td>
+        <td><div class="free-court-container"><select id="gender-805-9"><option value="men">남자</option><option value="women">여자</option></select><div class="free-court-inputs"><input type="text" id="team1-player1-805-9" placeholder="팀1 플레이어1"><input type="text" id="team1-player2-805-9" placeholder="팀1 플레이어2"> vs <input type="text" id="team2-player1-805-9" placeholder="팀2 플레이어1"><input type="text" id="team2-player2-805-9" placeholder="팀2 플레이어2"></div><div class="score-input-container"><input type="number" id="score-805-9-team1" min="0" max="6" value="0"> : <input type="number" id="score-805-9-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-805-9"></span></div><span id="completed-805-9" class="completed"></span></div></td>
       </tr>
       <tr>
         <td>8:30~8:55</td>
@@ -322,6 +361,7 @@
         <td><span class="match-pair">김지원&김나경 vs 남정주&최창민</span><br><div class="score-input-container"><input type="number" id="score-830-6-team1" min="0" max="6" value="0"> : <input type="number" id="score-830-6-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-830-6"></span></div><span id="completed-830-6" class="completed"></span></td>
         <td>-</td>
         <td>-</td>
+        <td><div class="free-court-container"><select id="gender-830-9"><option value="men">남자</option><option value="women">여자</option></select><div class="free-court-inputs"><input type="text" id="team1-player1-830-9" placeholder="팀1 플레이어1"><input type="text" id="team1-player2-830-9" placeholder="팀1 플레이어2"> vs <input type="text" id="team2-player1-830-9" placeholder="팀2 플레이어1"><input type="text" id="team2-player2-830-9" placeholder="팀2 플레이어2"></div><div class="score-input-container"><input type="number" id="score-830-9-team1" min="0" max="6" value="0"> : <input type="number" id="score-830-9-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-830-9"></span></div><span id="completed-830-9" class="completed"></span></div></td>
       </tr>
       <tr>
         <td>8:55~9:20</td>
@@ -330,6 +370,7 @@
         <td><span class="match-pair">김지원&이은지 vs 이지화&남정주</span><br><div class="score-input-container"><input type="number" id="score-855-6-team1" min="0" max="6" value="0"> : <input type="number" id="score-855-6-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-855-6"></span></div><span id="completed-855-6" class="completed"></span></td>
         <td>-</td>
         <td>-</td>
+        <td><div class="free-court-container"><select id="gender-855-9"><option value="men">남자</option><option value="women">여자</option></select><div class="free-court-inputs"><input type="text" id="team1-player1-855-9" placeholder="팀1 플레이어1"><input type="text" id="team1-player2-855-9" placeholder="팀1 플레이어2"> vs <input type="text" id="team2-player1-855-9" placeholder="팀2 플레이어1"><input type="text" id="team2-player2-855-9" placeholder="팀2 플레이어2"></div><div class="score-input-container"><input type="number" id="score-855-9-team1" min="0" max="6" value="0"> : <input type="number" id="score-855-9-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-855-9"></span></div><span id="completed-855-9" class="completed"></span></div></td>
       </tr>
       <tr>
         <td>9:20~9:45</td>
@@ -338,6 +379,7 @@
         <td><span class="match-pair">김지원&김유하 vs 김나경&남정주</span><br><div class="score-input-container"><input type="number" id="score-920-6-team1" min="0" max="6" value="0"> : <input type="number" id="score-920-6-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-920-6"></span></div><span id="completed-920-6" class="completed"></span></td>
         <td>-</td>
         <td>-</td>
+        <td><div class="free-court-container"><select id="gender-920-9"><option value="men">남자</option><option value="women">여자</option></select><div class="free-court-inputs"><input type="text" id="team1-player1-920-9" placeholder="팀1 플레이어1"><input type="text" id="team1-player2-920-9" placeholder="팀1 플레이어2"> vs <input type="text" id="team2-player1-920-9" placeholder="팀2 플레이어1"><input type="text" id="team2-player2-920-9" placeholder="팀2 플레이어2"></div><div class="score-input-container"><input type="number" id="score-920-9-team1" min="0" max="6" value="0"> : <input type="number" id="score-920-9-team2" min="0" max="6" value="0"><span class="loading-feedback" id="loading-920-9"></span></div><span id="completed-920-9" class="completed"></span></div></td>
       </tr>
     </tbody>
   </table>
@@ -390,23 +432,15 @@
           var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
           var firstSheetName = workbook.SheetNames[0];
           var worksheet = workbook.Sheets[firstSheetName];
-
-          // Convert sheet to JSON to filter blank rows
           var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-          // Filter out blank rows (rows where all cells are empty, null, or undefined)
           var filteredData = jsonData.filter(row => row.some(filledCell));
-
-          // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
           var headerRowIndex = filteredData.findIndex((row, index) =>
             row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
           );
-          // Fallback
           if (headerRowIndex === -1 || headerRowIndex > 25) {
             headerRowIndex = 0;
           }
-
-          // Convert filtered JSON back to CSV
-          var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+          var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
           csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
           return csv;
         } catch (e) {
@@ -439,8 +473,8 @@
       alert("Firebase 설정을 확인해주세요. firebaseConfig에 올바른 값을 입력했는지 확인하세요.");
     }
 
-    // 경기 정보
-    const matches = [
+    // 고정 경기 정보
+    const fixedMatches = [
       { time: "600", court: "3", team1: ["최준호", "@기훈"], team2: ["정수현", "김석준"] },
       { time: "600", court: "6", team1: ["김나경", "김유하"], team2: ["이은지", "이지화"], isWomen: true },
       { time: "600", court: "8", team1: ["상우", "안종현"], team2: ["지민석", "김정보"] },
@@ -501,7 +535,8 @@
         return;
       }
 
-      matches.forEach(match => {
+      // 고정 경기 리스너
+      fixedMatches.forEach(match => {
         const docRef = db.collection('scores').doc(`${match.time}-${match.court}`);
         docRef.onSnapshot(doc => {
           if (doc.exists) {
@@ -512,7 +547,6 @@
           }
         });
 
-        // 스코어 입력 시 Firestore에 저장
         const input1 = document.getElementById(`score-${match.time}-${match.court}-team1`);
         const input2 = document.getElementById(`score-${match.time}-${match.court}-team2`);
         [input1, input2].forEach(input => {
@@ -551,13 +585,93 @@
           });
         });
       });
+
+      // 자유 코트(9번 코트) 리스너
+      const timeSlots = ["600", "625", "650", "715", "740", "805", "830", "855", "920"];
+      timeSlots.forEach(time => {
+        const docRef = db.collection('scores').doc(`${time}-9`);
+        docRef.onSnapshot(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            document.getElementById(`gender-${time}-9`).value = data.gender || 'men';
+            document.getElementById(`team1-player1-${time}-9`).value = data.team1?.[0] || '';
+            document.getElementById(`team1-player2-${time}-9`).value = data.team1?.[1] || '';
+            document.getElementById(`team2-player1-${time}-9`).value = data.team2?.[0] || '';
+            document.getElementById(`team2-player2-${time}-9`).value = data.team2?.[1] || '';
+            document.getElementById(`score-${time}-9-team1`).value = data.team1Score || 0;
+            document.getElementById(`score-${time}-9-team2`).value = data.team2Score || 0;
+            updateScores();
+          }
+        });
+
+        const inputs = [
+          document.getElementById(`gender-${time}-9`),
+          document.getElementById(`team1-player1-${time}-9`),
+          document.getElementById(`team1-player2-${time}-9`),
+          document.getElementById(`team2-player1-${time}-9`),
+          document.getElementById(`team2-player2-${time}-9`),
+          document.getElementById(`score-${time}-9-team1`),
+          document.getElementById(`score-${time}-9-team2`)
+        ];
+        inputs.forEach(input => {
+          input.addEventListener('change', () => {
+            const loadingSpan = document.getElementById(`loading-${time}-9`);
+            loadingSpan.textContent = "업데이트 중...";
+            loadingSpan.style.display = "block";
+            const gender = document.getElementById(`gender-${time}-9`).value;
+            const team1 = [
+              document.getElementById(`team1-player1-${time}-9`).value.trim(),
+              document.getElementById(`team1-player2-${time}-9`).value.trim()
+            ].filter(Boolean);
+            const team2 = [
+              document.getElementById(`team2-player1-${time}-9`).value.trim(),
+              document.getElementById(`team2-player2-${time}-9`).value.trim()
+            ].filter(Boolean);
+            const score1 = parseInt(document.getElementById(`score-${time}-9-team1`).value) || 0;
+            const score2 = parseInt(document.getElementById(`score-${time}-9-team2`).value) || 0;
+            docRef.set({
+              gender,
+              team1,
+              team2,
+              team1Score: score1,
+              team2Score: score2
+            })
+              .then(() => {
+                const completedSpan = document.getElementById(`completed-${time}-9`);
+                if (score1 !== 0 || score2 !== 0) {
+                  completedSpan.textContent = "완료";
+                } else {
+                  completedSpan.textContent = "";
+                }
+                loadingSpan.textContent = "저장 완료!";
+                setTimeout(() => {
+                  loadingSpan.style.display = "none";
+                }, 1000);
+              })
+              .catch(error => {
+                console.error("Firestore 저장 실패: ", error);
+                loadingSpan.textContent = "저장 실패";
+                setTimeout(() => {
+                  loadingSpan.style.display = "none";
+                }, 1000);
+              });
+          });
+          input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              input.dispatchEvent(new Event('change'));
+            }
+          });
+        });
+      });
     }
 
     // 스코어 업데이트 함수
     function updateScores() {
       initializeStats();
 
-      matches.forEach(match => {
+      // 고정 경기 처리
+      fixedMatches.forEach(match => {
         const score1 = parseInt(document.getElementById(`score-${match.time}-${match.court}-team1`).value) || 0;
         const score2 = parseInt(document.getElementById(`score-${match.time}-${match.court}-team2`).value) || 0;
 
@@ -566,6 +680,57 @@
         const stats = match.isWomen ? womenStats : menStats;
         const team1 = match.team1;
         const team2 = match.team2;
+
+        if (score1 > score2) {
+          team1.forEach(player => {
+            stats[player].wins += 1;
+          });
+          team2.forEach(player => {
+            stats[player].losses += 1;
+          });
+        } else if (score2 > score1) {
+          team2.forEach(player => {
+            stats[player].wins += 1;
+          });
+          team1.forEach(player => {
+            stats[player].losses += 1;
+          });
+        }
+
+        const gameDiff = score1 - score2;
+        team1.forEach(player => {
+          stats[player].gameDiff += gameDiff;
+        });
+        team2.forEach(player => {
+          stats[player].gameDiff -= gameDiff;
+        });
+      });
+
+      // 자유 코트(9번 코트) 처리
+      const timeSlots = ["600", "625", "650", "715", "740", "805", "830", "855", "920"];
+      timeSlots.forEach(time => {
+        const team1 = [
+          document.getElementById(`team1-player1-${time}-9`).value.trim(),
+          document.getElementById(`team1-player2-${time}-9`).value.trim()
+        ].filter(Boolean);
+        const team2 = [
+          document.getElementById(`team2-player1-${time}-9`).value.trim(),
+          document.getElementById(`team2-player2-${time}-9`).value.trim()
+        ].filter(Boolean);
+        const score1 = parseInt(document.getElementById(`score-${time}-9-team1`).value) || 0;
+        const score2 = parseInt(document.getElementById(`score-${time}-9-team2`).value) || 0;
+        const gender = document.getElementById(`gender-${time}-9`).value;
+
+        if (score1 === 0 && score2 === 0) return;
+        if (team1.length === 0 || team2.length === 0) return;
+
+        const stats = gender === 'women' ? womenStats : menStats;
+        team1.forEach(player => {
+          if (!stats[player]) stats[player] = { wins: 0, losses: 0, gameDiff: 0 };
+        });
+        team2.forEach(player => {
+          if (!stats[player]) stats[player] = { wins: 0, losses: 0, gameDiff: 0 };
+        });
 
         if (score1 > score2) {
           team1.forEach(player => {
@@ -678,16 +843,15 @@
         });
       });
 
-      // matches 배열 기반으로 필터링
+      // 고정 경기 필터링
       let hasMatches = false;
-      matches.forEach(match => {
+      fixedMatches.forEach(match => {
         const players = [...match.team1, ...match.team2];
         if (players.includes(playerName)) {
           const tableId = match.time < "805" ? 'schedule-table-1' : 'schedule-table-2';
           const table = document.getElementById(tableId);
           const rows = table.querySelectorAll('tbody tr');
           
-          // 시간 매핑
           const timeMap = {
             "600": "6:00~6:25",
             "625": "6:25~6:50",
@@ -704,16 +868,56 @@
           rows.forEach(row => {
             const timeCell = row.querySelector('td:first-child');
             if (timeCell && timeCell.textContent.trim() === expectedTime) {
-              // 코트 인덱스 계산 (schedule-table-1: 3~8, schedule-table-2: 4~8)
               const courtIndex = tableId === 'schedule-table-1' 
-                ? parseInt(match.court) - 2  // 3번 코트 -> td:nth-child(2)
-                : parseInt(match.court) - 3; // 4번 코트 -> td:nth-child(2)
+                ? parseInt(match.court) - 2
+                : parseInt(match.court) - 3;
               const matchCell = row.querySelector(`td:nth-child(${courtIndex + 1}) .match-pair`);
               if (matchCell) {
                 row.classList.remove('hidden');
                 matchCell.classList.add('highlight');
                 hasMatches = true;
-                console.log(`Match found: ${playerName} at ${expectedTime}, court ${match.court}`);
+              }
+            }
+          });
+        }
+      });
+
+      // 자유 코트 필터링
+      const timeSlots = ["600", "625", "650", "715", "740", "805", "830", "855", "920"];
+      timeSlots.forEach(time => {
+        const team1 = [
+          document.getElementById(`team1-player1-${time}-9`).value.trim(),
+          document.getElementById(`team1-player2-${time}-9`).value.trim()
+        ].filter(Boolean);
+        const team2 = [
+          document.getElementById(`team2-player1-${time}-9`).value.trim(),
+          document.getElementById(`team2-player2-${time}-9`).value.trim()
+        ].filter(Boolean);
+        const players = [...team1, ...team2];
+        if (players.includes(playerName)) {
+          const tableId = time < "805" ? 'schedule-table-1' : 'schedule-table-2';
+          const table = document.getElementById(tableId);
+          const rows = table.querySelectorAll('tbody tr');
+          const timeMap = {
+            "600": "6:00~6:25",
+            "625": "6:25~6:50",
+            "650": "6:50~7:15",
+            "715": "7:15~7:40",
+            "740": "7:40~8:05",
+            "805": "8:05~8:30",
+            "830": "8:30~8:55",
+            "855": "8:55~9:20",
+            "920": "9:20~9:45"
+          };
+          const expectedTime = timeMap[time];
+          rows.forEach(row => {
+            const timeCell = row.querySelector('td:first-child');
+            if (timeCell && timeCell.textContent.trim() === expectedTime) {
+              const matchCell = row.querySelector('td:last-child');
+              if (matchCell) {
+                row.classList.remove('hidden');
+                matchCell.classList.add('highlight');
+                hasMatches = true;
               }
             }
           });
@@ -725,7 +929,6 @@
         clearButton.classList.remove('hidden');
       } else {
         clearButton.classList.add('hidden');
-        console.log(`No matches found for ${playerName}`);
       }
     }
 
@@ -739,8 +942,8 @@
         const rows = table.querySelectorAll('tbody tr');
         rows.forEach(row => {
           row.classList.remove('hidden');
-          const matchCell = row.querySelector('.match-pair');
-          if (matchCell) matchCell.classList.remove('highlight');
+          const matchCells = row.querySelectorAll('.match-pair, .free-court-container');
+          matchCells.forEach(cell => cell.classList.remove('highlight'));
         });
       });
 
