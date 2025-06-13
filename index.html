@@ -1,49 +1,13 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2025 래랑가로스 (HOSU - OPEN)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -56,15 +20,15 @@
         .gold-accent {
             color: #D4A017;
         }
-        .update-btn {
+        .update-btn, .download-btn, .load-btn {
             transition: all 0.3s ease;
             box-shadow: 0 0 10px rgba(212, 160, 23, 0.5);
         }
-        .update-btn:hover {
+        .update-btn:hover, .download-btn:hover, .load-btn:hover {
             transform: scale(1.05);
             box-shadow: 0 0 20px rgba(212, 160, 23, 0.8);
         }
-        .update-btn:active {
+        .update-btn:active, .download-btn:active, .load-btn:active {
             transform: scale(0.95);
         }
         table {
@@ -110,16 +74,16 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
-        /* 스크롤바 커스터마이징 */
-        table::-webkit-scrollbar {
-            height: 8px;
+        .chart-container {
+            margin-top: 20px;
+            max-width: 100%;
         }
-        table::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        table::-webkit-scrollbar-thumb {
-            background-color: #2A6B5B;
-            border-radius: 4px;
+        .dashboard-card {
+            background: #fff;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         @media (max-width: 640px) {
             th, td {
@@ -131,7 +95,7 @@
                 font-size: 12px;
                 padding: 6px;
             }
-            .update-btn {
+            .update-btn, .download-btn, .load-btn {
                 padding: 10px;
                 font-size: 16px;
             }
@@ -145,7 +109,7 @@
 
         <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6 mb-8">
             <h2 class="text-2xl font-semibold mb-4 text-gray-800">회차별 게임 스케줄</h2>
-            <p class="note text-sm sm:text-base text-gray-500 mb-4">참고: 1세트, 6게임제, 노애드 스코어링, 순위는 승리 게임 수, 게임득실 순 (게임득실 = 획득 게임 - 실점 게임)</p>
+            <p class="note text-sm sm:text-base text-gray-500 mb-4">참고: 1세트, 6게임제, 노애드 스코어링</p>
             <details>
                 <summary class="font-medium text-lg">1회차</summary>
                 <table class="schedule-table w-full bg-white">
@@ -701,333 +665,158 @@
                     </tr>
                 </table>
             </details>
-            <button id="update-ranking" class="update-btn w-full mt-4 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-800 font-bold text-lg rounded-lg">순위 업데이트</button>
-        </div>
 
-        <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6 mb-8">
-            <h2 class="text-2xl font-semibold mb-4 text-gray-800">월별 순위표</h2>
-            <table id="ranking-table" class="w-full bg-white">
-                <tr class="tennis-green text-white">
-                    <th>순위</th>
-                    <th>선수</th>
-                    <th>승</th>
-                    <th>패</th>
-                    <th>게임득실</th>
-                    <th>접전 (%)</th>
-                    <th>베이글</th>
-                    <th>MMR</th>
-                </tr>
-                <tr>
-                    <td>1</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>4</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>5</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>6</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>7</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>8</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>9</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>10</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>11</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>12</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>13</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>14</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>15</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>16</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>17</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>18</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>19</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>20</td>
-                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
-                    <td><input type="text" class="wins w-full" readonly></td>
-                    <td><input type="text" class="losses w-full" readonly></td>
-                    <td><input type="text" class="game-diff w-full" readonly></td>
-                    <td><input type="text" class="close-set w-full" readonly></td>
-                    <td><input type="text" class="bagel-wins w-full" readonly></td>
-                    <td><input type="text" class="mmr w-full" readonly></td>
-                </tr>
-            </table>
-        </div>
+            <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6 mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">월별 순위표</h2>
+                <table id="ranking-table" class="w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>순위</th>
+                        <th>선수</th>
+                        <th>승</th>
+                        <th>패</th>
+                        <th>게임득실</th>
+                        <th>접전 (%)</th>
+                        <th>베이글</th>
+                        <th>MMR</th>
+                    </tr>
+                    <tr><td>1</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>2</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>3</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>4</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>5</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>6</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>7</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>8</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>9</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>10</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>11</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>12</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>13</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>14</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>15</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>16</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>17</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>18</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>19</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                    <tr><td>20</td><td><input type="text" class="ranking-player w-full" readonly></td><td><input type="text" class="wins w-full" readonly></td><td><input type="text" class="losses w-full" readonly></td><td><input type="text" class="game-diff w-full" readonly></td><td><input type="text" class="close-set w-full" readonly></td><td><input type="text" class="bagel-wins w-full" readonly></td><td><input type="text" class="mmr w-full" readonly></td></tr>
+                </table>
+            </div>
 
-        <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6">
-            <h2 class="text-2xl font-semibold mb-4 text-gray-800">파트너별 승률표</h2>
-            <table id="pair-ranking-table" class="w-full bg-white">
-                <tr class="tennis-green text-white">
-                    <th>순위</th>
-                    <th>페어</th>
-                    <th>승</th>
-                    <th>패</th>
-                    <th>승률 (%)</th>
-                </tr>
-                <tr>
-                    <td>1</td>
-                    <td><input type="text" class="pair-name w-full" readonly></td>
-                    <td><input type="text" class="pair-wins w-full" readonly></td>
-                    <td><input type="text" class="pair-losses w-full" readonly></td>
-                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td><input type="text" class="pair-name w-full" readonly></td>
-                    <td><input type="text" class="pair-wins w-full" readonly></td>
-                    <td><input type="text" class="pair-losses w-full" readonly></td>
-                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td><input type="text" class="pair-name w-full" readonly></td>
-                    <td><input type="text" class="pair-wins w-full" readonly></td>
-                    <td><input type="text" class="pair-losses w-full" readonly></td>
-                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>4</td>
-                    <td><input type="text" class="pair-name w-full" readonly></td>
-                    <td><input type="text" class="pair-wins w-full" readonly></td>
-                    <td><input type="text" class="pair-losses w-full" readonly></td>
-                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>5</td>
-                    <td><input type="text" class="pair-name w-full" readonly></td>
-                    <td><input type="text" class="pair-wins w-full" readonly></td>
-                    <td><input type="text" class="pair-losses w-full" readonly></td>
-                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>6</td>
-                    <td><input type="text" class="pair-name w-full" readonly></td>
-                    <td><input type="text" class="pair-wins w-full" readonly></td>
-                    <td><input type="text" class="pair-losses w-full" readonly></td>
-                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>7</td>
-                    <td><input type="text" class="pair-name w-full" readonly></td>
-                    <td><input type="text" class="pair-wins w-full" readonly></td>
-                    <td><input type="text" class="pair-losses w-full" readonly></td>
-                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>8</td>
-                    <td><input type="text" class="pair-name w-full" readonly></td>
-                    <td><input type="text" class="pair-wins w-full" readonly></td>
-                    <td><input type="text" class="pair-losses w-full" readonly></td>
-                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>9</td>
-                    <td><input type="text" class="pair-name w-full" readonly></td>
-                    <td><input type="text" class="pair-wins w-full" readonly></td>
-                    <td><input type="text" class="pair-losses w-full" readonly></td>
-                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
-                </tr>
-                <tr>
-                    <td>10</td>
-                    <td><input type="text" class="pair-name w-full" readonly></td>
-                    <td><input type="text" class="pair-wins w-full" readonly></td>
-                    <td><input type="text" class="pair-losses w-full" readonly></td>
-                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
-                </tr>
-            </table>
+            <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">파트너별 승률표</h2>
+                <table id="pair-ranking-table" class="w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>순위</th>
+                        <th>페어</th>
+                        <th>승</th>
+                        <th>패</th>
+                        <th>승률 (%)</th>
+                    </tr>
+                    <tr><td>1</td><td><input type="text" class="pair-name w-full" readonly></td><td><input type="text" class="pair-wins w-full" readonly></td><td><input type="text" class="pair-losses w-full" readonly></td><td><input type="text" class="pair-win-rate w-full" readonly></td></tr>
+                    <tr><td>2</td><td><input type="text" class="pair-name w-full" readonly></td><td><input type="text" class="pair-wins w-full" readonly></td><td><input type="text" class="pair-losses w-full" readonly></td><td><input type="text" class="pair-win-rate w-full" readonly></td></tr>
+                    <tr><td>3</td><td><input type="text" class="pair-name w-full" readonly></td><td><input type="text" class="pair-wins w-full" readonly></td><td><input type="text" class="pair-losses w-full" readonly></td><td><input type="text" class="pair-win-rate w-full" readonly></td></tr>
+                    <tr><td>4</td><td><input type="text" class="pair-name w-full" readonly></td><td><input type="text" class="pair-wins w-full" readonly></td><td><input type="text" class="pair-losses w-full" readonly></td><td><input type="text" class="pair-win-rate w-full" readonly></td></tr>
+                    <tr><td>5</td><td><input type="text" class="pair-name w-full" readonly></td><td><input type="text" class="pair-wins w-full" readonly></td><td><input type="text" class="pair-losses w-full" readonly></td><td><input type="text" class="pair-win-rate w-full" readonly></td></tr>
+                    <tr><td>6</td><td><input type="text" class="pair-name w-full" readonly></td><td><input type="text" class="pair-wins w-full" readonly></td><td><input type="text" class="pair-losses w-full" readonly></td><td><input type="text" class="pair-win-rate w-full" readonly></td></tr>
+                    <tr><td>7</td><td><input type="text" class="pair-name w-full" readonly></td><td><input type="text" class="pair-wins w-full" readonly></td><td><input type="text" class="pair-losses w-full" readonly></td><td><input type="text" class="pair-win-rate w-full" readonly></td></tr>
+                    <tr><td>8</td><td><input type="text" class="pair-name w-full" readonly></td><td><input type="text" class="pair-wins w-full" readonly></td><td><input type="text" class="pair-losses w-full" readonly></td><td><input type="text" class="pair-win-rate w-full" readonly></td></tr>
+                    <tr><td>9</td><td><input type="text" class="pair-name w-full" readonly></td><td><input type="text" class="pair-wins w-full" readonly></td><td><input type="text" class="pair-losses w-full" readonly></td><td><input type="text" class="pair-win-rate w-full" readonly></td></tr>
+                    <tr><td>10</td><td><input type="text" class="pair-name w-full" readonly></td><td><input type="text" class="pair-wins w-full" readonly></td><td><input type="text" class="pair-losses w-full" readonly></td><td><input type="text" class="pair-win-rate w-full" readonly></td></tr>
+                </table>
+            </div>
+
+            <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6 chart-container">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">월별 MMR 등락표</h2>
+                <canvas id="mmrChart"></canvas>
+            </div>
+
+            <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">통계 대시보드</h2>
+                <div class="dashboard-card">
+                    <strong>총 경기 수:</strong> <span id="total-matches">0</span>
+                </div>
+                <div class="dashboard-card">
+                    <strong>평균 접전 비율:</strong> <span id="avg-close-set">0%</span>
+                </div>
+                <div class="dashboard-card">
+                    <strong>베이글 승리율:</strong> <span id="bagel-rate">0%</span>
+                </div>
+            </div>
+
+            <div class="flex space-x-4 mt-4">
+                <button id="update-ranking" class="update-btn flex-1 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-800 font-bold text-lg rounded-lg">순위 업데이트</button>
+                <button id="download-file" class="download-btn flex-1 py-3 bg-gradient-to-r from-green-400 to-green-500 text-white font-bold text-lg rounded-lg">파일 다운로드</button>
+                <input type="file" id="load-file" accept=".json" class="hidden">
+                <button id="load-btn" class="load-btn flex-1 py-3 bg-gradient-to-r from-blue-400 to-blue-500 text-white font-bold text-lg rounded-lg">파일 로드</button>
+            </div>
         </div>
 
         <script>
+            // Firebase 설정 (여기서 자신의 프로젝트 설정으로 교체해야 함)
+            const firebaseConfig = {
+                apiKey: "YOUR_API_KEY",
+                authDomain: "YOUR_AUTH_DOMAIN",
+                databaseURL: "https://YOUR_DATABASE_NAME.firebaseio.com",
+                projectId: "YOUR_PROJECT_ID",
+                storageBucket: "YOUR_STORAGE_BUCKET",
+                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                appId: "YOUR_APP_ID"
+            };
+
+            // Firebase 초기화
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+            const tennisRef = database.ref('tennisLeague');
+
+            let players = {};
+            let pairs = {};
+            let chartInstance = null;
+
+            // 실시간 데이터 리스너
+            tennisRef.on('value', (snapshot) => {
+                const data = snapshot.val() || {};
+                players = data.players || {};
+                pairs = data.pairs || {};
+                const schedule = data.schedule || [];
+
+                // 스케줄 업데이트
+                const scheduleRows = document.querySelectorAll('.schedule-table tr:not(:first-child)');
+                schedule.forEach((s, index) => {
+                    const row = scheduleRows[index];
+                    if (row) {
+                        row.querySelector('.player1').value = s.match1.p1 || '';
+                        row.querySelector('.player2').value = s.match1.p2 || '';
+                        row.querySelector('.player3').value = s.match1.p3 || '';
+                        row.querySelector('.player4').value = s.match1.p4 || '';
+                        row.querySelector('.score').value = s.match1.score || '';
+                    }
+                });
+
+                updateRanking();
+            });
+
             document.getElementById('update-ranking').addEventListener('click', updateRanking);
+            document.getElementById('download-file').addEventListener('click', downloadFile);
+            document.getElementById('load-file').addEventListener('change', loadFile);
+            document.getElementById('load-btn').addEventListener('click', () => document.getElementById('load-file').click());
 
             function updateRanking() {
-                const scheduleRows = document.querySelectorAll('.schedule-table tr:not(:first-child)');
-                const players = {};
-                const pairs = {};
+                players = {};
+                pairs = {};
 
                 // 플레이어 데이터 초기화
                 document.querySelectorAll('.ranking-player').forEach(input => {
                     const name = input.value.trim();
                     if (name) {
-                        players[name] = { 
-                            wins: 0, 
-                            losses: 0, 
-                            gameDiff: 0, 
-                            closeSets: 0, 
-                            totalSets: 0, 
-                            bagelWins: 0, 
-                            mmr: 1500 // 초기 MMR 1500
-                        };
+                        players[name] = { wins: 0, losses: 0, gameDiff: 0, closeSets: 0, totalSets: 0, bagelWins: 0, mmr: 1500 };
                     }
                 });
 
                 // 스케줄에서 경기 결과 처리
+                let totalMatches = 0;
+                let totalCloseSets = 0;
+                let totalBagelWins = 0;
+                const scheduleRows = document.querySelectorAll('.schedule-table tr:not(:first-child)');
                 scheduleRows.forEach(row => {
                     const player1 = row.querySelector('.player1').value.trim();
                     const player2 = row.querySelector('.player2').value.trim();
@@ -1036,29 +825,28 @@
                     const score = row.querySelector('.score').value.trim();
 
                     if (player1 && player2 && player3 && player4 && score) {
+                        totalMatches++;
                         const [score1, score2] = score.split('-').map(Number);
                         if (isNaN(score1) || isNaN(score2)) return;
 
-                        // 페어 이름 생성 (알파벳순으로 정렬)
                         const pair1 = [player1, player2].sort().join('-');
                         const pair2 = [player3, player4].sort().join('-');
                         if (!pairs[pair1]) pairs[pair1] = { wins: 0, losses: 0 };
                         if (!pairs[pair2]) pairs[pair2] = { wins: 0, losses: 0 };
 
-                        // 접전 세트 여부 (스코어 차이 2 이하, 즉 6-4, 6-5 접전)
                         const isCloseSet = Math.abs(score1 - score2) <= 2;
                         const isBagelWin = (score1 === 6 && score2 === 0) || (score2 === 6 && score1 === 0);
+                        if (isCloseSet) totalCloseSets++;
+                        if (isBagelWin) totalBagelWins += (score1 === 6 ? 1 : 0) + (score2 === 6 ? 1 : 0);
 
-                        // MMR 계산
-                        const team1MMR = (players[player1].mmr + players[player2].mmr) / 2;
-                        const team2MMR = (players[player3].mmr + players[player4].mmr) / 2;
+                        const team1MMR = (players[player1]?.mmr || 1500 + players[player2]?.mmr || 1500) / 2;
+                        const team2MMR = (players[player3]?.mmr || 1500 + players[player4]?.mmr || 1500) / 2;
                         const expectedScore1 = 1 / (1 + Math.pow(10, (team2MMR - team1MMR) / 400));
                         const expectedScore2 = 1 - expectedScore1;
-                        const K = isCloseSet ? 24 : 32; // 접전 세트면 K값 24, 아니면 32
+                        const K = isCloseSet ? 24 : 32;
                         const scoreMargin = Math.abs(score1 - score2);
-                        const marginMultiplier = 1 + (scoreMargin > 4 ? 0.2 : scoreMargin > 2 ? 0.1 : 0); // 스코어 차이에 따라 보너스
+                        const marginMultiplier = 1 + (scoreMargin > 4 ? 0.2 : scoreMargin > 2 ? 0.1 : 0);
 
-                        // 승패 및 지표 계산
                         if (score1 > score2) {
                             [player1, player2].forEach(p => {
                                 if (players[p]) {
@@ -1066,7 +854,7 @@
                                     players[p].gameDiff += (score1 - score2);
                                     players[p].totalSets += 1;
                                     if (isCloseSet) players[p].closeSets += 1;
-                                    if (score1 === 6 && score2 === 0) players[p].bagelWins += 1;
+                                    if (isBagelWin && score1 === 6) players[p].bagelWins += 1;
                                     players[p].mmr += (K * (1 - expectedScore1) * marginMultiplier) / 2;
                                 }
                             });
@@ -1088,7 +876,7 @@
                                     players[p].gameDiff += (score2 - score1);
                                     players[p].totalSets += 1;
                                     if (isCloseSet) players[p].closeSets += 1;
-                                    if (score2 === 6 && score1 === 0) players[p].bagelWins += 1;
+                                    if (isBagelWin && score2 === 6) players[p].bagelWins += 1;
                                     players[p].mmr += (K * (1 - expectedScore2) * marginMultiplier) / 2;
                                 }
                             });
@@ -1107,16 +895,15 @@
                     }
                 });
 
-                // 개인 순위 계산
+                // 개인 순위표 업데이트 (MMR > 승리 > 게임득실 순)
                 const rankedPlayers = Object.entries(players)
                     .map(([name, stats]) => ({
                         name,
                         ...stats,
                         closeSetRatio: stats.totalSets ? (stats.closeSets / stats.totalSets * 100).toFixed(2) : 0
                     }))
-                    .sort((a, b) => b.wins - a.wins || b.gameDiff - a.gameDiff || b.mmr - a.mmr);
+                    .sort((a, b) => b.mmr - a.mmr || b.wins - a.wins || b.gameDiff - a.gameDiff);
 
-                // 개인 순위표 업데이트
                 const rankingRows = document.querySelectorAll('#ranking-table tr:not(:first-child)');
                 rankingRows.forEach((row, index) => {
                     const player = rankedPlayers[index];
@@ -1139,7 +926,7 @@
                     }
                 });
 
-                // 파트너별 순위 계산
+                // 파트너별 승률표 업데이트
                 const rankedPairs = Object.entries(pairs)
                     .map(([name, stats]) => ({
                         name,
@@ -1148,7 +935,6 @@
                     }))
                     .sort((a, b) => b.winRate - a.winRate || b.wins - a.wins);
 
-                // 파트너별 승률표 업데이트
                 const pairRows = document.querySelectorAll('#pair-ranking-table tr:not(:first-child)');
                 pairRows.forEach((row, index) => {
                     const pair = rankedPairs[index];
@@ -1164,8 +950,84 @@
                         row.querySelector('.pair-win-rate').value = '';
                     }
                 });
+
+                // MMR 그래프 업데이트
+                updateChart(rankedPlayers);
+
+                // 통계 대시보드 업데이트
+                document.getElementById('total-matches').textContent = totalMatches;
+                document.getElementById('avg-close-set').textContent = totalMatches ? (totalCloseSets / totalMatches * 100).toFixed(2) + '%' : '0%';
+                document.getElementById('bagel-rate').textContent = totalMatches ? (totalBagelWins / (totalMatches * 2) * 100).toFixed(2) + '%' : '0%';
+
+                // Firebase에 데이터 업로드
+                const data = {
+                    date: currentDate,
+                    players: Object.entries(players).map(([name, stats]) => ({ name, ...stats })),
+                    pairs: Object.entries(pairs).map(([name, stats]) => ({ name, ...stats })),
+                    schedule: Array.from(document.querySelectorAll('.schedule-table tr:not(:first-child)')).map(row => ({
+                        round: parseInt(row.parentElement.previousElementSibling.textContent),
+                        match1: {
+                            p1: row.querySelector('.player1').value.trim(),
+                            p2: row.querySelector('.player2').value.trim(),
+                            p3: row.querySelector('.player3').value.trim(),
+                            p4: row.querySelector('.player4').value.trim(),
+                            score: row.querySelector('.score').value.trim()
+                        }
+                    }))
+                };
+                tennisRef.set(data);
             }
-        </script>
-    </div>
-</body>
-</html>
+
+            function updateChart(rankedPlayers) {
+                const ctx = document.getElementById('mmrChart').getContext('2d');
+                if (chartInstance) chartInstance.destroy();
+
+                const labels = rankedPlayers.map(p => p.name);
+                const data = rankedPlayers.map(p => p.mmr);
+
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'MMR',
+                            data: data,
+                            backgroundColor: 'rgba(26, 60, 52, 0.7)',
+                            borderColor: 'rgba(212, 160, 23, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: false, title: { display: true, text: 'MMR' } }
+                        }
+                    }
+                });
+            }
+
+            function downloadFile() {
+                const data = {
+                    date: currentDate,
+                    players: Object.entries(players).map(([name, stats]) => ({
+                        name,
+                        wins: stats.wins,
+                        losses: stats.losses,
+                        gameDiff: stats.gameDiff,
+                        closeSets: stats.closeSets,
+                        totalSets: stats.totalSets,
+                        bagelWins: stats.bagelWins,
+                        mmr: Math.round(stats.mmr)
+                    })),
+                    pairs: Object.entries(pairs).map(([name, stats]) => ({
+                        name,
+                        wins: stats.wins,
+                        losses: stats.losses,
+                        winRate: stats.wins + stats.losses ? (stats.wins / (stats.wins + stats.losses) * 100).toFixed(2) : 0
+                    })),
+                    schedule: Array.from(document.querySelectorAll('.schedule-table tr:not(:first-child)')).map(row => ({
+                        round: parseInt(row.parentElement.previousElementSibling.textContent),
+                        match1: {
+                            p1: row.querySelector('.player1').value.trim(),
+                            p2: row.querySelector('.player2').value.trim(),
+                            p3: row.querySelector('.player3').value
