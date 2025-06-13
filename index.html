@@ -56,25 +56,27 @@
         .neon-yellow {
             color: #F4E04D;
         }
-        .update-btn {
+        .update-btn, .download-btn {
             transition: all 0.3s ease;
             box-shadow: 0 0 10px rgba(244, 224, 77, 0.5);
         }
-        .update-btn:hover {
+        .update-btn:hover, .download-btn:hover {
             transform: scale(1.05);
             box-shadow: 0 0 20px rgba(244, 224, 77, 0.8);
         }
-        .update-btn:active {
+        .update-btn:active, .download-btn:active {
             transform: scale(0.95);
         }
         table {
             overflow-x: auto;
+            min-width: 100%;
             display: block;
         }
         th, td {
             padding: 12px;
             text-align: center;
             border: 1px solid #e2e8f0;
+            min-width: 80px;
         }
         tr:hover {
             background-color: #f1f5f9;
@@ -84,6 +86,8 @@
             border-radius: 4px;
             border: 1px solid #d1d5db;
             transition: all 0.2s ease;
+            min-width: 0;
+            flex-grow: 1;
         }
         input[type="text"]:focus {
             outline: none;
@@ -106,15 +110,28 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+        /* 스크롤바 커스터마이징 */
+        table::-webkit-scrollbar {
+            height: 8px;
+        }
+        table::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        table::-webkit-scrollbar-thumb {
+            background-color: #2A6B5B;
+            border-radius: 4px;
+        }
         @media (max-width: 640px) {
             th, td {
                 font-size: 14px;
-                padding: 8px;
+                padding: 6px;
+                min-width: 60px;
             }
             input[type="text"] {
-                font-size: 14px;
+                font-size: 12px;
+                padding: 6px;
             }
-            .update-btn {
+            .update-btn, .download-btn {
                 padding: 10px;
                 font-size: 16px;
             }
@@ -684,7 +701,10 @@
                     </tr>
                 </table>
             </details>
-            <button id="update-ranking" class="update-btn w-full mt-4 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-800 font-bold text-lg rounded-lg">순위 업데이트</button>
+            <div class="flex space-x-4 mt-4">
+                <button id="update-ranking" class="update-btn flex-1 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-800 font-bold text-lg rounded-lg">순위 업데이트</button>
+                <button id="download-file" class="download-btn flex-1 py-3 bg-gradient-to-r from-green-400 to-green-500 text-white font-bold text-lg rounded-lg">파일 다운로드</button>
+            </div>
         </div>
 
         <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6 mb-8">
@@ -988,6 +1008,7 @@
 
         <script>
             document.getElementById('update-ranking').addEventListener('click', updateRanking);
+            document.getElementById('download-file').addEventListener('click', downloadFile);
 
             function updateRanking() {
                 const scheduleRows = document.querySelectorAll('.schedule-table tr:not(:first-child)');
@@ -1148,6 +1169,20 @@
                     }
                 });
             }
+
+            function downloadFile() {
+                const htmlContent = document.documentElement.outerHTML;
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'tennis_ranking_2025_06.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
         </script>
+    </div>
 </body>
 </html>
