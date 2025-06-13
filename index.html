@@ -42,7 +42,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>월별 테니스 복식 게임 기록 및 순위표</title>
+    <title>2025 래랑가로스 (HOSU - OPEN)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -53,18 +53,18 @@
         .tennis-green {
             background: linear-gradient(to right, #1A3C34, #2A6B5B);
         }
-        .neon-yellow {
-            color: #F4E04D;
+        .gold-accent {
+            color: #D4A017;
         }
-        .update-btn, .download-btn {
+        .update-btn {
             transition: all 0.3s ease;
-            box-shadow: 0 0 10px rgba(244, 224, 77, 0.5);
+            box-shadow: 0 0 10px rgba(212, 160, 23, 0.5);
         }
-        .update-btn:hover, .download-btn:hover {
+        .update-btn:hover {
             transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(244, 224, 77, 0.8);
+            box-shadow: 0 0 20px rgba(212, 160, 23, 0.8);
         }
-        .update-btn:active, .download-btn:active {
+        .update-btn:active {
             transform: scale(0.95);
         }
         table {
@@ -91,8 +91,8 @@
         }
         input[type="text"]:focus {
             outline: none;
-            border-color: #F4E04D;
-            box-shadow: 0 0 5px rgba(244, 224, 77, 0.5);
+            border-color: #D4A017;
+            box-shadow: 0 0 5px rgba(212, 160, 23, 0.5);
         }
         details summary {
             background: #f9fafb;
@@ -131,7 +131,7 @@
                 font-size: 12px;
                 padding: 6px;
             }
-            .update-btn, .download-btn {
+            .update-btn {
                 padding: 10px;
                 font-size: 16px;
             }
@@ -140,7 +140,7 @@
 </head>
 <body class="min-h-screen p-4 sm:p-6">
     <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-4 text-gray-800">월별 테니스 복식 게임 기록 및 순위표</h1>
+        <h1 class="text-4xl sm:text-5xl font-bold text-center mb-6 text-gray-800 gold-accent shadow-md p-2 rounded-lg" style="background-color: #1A3C34; color: #D4A017;">2025 래랑가로스 (HOSU - OPEN)</h1>
         <p class="text-center text-lg mb-6 text-gray-600"><strong>기간:</strong> 2025년 6월</p>
 
         <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6 mb-8">
@@ -701,10 +701,7 @@
                     </tr>
                 </table>
             </details>
-            <div class="flex space-x-4 mt-4">
-                <button id="update-ranking" class="update-btn flex-1 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-800 font-bold text-lg rounded-lg">순위 업데이트</button>
-                <button id="download-file" class="download-btn flex-1 py-3 bg-gradient-to-r from-green-400 to-green-500 text-white font-bold text-lg rounded-lg">파일 다운로드</button>
-            </div>
+            <button id="update-ranking" class="update-btn w-full mt-4 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-800 font-bold text-lg rounded-lg">순위 업데이트</button>
         </div>
 
         <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6 mb-8">
@@ -1008,7 +1005,6 @@
 
         <script>
             document.getElementById('update-ranking').addEventListener('click', updateRanking);
-            document.getElementById('download-file').addEventListener('click', downloadFile);
 
             function updateRanking() {
                 const scheduleRows = document.querySelectorAll('.schedule-table tr:not(:first-child)');
@@ -1049,7 +1045,7 @@
                         if (!pairs[pair1]) pairs[pair1] = { wins: 0, losses: 0 };
                         if (!pairs[pair2]) pairs[pair2] = { wins: 0, losses: 0 };
 
-                        // 접전 세트 여부 (스코어 차이 2 이하)
+                        // 접전 세트 여부 (스코어 차이 2 이하, 즉 6-4, 6-5 접전)
                         const isCloseSet = Math.abs(score1 - score2) <= 2;
                         const isBagelWin = (score1 === 6 && score2 === 0) || (score2 === 6 && score1 === 0);
 
@@ -1058,7 +1054,7 @@
                         const team2MMR = (players[player3].mmr + players[player4].mmr) / 2;
                         const expectedScore1 = 1 / (1 + Math.pow(10, (team2MMR - team1MMR) / 400));
                         const expectedScore2 = 1 - expectedScore1;
-                        const K = isCloseSet ? 24 : 32; // 접전 세트면 K값 낮춤
+                        const K = isCloseSet ? 24 : 32; // 접전 세트면 K값 24, 아니면 32
                         const scoreMargin = Math.abs(score1 - score2);
                         const marginMultiplier = 1 + (scoreMargin > 4 ? 0.2 : scoreMargin > 2 ? 0.1 : 0); // 스코어 차이에 따라 보너스
 
@@ -1168,19 +1164,6 @@
                         row.querySelector('.pair-win-rate').value = '';
                     }
                 });
-            }
-
-            function downloadFile() {
-                const htmlContent = document.documentElement.outerHTML;
-                const blob = new Blob([htmlContent], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'tennis_ranking_2025_06.html';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
             }
         </script>
     </div>
