@@ -43,818 +43,1111 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>월별 테니스 복식 게임 기록 및 순위표</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1, h2 { color: #333; }
-        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-        th { background-color: #f4f4f4; }
-        .section { margin-bottom: 40px; }
-        .note { font-style: italic; color: #555; }
-        input[type="text"] { width: 100%; padding: 5px; box-sizing: border-box; }
-        #update-ranking { margin: 10px 0; padding: 10px; background-color: #007BFF; color: white; border: none; cursor: pointer; }
-        #update-ranking:hover { background-color: #0056b3; }
-        details { margin: 10px 0; }
-        summary { background-color: #f9f9f9; padding: 10px; cursor: pointer; font-size: 16px; }
-        summary:hover { background-color: #e0e0e0; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .tennis-green {
+            background: linear-gradient(to right, #1A3C34, #2A6B5B);
+        }
+        .neon-yellow {
+            color: #F4E04D;
+        }
+        .update-btn {
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(244, 224, 77, 0.5);
+        }
+        .update-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(244, 224, 77, 0.8);
+        }
+        .update-btn:active {
+            transform: scale(0.95);
+        }
+        table {
+            overflow-x: auto;
+            display: block;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        tr:hover {
+            background-color: #f1f5f9;
+        }
+        input[type="text"] {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #d1d5db;
+            transition: all 0.2s ease;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #F4E04D;
+            box-shadow: 0 0 5px rgba(244, 224, 77, 0.5);
+        }
+        details summary {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 6px;
+            transition: background 0.3s ease;
+        }
+        details summary:hover {
+            background: #e5e7eb;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @media (max-width: 640px) {
+            th, td {
+                font-size: 14px;
+                padding: 8px;
+            }
+            input[type="text"] {
+                font-size: 14px;
+            }
+            .update-btn {
+                padding: 10px;
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
-<body>
-    <h1>월별 테니스 복식 게임 기록 및 순위표</h1>
-    <p><strong>기간:</strong> 2025년 6월</p>
+<body class="min-h-screen p-4 sm:p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-4 text-gray-800">월별 테니스 복식 게임 기록 및 순위표</h1>
+        <p class="text-center text-lg mb-6 text-gray-600"><strong>기간:</strong> 2025년 6월</p>
 
-    <div class="section">
-        <h2>회차별 게임 스케줄</h2>
-        <p class="note">참고: 1세트, 6게임제, 노애드 스코어링, 순위는 승리 게임 수, 게임득실 순 (게임득실 = 획득 게임 - 실점 게임)</p>
-        <details>
-            <summary>1회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>2회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>3회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>4회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>5회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>6회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>7회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>8회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>9회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>10회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>11회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>12회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>13회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>14회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <details>
-            <summary>15회차</summary>
-            <table class="schedule-table">
-                <tr>
-                    <th>플레이어 1</th>
-                    <th>플레이어 2</th>
-                    <th>vs</th>
-                    <th>플레이어 3</th>
-                    <th>플레이어 4</th>
-                    <th>스코어</th>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-                <tr>
-                    <td><input type="text" placeholder="이름" class="player1"></td>
-                    <td><input type="text" placeholder="이름" class="player2"></td>
-                    <td>vs</td>
-                    <td><input type="text" placeholder="이름" class="player3"></td>
-                    <td><input type="text" placeholder="이름" class="player4"></td>
-                    <td><input type="text" placeholder="예: 6-4" class="score"></td>
-                </tr>
-            </table>
-        </details>
-        <button id="update-ranking">순위 업데이트</button>
-    </div>
+        <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">회차별 게임 스케줄</h2>
+            <p class="note text-sm sm:text-base text-gray-500 mb-4">참고: 1세트, 6게임제, 노애드 스코어링, 순위는 승리 게임 수, 게임득실 순 (게임득실 = 획득 게임 - 실점 게임)</p>
+            <details>
+                <summary class="font-medium text-lg">1회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">2회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">3회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">4회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">5회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">6회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">7회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">8회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">9회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">10회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">11회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">12회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">13회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">14회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <details>
+                <summary class="font-medium text-lg">15회차</summary>
+                <table class="schedule-table w-full bg-white">
+                    <tr class="tennis-green text-white">
+                        <th>플레이어 1</th>
+                        <th>플레이어 2</th>
+                        <th>vs</th>
+                        <th>플레이어 3</th>
+                        <th>플레이어 4</th>
+                        <th>스코어</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="이름" class="player1 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player2 w-full"></td>
+                        <td>vs</td>
+                        <td><input type="text" placeholder="이름" class="player3 w-full"></td>
+                        <td><input type="text" placeholder="이름" class="player4 w-full"></td>
+                        <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
+                    </tr>
+                </table>
+            </details>
+            <button id="update-ranking" class="update-btn w-full mt-4 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-800 font-bold text-lg rounded-lg">순위 업데이트</button>
+        </div>
 
-    <div class="section">
-        <h2>월별 순위표</h2>
-        <table id="ranking-table">
-            <tr>
-                <th>순위</th>
-                <th>선수</th>
-                <th>승</th>
-                <th>패</th>
-                <th>게임득실</th>
-                <th>접전 세트 (%)</th>
-                <th>베이글 승리</th>
-                <th>MMR</th>
-            </tr>
-            <tr><td>1</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>2</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>3</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>4</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>5</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>6</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>7</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>8</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>9</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>10</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>11</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>12</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>13</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>14</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>15</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>16</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>17</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>18</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>19</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>20</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>21</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>22</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>23</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>24</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>25</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>26</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>27</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>28</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>29</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-            <tr><td>30</td><td><input type="text" placeholder="이름" class="ranking-player"></td><td><input type="text" class="wins" readonly></td><td><input type="text" class="losses" readonly></td><td><input type="text" class="game-diff" readonly></td><td><input type="text" class="close-set" readonly></td><td><input type="text" class="bagel-wins" readonly></td><td><input type="text" class="mmr" readonly></td></tr>
-        </table>
-    </div>
+        <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">월별 순위표</h2>
+            <table id="ranking-table" class="w-full bg-white">
+                <tr class="tennis-green text-white">
+                    <th>순위</th>
+                    <th>선수</th>
+                    <th>승</th>
+                    <th>패</th>
+                    <th>게임득실</th>
+                    <th>접전 (%)</th>
+                    <th>베이글</th>
+                    <th>MMR</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>10</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>11</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>12</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>13</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>14</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>15</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>16</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>17</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>18</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>19</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>20</td>
+                    <td><input type="text" placeholder="이름" class="ranking-player w-full"></td>
+                    <td><input type="text" class="wins w-full" readonly></td>
+                    <td><input type="text" class="losses w-full" readonly></td>
+                    <td><input type="text" class="game-diff w-full" readonly></td>
+                    <td><input type="text" class="close-set w-full" readonly></td>
+                    <td><input type="text" class="bagel-wins w-full" readonly></td>
+                    <td><input type="text" class="mmr w-full" readonly></td>
+                </tr>
+            </table>
+        </div>
 
-    <div class="section">
-        <h2>파트너별 승률표</h2>
-        <table id="pair-ranking-table">
-            <tr>
-                <th>순위</th>
-                <th>페어</th>
-                <th>승</th>
-                <th>패</th>
-                <th>승률 (%)</th>
-            </tr>
-            <tr><td>1</td><td><input type="text" class="pair-name" readonly></td><td><input type="text" class="pair-wins" readonly></td><td><input type="text" class="pair-losses" readonly></td><td><input type="text" class="pair-win-rate" readonly></td></tr>
-            <tr><td>2</td><td><input type="text" class="pair-name" readonly></td><td><input type="text" class="pair-wins" readonly></td><td><input type="text" class="pair-losses" readonly></td><td><input type="text" class="pair-win-rate" readonly></td></tr>
-            <tr><td>3</td><td><input type="text" class="pair-name" readonly></td><td><input type="text" class="pair-wins" readonly></td><td><input type="text" class="pair-losses" readonly></td><td><input type="text" class="pair-win-rate" readonly></td></tr>
-            <tr><td>4</td><td><input type="text" class="pair-name" readonly></td><td><input type="text" class="pair-wins" readonly></td><td><input type="text" class="pair-losses" readonly></td><td><input type="text" class="pair-win-rate" readonly></td></tr>
-            <tr><td>5</td><td><input type="text" class="pair-name" readonly></td><td><input type="text" class="pair-wins" readonly></td><td><input type="text" class="pair-losses" readonly></td><td><input type="text" class="pair-win-rate" readonly></td></tr>
-            <tr><td>6</td><td><input type="text" class="pair-name" readonly></td><td><input type="text" class="pair-wins" readonly></td><td><input type="text" class="pair-losses" readonly></td><td><input type="text" class="pair-win-rate" readonly></td></tr>
-            <tr><td>7</td><td><input type="text" class="pair-name" readonly></td><td><input type="text" class="pair-wins" readonly></td><td><input type="text" class="pair-losses" readonly></td><td><input type="text" class="pair-win-rate" readonly></td></tr>
-            <tr><td>8</td><td><input type="text" class="pair-name" readonly></td><td><input type="text" class="pair-wins" readonly></td><td><input type="text" class="pair-losses" readonly></td><td><input type="text" class="pair-win-rate" readonly></td></tr>
-            <tr><td>9</td><td><input type="text" class="pair-name" readonly></td><td><input type="text" class="pair-wins" readonly></td><td><input type="text" class="pair-losses" readonly></td><td><input type="text" class="pair-win-rate" readonly></td></tr>
-            <tr><td>10</td><td><input type="text" class="pair-name" readonly></td><td><input type="text" class="pair-wins" readonly></td><td><input type="text" class="pair-losses" readonly></td><td><input type="text" class="pair-win-rate" readonly></td></tr>
-        </table>
-    </div>
+        <div class="section bg-white shadow-md rounded-lg p-4 sm:p-6">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">파트너별 승률표</h2>
+            <table id="pair-ranking-table" class="w-full bg-white">
+                <tr class="tennis-green text-white">
+                    <th>순위</th>
+                    <th>페어</th>
+                    <th>승</th>
+                    <th>패</th>
+                    <th>승률 (%)</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td><input type="text" class="pair-name w-full" readonly></td>
+                    <td><input type="text" class="pair-wins w-full" readonly></td>
+                    <td><input type="text" class="pair-losses w-full" readonly></td>
+                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td><input type="text" class="pair-name w-full" readonly></td>
+                    <td><input type="text" class="pair-wins w-full" readonly></td>
+                    <td><input type="text" class="pair-losses w-full" readonly></td>
+                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td><input type="text" class="pair-name w-full" readonly></td>
+                    <td><input type="text" class="pair-wins w-full" readonly></td>
+                    <td><input type="text" class="pair-losses w-full" readonly></td>
+                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td><input type="text" class="pair-name w-full" readonly></td>
+                    <td><input type="text" class="pair-wins w-full" readonly></td>
+                    <td><input type="text" class="pair-losses w-full" readonly></td>
+                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td><input type="text" class="pair-name w-full" readonly></td>
+                    <td><input type="text" class="pair-wins w-full" readonly></td>
+                    <td><input type="text" class="pair-losses w-full" readonly></td>
+                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td><input type="text" class="pair-name w-full" readonly></td>
+                    <td><input type="text" class="pair-wins w-full" readonly></td>
+                    <td><input type="text" class="pair-losses w-full" readonly></td>
+                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td><input type="text" class="pair-name w-full" readonly></td>
+                    <td><input type="text" class="pair-wins w-full" readonly></td>
+                    <td><input type="text" class="pair-losses w-full" readonly></td>
+                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td><input type="text" class="pair-name w-full" readonly></td>
+                    <td><input type="text" class="pair-wins w-full" readonly></td>
+                    <td><input type="text" class="pair-losses w-full" readonly></td>
+                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td><input type="text" class="pair-name w-full" readonly></td>
+                    <td><input type="text" class="pair-wins w-full" readonly></td>
+                    <td><input type="text" class="pair-losses w-full" readonly></td>
+                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
+                </tr>
+                <tr>
+                    <td>10</td>
+                    <td><input type="text" class="pair-name w-full" readonly></td>
+                    <td><input type="text" class="pair-wins w-full" readonly></td>
+                    <td><input type="text" class="pair-losses w-full" readonly></td>
+                    <td><input type="text" class="pair-win-rate w-full" readonly></td>
+                </tr>
+            </table>
+        </div>
 
-    <script>
-        document.getElementById('update-ranking').addEventListener('click', updateRanking);
+        <script>
+            document.getElementById('update-ranking').addEventListener('click', updateRanking);
 
-        function updateRanking() {
-            const scheduleRows = document.querySelectorAll('.schedule-table tr:not(:first-child)');
-            const players = {};
-            const pairs = {};
+            function updateRanking() {
+                const scheduleRows = document.querySelectorAll('.schedule-table tr:not(:first-child)');
+                const players = {};
+                const pairs = {};
 
-            // 플레이어 데이터 초기화
-            document.querySelectorAll('.ranking-player').forEach(input => {
-                const name = input.value.trim();
-                if (name) {
-                    players[name] = { 
-                        wins: 0, 
-                        losses: 0, 
-                        gameDiff: 0, 
-                        closeSets: 0, 
-                        totalSets: 0, 
-                        bagelWins: 0, 
-                        mmr: 1500 // 초기 MMR 1500
-                    };
-                }
-            });
-
-            // 스케줄에서 경기 결과 처리
-            scheduleRows.forEach(row => {
-                const player1 = row.querySelector('.player1').value.trim();
-                const player2 = row.querySelector('.player2').value.trim();
-                const player3 = row.querySelector('.player3').value.trim();
-                const player4 = row.querySelector('.player4').value.trim();
-                const score = row.querySelector('.score').value.trim();
-
-                if (player1 && player2 && player3 && player4 && score) {
-                    const [score1, score2] = score.split('-').map(Number);
-                    if (isNaN(score1) || isNaN(score2)) return;
-
-                    // 페어 이름 생성 (알파벳순으로 정렬)
-                    const pair1 = [player1, player2].sort().join('-');
-                    const pair2 = [player3, player4].sort().join('-');
-                    if (!pairs[pair1]) pairs[pair1] = { wins: 0, losses: 0 };
-                    if (!pairs[pair2]) pairs[pair2] = { wins: 0, losses: 0 };
-
-                    // 접전 세트 여부 (스코어 차이 2 이하)
-                    const isCloseSet = Math.abs(score1 - score2) <= 2;
-                    const isBagelWin = (score1 === 6 && score2 === 0) || (score2 === 6 && score1 === 0);
-
-                    // MMR 계산
-                    const team1MMR = (players[player1].mmr + players[player2].mmr) / 2;
-                    const team2MMR = (players[player3].mmr + players[player4].mmr) / 2;
-                    const expectedScore1 = 1 / (1 + Math.pow(10, (team2MMR - team1MMR) / 400));
-                    const expectedScore2 = 1 - expectedScore1;
-                    const K = isCloseSet ? 24 : 32; // 접전 세트면 K값 낮춤
-                    const scoreMargin = Math.abs(score1 - score2);
-                    const marginMultiplier = 1 + (scoreMargin > 4 ? 0.2 : scoreMargin > 2 ? 0.1 : 0); // 스코어 차이에 따라 보너스
-
-                    // 승패 및 지표 계산
-                    if (score1 > score2) {
-                        [player1, player2].forEach(p => {
-                            if (players[p]) {
-                                players[p].wins += 1;
-                                players[p].gameDiff += (score1 - score2);
-                                players[p].totalSets += 1;
-                                if (isCloseSet) players[p].closeSets += 1;
-                                if (score1 === 6 && score2 === 0) players[p].bagelWins += 1;
-                                players[p].mmr += (K * (1 - expectedScore1) * marginMultiplier) / 2;
-                            }
-                        });
-                        [player3, player4].forEach(p => {
-                            if (players[p]) {
-                                players[p].losses += 1;
-                                players[p].gameDiff += (score2 - score1);
-                                players[p].totalSets += 1;
-                                if (isCloseSet) players[p].closeSets += 1;
-                                players[p].mmr += (K * (0 - expectedScore2) * marginMultiplier) / 2;
-                            }
-                        });
-                        pairs[pair1].wins += 1;
-                        pairs[pair2].losses += 1;
-                    } else {
-                        [player3, player4].forEach(p => {
-                            if (players[p]) {
-                                players[p].wins += 1;
-                                players[p].gameDiff += (score2 - score1);
-                                players[p].totalSets += 1;
-                                if (isCloseSet) players[p].closeSets += 1;
-                                if (score2 === 6 && score1 === 0) players[p].bagelWins += 1;
-                                players[p].mmr += (K * (1 - expectedScore2) * marginMultiplier) / 2;
-                            }
-                        });
-                        [player1, player2].forEach(p => {
-                            if (players[p]) {
-                                players[p].losses += 1;
-                                players[p].gameDiff += (score1 - score2);
-                                players[p].totalSets += 1;
-                                if (isCloseSet) players[p].closeSets += 1;
-                                players[p].mmr += (K * (0 - expectedScore1) * marginMultiplier) / 2;
-                            }
-                        });
-                        pairs[pair2].wins += 1;
-                        pairs[pair1].losses += 1;
+                // 플레이어 데이터 초기화
+                document.querySelectorAll('.ranking-player').forEach(input => {
+                    const name = input.value.trim();
+                    if (name) {
+                        players[name] = { 
+                            wins: 0, 
+                            losses: 0, 
+                            gameDiff: 0, 
+                            closeSets: 0, 
+                            totalSets: 0, 
+                            bagelWins: 0, 
+                            mmr: 1500 // 초기 MMR 1500
+                        };
                     }
-                }
-            });
+                });
 
-            // 개인 순위 계산
-            const rankedPlayers = Object.entries(players)
-                .map(([name, stats]) => ({
-                    name,
-                    ...stats,
-                    closeSetRatio: stats.totalSets ? (stats.closeSets / stats.totalSets * 100).toFixed(2) : 0
-                }))
-                .sort((a, b) => b.wins - a.wins || b.gameDiff - a.gameDiff || b.mmr - a.mmr);
+                // 스케줄에서 경기 결과 처리
+                scheduleRows.forEach(row => {
+                    const player1 = row.querySelector('.player1').value.trim();
+                    const player2 = row.querySelector('.player2').value.trim();
+                    const player3 = row.querySelector('.player3').value.trim();
+                    const player4 = row.querySelector('.player4').value.trim();
+                    const score = row.querySelector('.score').value.trim();
 
-            // 개인 순위표 업데이트
-            const rankingRows = document.querySelectorAll('#ranking-table tr:not(:first-child)');
-            rankingRows.forEach((row, index) => {
-                const player = rankedPlayers[index];
-                if (player) {
-                    row.querySelector('.ranking-player').value = player.name;
-                    row.querySelector('.wins').value = player.wins;
-                    row.querySelector('.losses').value = player.losses;
-                    row.querySelector('.game-diff').value = player.gameDiff;
-                    row.querySelector('.close-set').value = player.closeSetRatio;
-                    row.querySelector('.bagel-wins').value = player.bagelWins;
-                    row.querySelector('.mmr').value = Math.round(player.mmr);
-                } else {
-                    row.querySelector('.ranking-player').value = '';
-                    row.querySelector('.wins').value = '';
-                    row.querySelector('.losses').value = '';
-                    row.querySelector('.game-diff').value = '';
-                    row.querySelector('.close-set').value = '';
-                    row.querySelector('.bagel-wins').value = '';
-                    row.querySelector('.mmr').value = '';
-                }
-            });
+                    if (player1 && player2 && player3 && player4 && score) {
+                        const [score1, score2] = score.split('-').map(Number);
+                        if (isNaN(score1) || isNaN(score2)) return;
 
-            // 파트너별 순위 계산
-            const rankedPairs = Object.entries(pairs)
-                .map(([name, stats]) => ({
-                    name,
-                    ...stats,
-                    winRate: stats.wins + stats.losses ? (stats.wins / (stats.wins + stats.losses) * 100).toFixed(2) : 0
-                }))
-                .sort((a, b) => b.winRate - a.winRate || b.wins - a.wins);
+                        // 페어 이름 생성 (알파벳순으로 정렬)
+                        const pair1 = [player1, player2].sort().join('-');
+                        const pair2 = [player3, player4].sort().join('-');
+                        if (!pairs[pair1]) pairs[pair1] = { wins: 0, losses: 0 };
+                        if (!pairs[pair2]) pairs[pair2] = { wins: 0, losses: 0 };
 
-            // 파트너별 승률표 업데이트
-            const pairRows = document.querySelectorAll('#pair-ranking-table tr:not(:first-child)');
-            pairRows.forEach((row, index) => {
-                const pair = rankedPairs[index];
-                if (pair) {
-                    row.querySelector('.pair-name').value = pair.name;
-                    row.querySelector('.pair-wins').value = pair.wins;
-                    row.querySelector('.pair-losses').value = pair.losses;
-                    row.querySelector('.pair-win-rate').value = pair.winRate;
-                } else {
-                    row.querySelector('.pair-name').value = '';
-                    row.querySelector('.pair-wins').value = '';
-                    row.querySelector('.pair-losses').value = '';
-                    row.querySelector('.pair-win-rate').value = '';
-                }
-            });
-        }
-    </script>
+                        // 접전 세트 여부 (스코어 차이 2 이하)
+                        const isCloseSet = Math.abs(score1 - score2) <= 2;
+                        const isBagelWin = (score1 === 6 && score2 === 0) || (score2 === 6 && score1 === 0);
+
+                        // MMR 계산
+                        const team1MMR = (players[player1].mmr + players[player2].mmr) / 2;
+                        const team2MMR = (players[player3].mmr + players[player4].mmr) / 2;
+                        const expectedScore1 = 1 / (1 + Math.pow(10, (team2MMR - team1MMR) / 400));
+                        const expectedScore2 = 1 - expectedScore1;
+                        const K = isCloseSet ? 24 : 32; // 접전 세트면 K값 낮춤
+                        const scoreMargin = Math.abs(score1 - score2);
+                        const marginMultiplier = 1 + (scoreMargin > 4 ? 0.2 : scoreMargin > 2 ? 0.1 : 0); // 스코어 차이에 따라 보너스
+
+                        // 승패 및 지표 계산
+                        if (score1 > score2) {
+                            [player1, player2].forEach(p => {
+                                if (players[p]) {
+                                    players[p].wins += 1;
+                                    players[p].gameDiff += (score1 - score2);
+                                    players[p].totalSets += 1;
+                                    if (isCloseSet) players[p].closeSets += 1;
+                                    if (score1 === 6 && score2 === 0) players[p].bagelWins += 1;
+                                    players[p].mmr += (K * (1 - expectedScore1) * marginMultiplier) / 2;
+                                }
+                            });
+                            [player3, player4].forEach(p => {
+                                if (players[p]) {
+                                    players[p].losses += 1;
+                                    players[p].gameDiff += (score2 - score1);
+                                    players[p].totalSets += 1;
+                                    if (isCloseSet) players[p].closeSets += 1;
+                                    players[p].mmr += (K * (0 - expectedScore2) * marginMultiplier) / 2;
+                                }
+                            });
+                            pairs[pair1].wins += 1;
+                            pairs[pair2].losses += 1;
+                        } else {
+                            [player3, player4].forEach(p => {
+                                if (players[p]) {
+                                    players[p].wins += 1;
+                                    players[p].gameDiff += (score2 - score1);
+                                    players[p].totalSets += 1;
+                                    if (isCloseSet) players[p].closeSets += 1;
+                                    if (score2 === 6 && score1 === 0) players[p].bagelWins += 1;
+                                    players[p].mmr += (K * (1 - expectedScore2) * marginMultiplier) / 2;
+                                }
+                            });
+                            [player1, player2].forEach(p => {
+                                if (players[p]) {
+                                    players[p].losses += 1;
+                                    players[p].gameDiff += (score1 - score2);
+                                    players[p].totalSets += 1;
+                                    if (isCloseSet) players[p].closeSets += 1;
+                                    players[p].mmr += (K * (0 - expectedScore1) * marginMultiplier) / 2;
+                                }
+                            });
+                            pairs[pair2].wins += 1;
+                            pairs[pair1].losses += 1;
+                        }
+                    }
+                });
+
+                // 개인 순위 계산
+                const rankedPlayers = Object.entries(players)
+                    .map(([name, stats]) => ({
+                        name,
+                        ...stats,
+                        closeSetRatio: stats.totalSets ? (stats.closeSets / stats.totalSets * 100).toFixed(2) : 0
+                    }))
+                    .sort((a, b) => b.wins - a.wins || b.gameDiff - a.gameDiff || b.mmr - a.mmr);
+
+                // 개인 순위표 업데이트
+                const rankingRows = document.querySelectorAll('#ranking-table tr:not(:first-child)');
+                rankingRows.forEach((row, index) => {
+                    const player = rankedPlayers[index];
+                    if (player) {
+                        row.querySelector('.ranking-player').value = player.name;
+                        row.querySelector('.wins').value = player.wins;
+                        row.querySelector('.losses').value = player.losses;
+                        row.querySelector('.game-diff').value = player.gameDiff;
+                        row.querySelector('.close-set').value = player.closeSetRatio;
+                        row.querySelector('.bagel-wins').value = player.bagelWins;
+                        row.querySelector('.mmr').value = Math.round(player.mmr);
+                    } else {
+                        row.querySelector('.ranking-player').value = '';
+                        row.querySelector('.wins').value = '';
+                        row.querySelector('.losses').value = '';
+                        row.querySelector('.game-diff').value = '';
+                        row.querySelector('.close-set').value = '';
+                        row.querySelector('.bagel-wins').value = '';
+                        row.querySelector('.mmr').value = '';
+                    }
+                });
+
+                // 파트너별 순위 계산
+                const rankedPairs = Object.entries(pairs)
+                    .map(([name, stats]) => ({
+                        name,
+                        ...stats,
+                        winRate: stats.wins + stats.losses ? (stats.wins / (stats.wins + stats.losses) * 100).toFixed(2) : 0
+                    }))
+                    .sort((a, b) => b.winRate - a.winRate || b.wins - a.wins);
+
+                // 파트너별 승률표 업데이트
+                const pairRows = document.querySelectorAll('#pair-ranking-table tr:not(:first-child)');
+                pairRows.forEach((row, index) => {
+                    const pair = rankedPairs[index];
+                    if (pair) {
+                        row.querySelector('.pair-name').value = pair.name;
+                        row.querySelector('.pair-wins').value = pair.wins;
+                        row.querySelector('.pair-losses').value = pair.losses;
+                        row.querySelector('.pair-win-rate').value = pair.winRate;
+                    } else {
+                        row.querySelector('.pair-name').value = '';
+                        row.querySelector('.pair-wins').value = '';
+                        row.querySelector('.pair-losses').value = '';
+                        row.querySelector('.pair-win-rate').value = '';
+                    }
+                });
+            }
+        </script>
 </body>
 </html>
