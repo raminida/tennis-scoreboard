@@ -21,6 +21,9 @@
         .section { background: var(--surface-color); padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 3rem; border: 1px solid var(--border-color); }
         h2 { font-family: 'Poppins', sans-serif; font-size: 2.2rem; color: var(--primary-color); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--border-color); }
         .charts-container { display: grid; grid-template-columns: 1fr; gap: 40px; margin-bottom: 40px; }
+        .chart-control { margin-bottom: 20px; text-align: center; }
+        .chart-control label { font-weight: bold; margin-right: 10px; }
+        .chart-control select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--surface-color); color: var(--text-color); }
         .awards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
         .award-card { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; text-align: center; }
         html[data-theme="light"] .award-card { background: #F9FAFB; }
@@ -41,12 +44,22 @@
         <div class="section">
             <h2>통계 차트</h2>
             <div class="charts-container">
-                <div><h3>TOP 5 MMR 추이</h3><canvas id="mmr-chart"></canvas></div>
-                <div><h3>우승 횟수</h3><canvas id="championship-chart"></canvas></div>
+                <div>
+                    <h3>TOP 5 MMR 추이</h3>
+                    <canvas id="mmr-chart"></canvas>
+                </div>
+                <div>
+                    <h3>선수 능력치 레이더</h3>
+                    <div class="chart-control">
+                        <label for="player-select">선수 선택:</label>
+                        <select id="player-select"></select>
+                    </div>
+                    <canvas id="player-radar-chart"></canvas>
+                </div>
             </div>
         </div>
         <div class="section">
-            <h2>🏆 어워드</h2>
+            <h2>🏆 시즌 어워드</h2>
             <div class="awards-grid"></div>
             <div style="text-align: center; margin-top: 30px;"><a href="index.html" class="btn">메인으로 돌아가기</a></div>
         </div>
@@ -59,21 +72,25 @@
         let db;
         try { db = getFirestore(initializeApp(firebaseConfig)); } catch (e) { console.error(e); }
 
-        let mmrChart, championshipChart;
+        let mmrChart, radarChart;
+        let allPlayersData = [];
+        let fullMmrHistory = [];
 
         async function loadDashboard() {
             if (!db) return;
-            // Load Rankings and MMR History for charts
             const rankingSnap = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-            const players = rankingSnap.exists() ? rankingSnap.data().players || [] : [];
-            const top5PlayerNames = players.slice(0, 5).map(p => p.name);
+            allPlayersData = rankingSnap.exists() ? rankingSnap.data().players || [] : [];
+            const top5PlayerNames = allPlayersData.slice(0, 5).map(p => p.name);
 
-            const historyQuery = query(collection(db, 'league', 'data', 'mmrHistory'), orderBy('createdAt'));
-            const historySnaps = await getDocs(historyQuery);
-            const historyData = historySnaps.docs.map(d => d.data());
+            const historySnap = await getDoc(doc(db, 'league', 'data', 'mmrHistory', 'v1'));
+            fullMmrHistory = historySnap.exists() ? historySnap.data().snapshots || [] : [];
             
-            renderMmrChart(historyData, top5PlayerNames);
-            renderChampionshipChart(players);
+            renderMmrChart(fullMmrHistory, top5PlayerNames);
+            setupPlayerSelector();
+            
+            if (allPlayersData.length > 0) {
+                renderPlayerRadarChart(allPlayersData[0].name); 
+            }
 
             // Load Awards
             const awardDetails = {
@@ -111,53 +128,134 @@
             }
         }
 
+        function setupPlayerSelector() {
+            const select = document.getElementById('player-select');
+            select.innerHTML = '';
+            allPlayersData.forEach(player => {
+                const option = document.createElement('option');
+                option.value = player.name;
+                option.textContent = player.name;
+                select.appendChild(option);
+            });
+            select.addEventListener('change', (e) => {
+                renderPlayerRadarChart(e.target.value);
+            });
+        }
+
+        function renderPlayerRadarChart(playerName) {
+            const player = allPlayersData.find(p => p.name === playerName);
+            if (!player) return;
+
+            const ctx = document.getElementById('player-radar-chart').getContext('2d');
+            
+            const playedPlayers = allPlayersData.filter(p => (parseInt(p.wins) + parseInt(p.losses)) > 0);
+            if (playedPlayers.length === 0) return;
+
+            // 스탯별 순위 계산 함수
+            const getRank = (p, stat) => {
+                const sorted = [...playedPlayers].sort((a,b) => b[stat] - a[stat]);
+                return sorted.findIndex(pl => pl.name === p.name) + 1;
+            };
+
+            // 백분위 점수 계산 함수 (순위 기반)
+            const getPercentileScore = (rank) => {
+                const percentile = (playedPlayers.length - rank) / (playedPlayers.length - 1);
+                // y = x^0.7 곡선 적용 (하위권 점수 보정)
+                return Math.pow(percentile, 0.7) * 100;
+            };
+
+            // 1. MMR 점수
+            const mmrRank = getRank(player, 'mmr');
+            const mmrScore = getPercentileScore(mmrRank);
+            
+            // 2. 승률
+            allPlayersData.forEach(p => p.winRate = (p.wins + p.losses) > 0 ? p.wins / (p.wins + p.losses) : 0);
+            const winRateRank = getRank(player, 'winRate');
+            const winRateScore = getPercentileScore(winRateRank);
+
+            // 3. 게임 득실
+            const gameDiffRank = getRank(player, 'gameDiff');
+            const gameDiffScore = getPercentileScore(gameDiffRank);
+            
+            // 4. 압도력
+            allPlayersData.forEach(p => p.dominantRate = (p.wins + p.losses) > 0 ? (p.dominantWins || 0) / (p.wins + p.losses) : 0);
+            const dominantRank = getRank(player, 'dominantRate');
+            const dominantScore = getPercentileScore(dominantRank);
+
+            // 5. 꾸준함
+            const playerMmrHistory = fullMmrHistory.map(h => h.players[playerName.replace(/\./g, '_')]).filter(mmr => mmr !== undefined);
+            let consistencyScore = 0;
+            const isMonotonic = playerMmrHistory.every((v, i, a) => !i || v >= a[i-1]);
+            if (playerMmrHistory.length < 2 || isMonotonic) {
+                consistencyScore = 100; // 1경기 이하 또는 MMR 하락 없으면 만점
+            } else {
+                const mean = playerMmrHistory.reduce((a, b) => a + b) / playerMmrHistory.length;
+                const stddev = Math.sqrt(playerMmrHistory.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / playerMmrHistory.length);
+                consistencyScore = Math.max(0, 100 - (stddev * 2));
+            }
+            
+            // 6. 클러치
+            allPlayersData.forEach(p => p.clutchRate = p.closeSets > 0 ? (p.closeWins || 0) / p.closeSets : -1); // 접전 없으면 -1
+            const clutchPlayers = playedPlayers.filter(p => p.clutchRate !== -1);
+            let clutchScore = 100; // 접전 경기 없으면 만점
+            if (clutchPlayers.length > 0 && player.clutchRate !== -1) {
+                const clutchRank = [...clutchPlayers].sort((a,b) => b.clutchRate - a.clutchRate).findIndex(pl => pl.name === player.name) + 1;
+                clutchScore = (clutchPlayers.length - clutchRank) / (clutchPlayers.length - 1) * 100;
+            }
+            
+            const data = {
+                labels: ['MMR', '승률', '게임득실', '압도력', '꾸준함', '클러치'],
+                datasets: [{
+                    label: player.name,
+                    data: [ mmrScore, winRateScore, gameDiffScore, dominantScore, consistencyScore, clutchScore ],
+                    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                    borderColor: 'rgba(76, 175, 80, 1)',
+                    pointBackgroundColor: 'rgba(76, 175, 80, 1)',
+                }]
+            };
+
+            if (radarChart) radarChart.destroy();
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: data,
+                options: {
+                    elements: { line: { borderWidth: 3 } },
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                            pointLabels: { font: { size: 14 }, color: 'var(--text-color)' },
+                            ticks: { display: false, stepSize: 20 },
+                            min: 0,
+                            max: 100
+                        }
+                    },
+                    plugins: { legend: { labels: { color: 'var(--text-color)', font: {size: 16} } } }
+                }
+            });
+        }
+
         function renderMmrChart(history, topPlayers) {
             const ctx = document.getElementById('mmr-chart').getContext('2d');
             const datasets = topPlayers.map((name, index) => {
                 const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
-                return { label: name, data: history.map(h => h[name.replace(/\./g,'_')] || null), borderColor: colors[index], fill: false, tension: 0.1 };
+                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, `${colors[index]}80`); 
+                gradient.addColorStop(1, `${colors[index]}00`);
+                return { 
+                    label: name, 
+                    data: history.map(h => h.players[name.replace(/\./g,'_')] || null), 
+                    borderColor: colors[index],
+                    backgroundColor: gradient,
+                    fill: true, 
+                    tension: 0.4,
+                    pointRadius: 2,
+                    pointHoverRadius: 5
+                };
             });
 
             if (mmrChart) mmrChart.destroy();
-            mmrChart = new Chart(ctx, { type: 'line', data: { labels: history.map((h, i) => `${i + 1}차`), datasets }, options: { scales: { x: { ticks: { color: 'var(--text-secondary-color)' } }, y: { ticks: { color: 'var(--text-secondary-color)' } } }, plugins: { legend: { labels: { color: 'var(--text-color)' } } } } });
-        }
-
-        function renderChampionshipChart(players) {
-            const ctx = document.getElementById('championship-chart').getContext('2d');
-            const filteredPlayers = players.filter(p => p.championships > 0).sort((a,b) => b.championships - a.championships);
-            
-            if (filteredPlayers.length === 0) {
-                ctx.canvas.style.display = 'none';
-                return;
-            }
-            ctx.canvas.style.display = 'block';
-
-            if (championshipChart) championshipChart.destroy();
-            championshipChart = new Chart(ctx, { 
-                type: 'bar', 
-                data: { 
-                    labels: filteredPlayers.map(p => p.name), 
-                    datasets: [{ 
-                        label: '우승 횟수', 
-                        data: filteredPlayers.map(p => p.championships), 
-                        backgroundColor: 'var(--accent-gold)',
-                        borderColor: 'rgba(0,0,0,0.2)',
-                        borderWidth: 1,
-                        barThickness: 30,
-                    }] 
-                }, 
-                options: { 
-                    indexAxis: 'y', 
-                    scales: { 
-                        x: { display: false, grid: { display: false } }, 
-                        y: { grid: { display: false }, ticks: { color: 'var(--text-secondary-color)', font: { size: 14 } } }
-                    }, 
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: { enabled: false },
-                    } 
-                } 
-            });
+            mmrChart = new Chart(ctx, { type: 'line', data: { labels: history.map(h => `${h.game}경기`), datasets }, options: { scales: { x: { ticks: { color: 'var(--text-secondary-color)' } }, y: { ticks: { color: 'var(--text-secondary-color)' } } }, plugins: { legend: { labels: { color: 'var(--text-color)' } } } } });
         }
         
         function applyTheme(theme) { 
