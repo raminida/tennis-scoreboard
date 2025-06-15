@@ -86,7 +86,6 @@
             return;
         }
 
-        // 데이터 로딩 실패해도 다음 코드가 실행되도록 try-catch 추가
         try {
             const rankingSnap = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
             allPlayersData = rankingSnap.exists() ? rankingSnap.data().players || [] : [];
@@ -110,7 +109,6 @@
             renderPlayerRadarChart(allPlayersData[0].name); 
         }
 
-        // 어워드 로딩
         const awardDetails = {
             mvp: { title: "시즌 MVP", icon: "👑" },
             formKing: { title: "시즌 폼 1위", icon: "🔥" },
@@ -173,21 +171,11 @@
         if (!player) return;
 
         const ctx = document.getElementById('player-radar-chart').getContext('2d');
-        
         const playedPlayers = allPlayersData.filter(p => (parseInt(p.wins || 0) + parseInt(p.losses || 0)) > 0);
         if (playedPlayers.length === 0) return;
 
-        const getRank = (p, stat) => {
-            const sorted = [...playedPlayers].sort((a,b) => b[stat] - a[stat]);
-            return sorted.findIndex(pl => pl.name === p.name) + 1;
-        };
-        
-        // [수정] 참가자가 1명일 때 0으로 나누는 오류 수정
-        const getPercentileScore = (rank) => {
-            if (playedPlayers.length <= 1) return 100;
-            const percentile = (playedPlayers.length - rank) / (playedPlayers.length - 1);
-            return Math.pow(percentile, 0.7) * 100;
-        };
+        const getRank = (p, stat) => [...playedPlayers].sort((a,b) => b[stat] - a[stat]).findIndex(pl => pl.name === p.name) + 1;
+        const getPercentileScore = (rank) => playedPlayers.length <= 1 ? 100 : Math.pow((playedPlayers.length - rank) / (playedPlayers.length - 1), 0.7) * 100;
 
         const mmrRank = getRank(player, 'mmr');
         const mmrScore = getPercentileScore(mmrRank);
@@ -203,10 +191,9 @@
         const dominantRank = getRank(player, 'dominantRate');
         const dominantScore = getPercentileScore(dominantRank);
 
-        const playerMmrHistory = fullMmrHistory.map(h => h.players[playerName.replace(/\./g, '_')]).filter(mmr => mmr !== undefined);
+        const playerMmrHistory = fullMmrHistory.map(h => h.players?.[playerName.replace(/\./g, '_')]).filter(mmr => mmr !== undefined);
         let consistencyScore = 0;
-        const isMonotonic = playerMmrHistory.every((v, i, a) => !i || v >= a[i-1]);
-        if (playerMmrHistory.length < 2 || isMonotonic) {
+        if (playerMmrHistory.length < 2 || playerMmrHistory.every((v, i, a) => !i || v >= a[i-1])) {
             consistencyScore = 100;
         } else {
             const mean = playerMmrHistory.reduce((a, b) => a + b) / playerMmrHistory.length;
@@ -219,12 +206,7 @@
         let clutchScore = 100;
         if (clutchPlayers.length > 0 && player.clutchRate !== -1) {
             const clutchRank = [...clutchPlayers].sort((a,b) => b.clutchRate - a.clutchRate).findIndex(pl => pl.name === player.name) + 1;
-            // [수정] 참가자가 1명일 때 0으로 나누는 오류 수정
-            if (clutchPlayers.length > 1) {
-                clutchScore = (clutchPlayers.length - clutchRank) / (clutchPlayers.length - 1) * 100;
-            } else {
-                clutchScore = 100;
-            }
+            clutchScore = clutchPlayers.length > 1 ? (clutchPlayers.length - clutchRank) / (clutchPlayers.length - 1) * 100 : 100;
         }
         
         const data = {
@@ -239,14 +221,21 @@
         };
 
         if (radarChart) radarChart.destroy();
+        
+        // [수정] 눈금(ticks)이 확실히 보이도록 옵션 수정
         const radarOptions = {
             elements: { line: { borderWidth: 3 } },
             scales: {
                 r: {
-                    angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
-                    grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                    angleLines: { color: 'var(--border-color)' },
+                    grid: { color: 'var(--border-color)' },
                     pointLabels: { font: { size: 14 }, color: 'var(--text-color)' },
-                    ticks: { display: true, stepSize: 20, backdropColor: 'transparent', color: 'var(--text-secondary-color)' },
+                    ticks: {
+                        display: true, // 눈금 표시 강제
+                        stepSize: 20,
+                        backdropColor: 'transparent',
+                        color: 'var(--text-secondary-color)' // 눈금 색상
+                    },
                     min: 0,
                     max: 100
                 }
@@ -258,29 +247,30 @@
 
     function renderMmrChart(history, topPlayers) {
         if (!history || history.length === 0 || !topPlayers || topPlayers.length === 0) {
-            console.log("MMR 차트 렌더링을 위한 데이터가 부족합니다.");
             return;
         }
         const ctx = document.getElementById('mmr-chart').getContext('2d');
         const datasets = topPlayers.map((name, index) => {
             const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
             const color = colors[index % colors.length];
-            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, `${color}80`); 
-            gradient.addColorStop(1, `${color}00`);
             return { 
                 label: name, 
-                data: history.map(h => h.players[name.replace(/\./g,'_')] || null), 
+                // [수정] 데이터 없는 구간(null)에서 선이 이어지도록 spanGaps 추가
+                spanGaps: true,
+                // [수정] 데이터 포인트가 적을 때 곡선이 이상하게 보이는 문제 방지
+                tension: history.length > 2 ? 0.4 : 0,
+                // [수정] h.players가 없을 경우를 대비해 옵셔널 체이닝(?.) 사용
+                data: history.map(h => h.players?.[name.replace(/\./g,'_')] || null), 
                 borderColor: color,
-                backgroundColor: gradient,
+                backgroundColor: `${color}33`, // 투명 그라데이션 대신 단색 투명으로 변경
                 fill: true, 
-                tension: 0.4,
-                pointRadius: 2,
-                pointHoverRadius: 5
+                pointRadius: 3,
+                pointHoverRadius: 6
             };
         });
 
         if (mmrChart) mmrChart.destroy();
+
         const lineOptions = {
             scales: {
                 x: { ticks: { color: 'var(--text-secondary-color)' }, grid: { color: 'var(--border-color)' } },
@@ -291,46 +281,29 @@
         mmrChart = new Chart(ctx, { type: 'line', data: { labels: history.map((h, i) => `${h.game || i + 1}경기`), datasets }, options: lineOptions });
     }
     
+    // [수정] 테마 변경 시 차트 업데이트 로직 단순화 및 강화
     function applyTheme(theme) { 
         document.documentElement.setAttribute('data-theme', theme);
         document.getElementById('theme-toggle').textContent = theme === 'dark' ? '☀️' : '🌙';
         localStorage.setItem('theme', theme);
-
-        // 차트가 이미 생성되었다면 테마에 맞게 옵션을 업데이트
-        const chartOptions = {
-            scales: {
-                r: {
-                    angleLines: { color: theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' },
-                    grid: { color: theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' },
-                    pointLabels: { color: 'var(--text-color)' },
-                    ticks: { color: 'var(--text-secondary-color)' }
-                }
-            },
-             plugins: { legend: { labels: { color: 'var(--text-color)' } } }
-        };
-
+    
         if (radarChart) {
-            radarChart.options.scales.r.angleLines.color = theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)';
-            radarChart.options.scales.r.grid.color = theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)';
-            radarChart.options.scales.r.pointLabels.color = 'var(--text-color)';
-            radarChart.options.scales.r.ticks.color = 'var(--text-secondary-color)';
-            radarChart.options.plugins.legend.labels.color = 'var(--text-color)';
-            radarChart.update();
+            // CSS 변수가 즉시 적용되므로 차트 전체를 다시 그리는게 가장 확실함
+            renderPlayerRadarChart(document.getElementById('player-select').value);
         }
         if (mmrChart) {
-            mmrChart.options.scales.x.ticks.color = 'var(--text-secondary-color)';
-            mmrChart.options.scales.y.ticks.color = 'var(--text-secondary-color)';
-            mmrChart.options.scales.x.grid.color = 'var(--border-color)';
-            mmrChart.options.scales.y.grid.color = 'var(--border-color)';
-            mmrChart.options.plugins.legend.labels.color = 'var(--text-color)';
-            mmrChart.update();
+             const top5 = allPlayersData.slice(0, 5).map(p => p.name);
+             renderMmrChart(fullMmrHistory, top5);
         }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         const savedTheme = localStorage.getItem('theme') || 'dark';
-        applyTheme(savedTheme);
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.getElementById('theme-toggle').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        
         loadDashboard();
+
         document.getElementById('theme-toggle').addEventListener('click', () => {
             const newTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
             applyTheme(newTheme);
