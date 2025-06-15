@@ -63,6 +63,7 @@
 
         async function loadDashboard() {
             if (!db) return;
+            // Load Rankings and MMR History for charts
             const rankingSnap = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
             const players = rankingSnap.exists() ? rankingSnap.data().players || [] : [];
             const top5PlayerNames = players.slice(0, 5).map(p => p.name);
@@ -74,29 +75,96 @@
             renderMmrChart(historyData, top5PlayerNames);
             renderChampionshipChart(players);
 
-            // 어워드 로드 (기존 로직과 유사)
+            // Load Awards
+            const awardDetails = {
+                mvp: { title: "시즌 MVP", icon: "👑" },
+                formKing: { title: "시즌 폼 1위", icon: "🔥" },
+                victoryFairy: { title: "시즌 승리요정", icon: "🧚" },
+                mostImproved: { title: "시즌 발전상", icon: "🚀" },
+                clutchKing: { title: "시즌 강심장", icon: "💎" },
+                bestDoubles: { title: "시즌 복식조", icon: "🤝" },
+                courtKiller: { title: "시즌 코트킬러", icon: "💣" },
+                giantKiller: { title: "시즌 자이언트 킬러", icon: "🎯" },
+                rivalPair: { title: "시즌 라이벌", icon: "⚔️" }
+            };
+            
+            const awardsSnap = await getDoc(doc(db, 'league', 'data', 'awards', 'v1'));
+            const awardsData = awardsSnap.exists() ? awardsSnap.data() : {};
+            const grid = document.querySelector('.awards-grid');
+            grid.innerHTML = '';
+
+            for (const key in awardDetails) {
+                const awardInfo = awardDetails[key];
+                const data = awardsData[key] || {};
+                const winner = data.name || '-';
+                const value = data.value || '-';
+                
+                const card = document.createElement('div');
+                card.className = 'award-card';
+                card.innerHTML = `
+                    <div class="award-icon">${awardInfo.icon}</div>
+                    <div class="award-title">${awardInfo.title}</div>
+                    <div class="award-winner">${winner}</div>
+                    <div class="award-value">${value}</div>
+                `;
+                grid.appendChild(card);
+            }
         }
 
         function renderMmrChart(history, topPlayers) {
             const ctx = document.getElementById('mmr-chart').getContext('2d');
             const datasets = topPlayers.map((name, index) => {
                 const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
-                return { label: name, data: history.map(h => h[name.replace('.','_')] || null), borderColor: colors[index], fill: false };
+                return { label: name, data: history.map(h => h[name.replace(/\./g,'_')] || null), borderColor: colors[index], fill: false, tension: 0.1 };
             });
 
             if (mmrChart) mmrChart.destroy();
-            mmrChart = new Chart(ctx, { type: 'line', data: { labels: history.map((h, i) => `업데이트 ${i+1}`), datasets }, options: { scales: { x: { ticks: { color: 'var(--text-secondary-color)' } }, y: { ticks: { color: 'var(--text-secondary-color)' } } }, plugins: { legend: { labels: { color: 'var(--text-color)' } } } } });
+            mmrChart = new Chart(ctx, { type: 'line', data: { labels: history.map((h, i) => `${i + 1}차`), datasets }, options: { scales: { x: { ticks: { color: 'var(--text-secondary-color)' } }, y: { ticks: { color: 'var(--text-secondary-color)' } } }, plugins: { legend: { labels: { color: 'var(--text-color)' } } } } });
         }
 
         function renderChampionshipChart(players) {
             const ctx = document.getElementById('championship-chart').getContext('2d');
-            const filteredPlayers = players.filter(p => p.championships > 0);
+            const filteredPlayers = players.filter(p => p.championships > 0).sort((a,b) => b.championships - a.championships);
             
+            if (filteredPlayers.length === 0) {
+                ctx.canvas.style.display = 'none';
+                return;
+            }
+            ctx.canvas.style.display = 'block';
+
             if (championshipChart) championshipChart.destroy();
-            championshipChart = new Chart(ctx, { type: 'bar', data: { labels: filteredPlayers.map(p => p.name), datasets: [{ label: '우승 횟수', data: filteredPlayers.map(p => p.championships), backgroundColor: 'var(--accent-gold)' }] }, options: { indexAxis: 'y', scales: { x: { ticks: { color: 'var(--text-secondary-color)', stepSize: 1 } }, y: { ticks: { color: 'var(--text-secondary-color)' } } }, plugins: { legend: { display: false } } } });
+            championshipChart = new Chart(ctx, { 
+                type: 'bar', 
+                data: { 
+                    labels: filteredPlayers.map(p => p.name), 
+                    datasets: [{ 
+                        label: '우승 횟수', 
+                        data: filteredPlayers.map(p => p.championships), 
+                        backgroundColor: 'var(--accent-gold)',
+                        borderColor: 'rgba(0,0,0,0.2)',
+                        borderWidth: 1,
+                        barThickness: 30,
+                    }] 
+                }, 
+                options: { 
+                    indexAxis: 'y', 
+                    scales: { 
+                        x: { display: false, grid: { display: false } }, 
+                        y: { grid: { display: false }, ticks: { color: 'var(--text-secondary-color)', font: { size: 14 } } }
+                    }, 
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { enabled: false },
+                    } 
+                } 
+            });
         }
         
-        function applyTheme(theme) { /* 이전 코드와 동일 */ }
+        function applyTheme(theme) { 
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('theme-toggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', theme);
+        }
         document.addEventListener('DOMContentLoaded', () => {
             applyTheme(localStorage.getItem('theme') || 'dark');
             loadDashboard();
