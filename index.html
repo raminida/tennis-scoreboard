@@ -44,8 +44,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2025 래랑가로스 (HOSU - OPEN)</title>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script defer src="https://www.gstatic.com/firebasejs/10.16.0/firebase-app.js"></script>
-    <script defer src="https://www.gstatic.com/firebasejs/10.16.0/firebase-firestore.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -305,8 +303,7 @@
                         <td><input type="text" placeholder="이름" class="player3 w-full"></td>
                         <td><input type="text" placeholder="이름" class="player4 w-full"></td>
                         <td><input type="text" placeholder="예: 6-4" class="score w-full"></td>
-                    </tr>
-                    </tr>
+                    </tr>                    </tr>
                 </table>
             </details>
             <details>
@@ -977,8 +974,13 @@
 
         <div id="toast" class="toast">데이터 저장됨</div>
 
-        <script>
-            // Firebase 초기화
+        <script type="module">
+            // Firebase 모듈 가져오기
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+            import { getFirestore, collection, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+            import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
+
+            // Firebase 설정
             const firebaseConfig = {
                 apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
                 authDomain: "tennis-plan-jibung.firebaseapp.com",
@@ -989,21 +991,22 @@
                 appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd",
                 measurementId: "G-4CSJLPFJD6"
             };
+
+            // Firebase 초기화
             let db = null;
-            if (typeof firebase !== 'undefined' && typeof firebase.initializeApp === 'function') {
-                try {
-                    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-                        throw new Error('firebaseConfig가 비어 있거나 필수 값이 누락됨');
-                    }
-                    const app = firebase.initializeApp(firebaseConfig);
-                    db = firebase.firestore();
-                } catch (e) {
-                    console.error('Firebase 초기화 실패:', e.message);
-                    showToast('Firebase 설정 오류: 설정을 확인하세요');
+            let analytics = null;
+            try {
+                if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+                    throw new Error('firebaseConfig가 비어 있거나 필수 값이 누락됨');
                 }
-            } else {
-                console.error('Firebase SDK 로드 실패');
-                showToast('Firebase SDK 로드 실패');
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                if (firebaseConfig.measurementId) {
+                    analytics = getAnalytics(app);
+                }
+            } catch (e) {
+                console.error('Firebase 초기화 실패:', e.message);
+                showToast('Firebase 설정 오류: 설정을 확인하세요');
             }
 
             // XLSX 처리 (IIFE로 중복 선언 방지)
@@ -1060,7 +1063,7 @@
                             scheduleData.push(match);
                         }
                     });
-                    await db.collection('schedule').doc('data').set({ matches: scheduleData });
+                    await setDoc(doc(db, 'schedule', 'data'), { matches: scheduleData });
 
                     const rankingRows = document.querySelectorAll('#ranking-table tr:not(:first-child)');
                     const rankingData = [];
@@ -1081,7 +1084,7 @@
                             rankingData.push(player);
                         }
                     });
-                    await db.collection('rankings').doc('data').set({ players: rankingData });
+                    await setDoc(doc(db, 'rankings', 'data'), { players: rankingData });
 
                     showToast('데이터 저장됨');
                 } catch (e) {
@@ -1097,8 +1100,8 @@
                     return;
                 }
                 try {
-                    const scheduleDoc = await db.collection('schedule').doc('data').get();
-                    const scheduleData = scheduleDoc.exists ? scheduleDoc.data().matches : [];
+                    const scheduleDoc = await getDoc(doc(db, 'schedule', 'data'));
+                    const scheduleData = scheduleDoc.exists() ? scheduleDoc.data().matches : [];
                     const scheduleRows = document.querySelectorAll('.schedule-table tr:not(:first-child)');
                     scheduleData.forEach((match, index) => {
                         if (scheduleRows[index]) {
@@ -1110,8 +1113,8 @@
                         }
                     });
 
-                    const rankingDoc = await db.collection('rankings').doc('data').get();
-                    const rankingData = rankingDoc.exists ? rankingDoc.data().players : [];
+                    const rankingDoc = await getDoc(doc(db, 'rankings', 'data'));
+                    const rankingData = rankingDoc.exists() ? rankingDoc.data().players : [];
                     const rankingRows = document.querySelectorAll('#ranking-table tr:not(:first-child)');
                     rankingData.forEach((player, index) => {
                         if (rankingRows[index]) {
