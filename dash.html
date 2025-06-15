@@ -1,4 +1,43 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -31,10 +70,38 @@
         .award-title { font-family: 'Poppins', sans-serif; font-size: 1.3rem; color: var(--primary-variant-color); margin-bottom: 5px; }
         .award-winner { font-size: 1.1rem; font-weight: 700; color: var(--text-color); }
         .award-value { font-size: 0.9rem; color: var(--text-secondary-color); }
-        .btn { display: inline-block; padding: 12px 28px; margin: 10px 5px; background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: 8px; font-weight: 700; border: none; }
+        .btn { display: inline-block; padding: 12px 28px; margin: 10px 5px; background: linear-gradient(135deg, var(--primary-color), var--variant-color)); color: #FFFFFF; text-decoration: none; border-radius: 8px; font-weight: 700; border: none; }
         html[data-theme="dark"] .btn { color: var(--bg-color); }
         .theme-toggle { position: fixed; top: 20px; right: 20px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        @media (max-width: 640px) { body { padding: 15px; } h1 { font-size: 2.2rem; } h2 { font-size: 1.8rem; } .section { padding: 20px; } .awards-grid { grid-template-columns: 1fr; } }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #333, #111);
+            color: #fff;
+            padding: 12px 25px;
+            border-radius: 50px;
+            box-shadow: 0 5px 15px var(--shadow-color);
+            opacity: 0;
+            transition: opacity 0.4s, transform 0.4s;
+            font-weight: 700;
+            z-index: 1000;
+        }
+        html[data-theme="light"] .toast {
+            background: linear-gradient(135deg, #f9f9f9, #f1f1f1);
+            color: #333;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        @media (max-width: 640px) { 
+            body { padding: 15px; } 
+            h1 { font-size: 2.2rem; } 
+            h2 { font-size: 1.8rem; } 
+            .section { padding: 20px; } 
+            .awards-grid { grid-template-columns: 1fr; } 
+        }
     </style>
 </head>
 <body>
@@ -66,14 +133,22 @@
     </div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
-    const firebaseConfig = { apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU", authDomain: "tennis-plan-jibung.firebaseapp.com", projectId: "tennis-plan-jibung", storageBucket: "tennis-plan-jibung.appspot.com", messagingSenderId: "491083537160", appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd" };
+    const firebaseConfig = { 
+        apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU", 
+        authDomain: "tennis-plan-jibung.firebaseapp.com", 
+        projectId: "tennis-plan-jibung", 
+        storageBucket: "tennis-plan-jibung.appspot.com", 
+        messagingSenderId: "491083537160", 
+        appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd" 
+    };
     let db;
     try { 
         db = getFirestore(initializeApp(firebaseConfig)); 
     } catch (e) { 
         console.error("Firebase 초기화 실패:", e);
+        showToast("Firebase 초기화 실패!");
     }
 
     let mmrChart, radarChart;
@@ -82,31 +157,50 @@
 
     async function loadDashboard() {
         if (!db) {
-            console.error("DB에 연결되지 않았습니다.");
+            showToast("DB 연결 실패!");
             return;
         }
 
         try {
             const rankingSnap = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
             allPlayersData = rankingSnap.exists() ? rankingSnap.data().players || [] : [];
+            console.log("랭킹 데이터:", allPlayersData);
+            if (allPlayersData.length === 0) {
+                showToast("랭킹 데이터 없음!");
+            }
         } catch (error) {
             console.error("랭킹 데이터 로딩 중 에러:", error);
+            showToast("랭킹 데이터 로드 실패!");
+            return;
         }
 
         try {
             const historySnap = await getDoc(doc(db, 'league', 'data', 'mmrHistory', 'v1'));
             fullMmrHistory = historySnap.exists() ? historySnap.data().snapshots || [] : [];
+            console.log("MMR 히스토리:", fullMmrHistory);
+            if (fullMmrHistory.length === 0) {
+                showToast("MMR 히스토리 없음! 승률 그래프로 전환.");
+            }
         } catch (error) {
             console.error("MMR 히스토리 로딩 중 에러:", error);
+            showToast("MMR 히스토리 로드 실패! 승률 그래프로 전환.");
         }
-        
+
         const top5PlayerNames = allPlayersData.slice(0, 5).map(p => p.name);
-        
-        renderMmrChart(fullMmrHistory, top5PlayerNames);
-        setupPlayerSelector();
-        
+        console.log("TOP 5 플레이어:", top5PlayerNames);
+
+        if (top5PlayerNames.length > 0) {
+            const useWinRate = fullMmrHistory.length === 0;
+            renderMmrChart(fullMmrHistory, top5PlayerNames, useWinRate);
+        } else {
+            showToast("TOP 5 플레이어 데이터 부족!");
+        }
+
         if (allPlayersData.length > 0) {
-            renderPlayerRadarChart(allPlayersData[0].name); 
+            setupPlayerSelector();
+            renderPlayerRadarChart(allPlayersData[0].name);
+        } else {
+            showToast("레이더 차트 데이터 부족!");
         }
 
         const awardDetails = {
@@ -120,23 +214,28 @@
             giantKiller: { title: "시즌 자이언트 킬러", icon: "🎯" },
             rivalPair: { title: "시즌 라이벌", icon: "⚔️" }
         };
-        
+
         let awardsData = {};
         try {
             const awardsSnap = await getDoc(doc(db, 'league', 'data', 'awards', 'v1'));
-            if (awardsSnap.exists()) {
-                awardsData = awardsSnap.data();
-            }
-        } catch(error) {
+            awardsData = awardsSnap.exists() ? awardsSnap.data() || {} : {};
+            console.log("어워드 데이터:", awardsData);
+        } catch (error) {
             console.error("어워드 데이터 로딩 중 에러:", error);
+            showToast("어워드 데이터 로드 실패!");
         }
 
         const grid = document.querySelector('.awards-grid');
+        if (!grid) {
+            console.error("awards-grid 요소 없음!");
+            showToast("어워드 그리드 오류!");
+            return;
+        }
         grid.innerHTML = '';
 
         for (const key in awardDetails) {
             const awardInfo = awardDetails[key];
-            const data = awardsData[key] || {};
+            const data = awardsData[key] || { name: '-', value: '-' };
             const winner = data.name || '-';
             const value = data.value || '-';
             
@@ -150,10 +249,16 @@
             `;
             grid.appendChild(card);
         }
+        console.log("어워드 그리드 렌더링 완료!");
     }
 
     function setupPlayerSelector() {
         const select = document.getElementById('player-select');
+        if (!select) {
+            console.error("player-select 요소 없음!");
+            showToast("선수 선택 드롭다운 오류!");
+            return;
+        }
         select.innerHTML = '';
         allPlayersData.forEach(player => {
             const option = document.createElement('option');
@@ -164,17 +269,32 @@
         select.addEventListener('change', (e) => {
             renderPlayerRadarChart(e.target.value);
         });
+        console.log("선수 선택 드롭다운 설정 완료!");
     }
 
     function renderPlayerRadarChart(playerName) {
         const player = allPlayersData.find(p => p.name === playerName);
-        if (!player) return;
+        if (!player) {
+            console.error(`플레이어 ${playerName} 데이터 없음!`);
+            showToast(`플레이어 ${playerName} 데이터 없음!`);
+            return;
+        }
 
-        const ctx = document.getElementById('player-radar-chart').getContext('2d');
+        const ctx = document.getElementById('player-radar-chart')?.getContext('2d');
+        if (!ctx) {
+            console.error("player-radar-chart 캔버스 없음!");
+            showToast("레이더 차트 캔버스 오류!");
+            return;
+        }
+
         const playedPlayers = allPlayersData.filter(p => (parseInt(p.wins || 0) + parseInt(p.losses || 0)) > 0);
-        if (playedPlayers.length === 0) return;
+        if (playedPlayers.length === 0) {
+            console.error("경기한 플레이어 데이터 없음!");
+            showToast("레이더 차트 데이터 부족!");
+            return;
+        }
 
-        const getRank = (p, stat) => [...playedPlayers].sort((a,b) => b[stat] - a[stat]).findIndex(pl => pl.name === p.name) + 1;
+        const getRank = (p, stat) => [...playedPlayers].sort((a,b) => (b[stat] || 0) - (a[stat] || 0)).findIndex(pl => pl.name === p.name) + 1;
         const getPercentileScore = (rank) => playedPlayers.length <= 1 ? 100 : Math.pow((playedPlayers.length - rank) / (playedPlayers.length - 1), 0.7) * 100;
 
         const mmrRank = getRank(player, 'mmr');
@@ -191,13 +311,13 @@
         const dominantRank = getRank(player, 'dominantRate');
         const dominantScore = getPercentileScore(dominantRank);
 
-        const playerMmrHistory = fullMmrHistory.map(h => h.players?.[playerName.replace(/\./g, '_')]).filter(mmr => mmr !== undefined);
+        const playerMmrHistory = fullMmrHistory.map(h => h[playerName.replace(/\*/g, '').replace(/\./g, '_')]).filter(mmr => mmr !== undefined);
         let consistencyScore = 0;
         if (playerMmrHistory.length < 2 || playerMmrHistory.every((v, i, a) => !i || v >= a[i-1])) {
             consistencyScore = 100;
         } else {
-            const mean = playerMmrHistory.reduce((a, b) => a + b) / playerMmrHistory.length;
-            const stddev = Math.sqrt(playerMmrHistory.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / playerMmrHistory.length);
+            const mean = playerMmrHistory.reduce((a, b) => a + b, 0) / playerMmrHistory.length;
+            const stddev = Math.sqrt(playerMmrHistory.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / playerMmrHistory.length);
             consistencyScore = Math.max(0, 100 - (stddev * 2));
         }
         
@@ -221,8 +341,7 @@
         };
 
         if (radarChart) radarChart.destroy();
-        
-        // [수정] 눈금(ticks)이 확실히 보이도록 옵션 수정
+
         const radarOptions = {
             elements: { line: { borderWidth: 3 } },
             scales: {
@@ -231,10 +350,10 @@
                     grid: { color: 'var(--border-color)' },
                     pointLabels: { font: { size: 14 }, color: 'var(--text-color)' },
                     ticks: {
-                        display: true, // 눈금 표시 강제
+                        display: true,
                         stepSize: 20,
                         backdropColor: 'transparent',
-                        color: 'var(--text-secondary-color)' // 눈금 색상
+                        color: 'var(--text-secondary-color)'
                     },
                     min: 0,
                     max: 100
@@ -242,58 +361,196 @@
             },
             plugins: { legend: { labels: { color: 'var(--text-color)', font: { size: 16 } } } }
         };
-        radarChart = new Chart(ctx, { type: 'radar', data: data, options: radarOptions });
+
+        try {
+            radarChart = new Chart(ctx, { type: 'radar', data: data, options: radarOptions });
+            console.log(`레이더 차트 렌더링 완료: ${playerName}`);
+        } catch (error) {
+            console.error("레이더 차트 렌더링 에러:", error);
+            showToast("레이더 차트 렌더링 실패!");
+        }
     }
 
-    function renderMmrChart(history, topPlayers) {
-        if (!history || history.length === 0 || !topPlayers || topPlayers.length === 0) {
+    function renderMmrChart(history, topPlayers, useWinRate = false) {
+        const ctx = document.getElementById('mmr-chart')?.getContext('2d');
+        if (!ctx) {
+            console.error("mmr-chart 캔버스 없음!");
+            showToast("MMR 그래프 캔버스 오류!");
             return;
         }
-        const ctx = document.getElementById('mmr-chart').getContext('2d');
-        const datasets = topPlayers.map((name, index) => {
-            const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
-            const color = colors[index % colors.length];
-            return { 
-                label: name, 
-                // [수정] 데이터 없는 구간(null)에서 선이 이어지도록 spanGaps 추가
-                spanGaps: true,
-                // [수정] 데이터 포인트가 적을 때 곡선이 이상하게 보이는 문제 방지
-                tension: history.length > 2 ? 0.4 : 0,
-                // [수정] h.players가 없을 경우를 대비해 옵셔널 체이닝(?.) 사용
-                data: history.map(h => h.players?.[name.replace(/\./g,'_')] || null), 
-                borderColor: color,
-                backgroundColor: `${color}33`, // 투명 그라데이션 대신 단색 투명으로 변경
-                fill: true, 
-                pointRadius: 3,
-                pointHoverRadius: 6
+
+        if (!topPlayers || topPlayers.length === 0) {
+            console.error("TOP 플레이어 데이터 없음:", topPlayers);
+            showToast("TOP 플레이어 데이터 부족!");
+            return;
+        }
+
+        let datasets, labels, yAxisConfig;
+        if (useWinRate) {
+            // 승률 추이 그래프
+            document.querySelector('#mmr-chart').parentElement.querySelector('h3').textContent = "TOP 5 승률 추이";
+            const winRateHistory = [];
+            let maxGames = 0;
+            topPlayers.forEach(name => {
+                const player = allPlayersData.find(p => p.name === name);
+                if (player) {
+                    const totalGames = (parseInt(player.wins || 0) + parseInt(player.losses || 0)) || 1;
+                    maxGames = Math.max(maxGames, totalGames);
+                }
+            });
+
+            for (let i = 1; i <= maxGames; i++) {
+                const snapshot = { game: i };
+                topPlayers.forEach(name => {
+                    const player = allPlayersData.find(p => p.name === name);
+                    if (player) {
+                        const wins = parseInt(player.wins || 0);
+                        const losses = parseInt(player.losses || 0);
+                        const gamesPlayed = wins + losses;
+                        const winRate = gamesPlayed >= i ? (wins / Math.max(gamesPlayed, 1)) * 100 : null;
+                        snapshot[name.replace(/\*/g, '').replace(/\./g, '_')] = winRate;
+                    }
+                });
+                winRateHistory.push(snapshot);
+            }
+
+            datasets = topPlayers.map((name, index) => {
+                const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+                const color = colors[index % colors.length];
+                const data = winRateHistory.map(h => {
+                    const key = name.replace(/\*/g, '').replace(/\./g, '_');
+                    return h[key] !== undefined ? h[key] : null;
+                });
+                console.log(`승률 그래프 - 플레이어 ${name} 데이터:`, data);
+                return {
+                    label: name,
+                    spanGaps: true,
+                    tension: winRateHistory.length > 2 ? 0.4 : 0,
+                    data,
+                    borderColor: color,
+                    backgroundColor: `${color}33`,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 8
+                };
+            });
+
+            labels = winRateHistory.map((h, i) => `${h.game}경기`);
+            yAxisConfig = {
+                ticks: { color: 'var(--text-secondary-color)' },
+                grid: { color: 'var(--border-color)' },
+                suggestedMin: 0,
+                suggestedMax: 100,
+                title: { display: true, text: '승률 (%)', color: 'var(--text-color)' }
             };
-        });
+        } else {
+            // MMR 추이 그래프
+            if (!history || history.length === 0) {
+                console.error("MMR 히스토리 데이터 없음:", history);
+                showToast("MMR 히스토리 데이터 부족! 승률 그래프로 전환.");
+                return renderMmrChart([], topPlayers, true);
+            }
+
+            datasets = topPlayers.map((name, index) => {
+                const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+                const color = colors[index % colors.length];
+                const data = history.map(h => {
+                    const key = name.replace(/\*/g, '').replace(/\./g, '_');
+                    return h && h[key] !== undefined ? h[key] : null;
+                });
+                console.log(`MMR 그래프 - 플레이어 ${name} 데이터:`, data);
+                return {
+                    label: name,
+                    spanGaps: true,
+                    tension: history.length > 2 ? 0.4 : 0,
+                    data,
+                    borderColor: color,
+                    backgroundColor: `${color}33`,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 8
+                };
+            });
+
+            labels = history.map((h, i) => `${h?.game || i + 1}경기`);
+            yAxisConfig = {
+                ticks: { color: 'var(--text-secondary-color)' },
+                grid: { color: 'var(--border-color)' },
+                suggestedMin: 1400,
+                suggestedMax: 1700,
+                title: { display: true, text: 'MMR', color: 'var(--text-color)' }
+            };
+        }
 
         if (mmrChart) mmrChart.destroy();
 
+        console.log("그래프 레이블:", labels);
+
         const lineOptions = {
             scales: {
-                x: { ticks: { color: 'var(--text-secondary-color)' }, grid: { color: 'var(--border-color)' } },
-                y: { ticks: { color: 'var(--text-secondary-color)' }, grid: { color: 'var(--border-color)' } }
+                x: {
+                    ticks: { color: 'var(--text-secondary-color)' },
+                    grid: { color: 'var(--border-color)' }
+                },
+                y: yAxisConfig
             },
-            plugins: { legend: { labels: { color: 'var(--text-color)' } } }
+            plugins: {
+                legend: { labels: { color: 'var(--text-color)' } },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    callbacks: {
+                        label: (context) => `${context.dataset.label}: ${context.parsed.y}${useWinRate ? '%' : ''}`
+                    }
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                intersect: false
+            }
         };
-        mmrChart = new Chart(ctx, { type: 'line', data: { labels: history.map((h, i) => `${h.game || i + 1}경기`), datasets }, options: lineOptions });
+
+        try {
+            mmrChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: lineOptions
+            });
+            console.log(`${useWinRate ? '승률' : 'MMR'} 차트 렌더링 완료!`);
+        } catch (error) {
+            console.error("Chart.js 렌더링 에러:", error);
+            showToast("그래프 렌더링 실패!");
+        }
     }
-    
-    // [수정] 테마 변경 시 차트 업데이트 로직 단순화 및 강화
-    function applyTheme(theme) { 
+
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }, 100);
+    }
+
+    function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         document.getElementById('theme-toggle').textContent = theme === 'dark' ? '☀️' : '🌙';
         localStorage.setItem('theme', theme);
     
-        if (radarChart) {
-            // CSS 변수가 즉시 적용되므로 차트 전체를 다시 그리는게 가장 확실함
+        if (radarChart && document.getElementById('player-select')?.value) {
             renderPlayerRadarChart(document.getElementById('player-select').value);
         }
-        if (mmrChart) {
-             const top5 = allPlayersData.slice(0, 5).map(p => p.name);
-             renderMmrChart(fullMmrHistory, top5);
+        if (mmrChart && allPlayersData.length > 0) {
+            const top5 = allPlayersData.slice(0, 5).map(p => p.name);
+            const useWinRate = fullMmrHistory.length === 0;
+            renderMmrChart(fullMmrHistory, top5, useWinRate);
         }
     }
 
