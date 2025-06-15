@@ -21,12 +21,37 @@
         .section { background: var(--surface-color); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
         h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: 10px; padding-bottom: 10px; border-bottom: 2px solid var(--border-color); }
         details { margin-bottom: 1rem; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
-        details summary { background: linear-gradient(135deg, #2a2a2a, #222222); padding: 12px 15px; cursor: pointer; font-size: 1.1rem; font-weight: 700; color: var(--secondary-color); outline: none; transition: background 0.3s ease; }
-        html[data-theme="light"] details summary { background: linear-gradient(135deg, #f9f9f9, #f1f1f1); color: var(--text-color); }
-        details[open] summary { background: var(--primary-color); color: var(--bg-color); }
-        html[data-theme="light"] details[open] summary { color: var(--secondary-color); }
-        details.round-group > summary { background: var(--surface-color); border: 1px solid var(--primary-color); font-size: 1.3rem; font-weight: 900; color: var(--secondary-color); }
-        html[data-theme="light"] details.round-group > summary { color: var(--text-color); }
+        details summary {
+            padding: 12px 15px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 700;
+            outline: none;
+            transition: background 0.3s ease, color 0.3s ease;
+            background: linear-gradient(135deg, #2a2a2a, #222222); 
+            color: var(--secondary-color);
+        }
+        html[data-theme="light"] details summary {
+            background: linear-gradient(135deg, #f9f9f9, #f1f1f1); 
+            color: var(--text-color);
+        }
+        details[open] > summary {
+            background: var(--primary-color);
+            color: var(--bg-color);
+        }
+        html[data-theme="light"] details[open] > summary {
+            color: var(--secondary-color);
+        }
+        details.round-group > summary {
+            background: var(--surface-color);
+            border: 1px solid var(--primary-color);
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: var(--secondary-color);
+        }
+        html[data-theme="light"] details.round-group > summary {
+            color: var(--text-color);
+        }
         .round-group-content { padding: 15px 10px 5px 10px; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border-color); }
         html[data-theme="light"] .round-group-content { background: rgba(0,0,0,0.02); }
         .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -339,22 +364,22 @@
 
                     sortedPlayers.forEach(p => {
                         if ((p.wins + p.losses) === 0) { p.mvpScore = 0; return; }
-                        const normalize = (val, min, max) => (max - min) > 0 ? (val - min) / (max - min) : 0.5;
-                        const mmrScore = normalize(p.mmr, minMmr, maxMmr) * 3.0;
-                        const winRateScore = (p.wins / (p.wins + p.losses)) * 3.0;
-                        const gameDiffScore = normalize(p.gameDiff, minGameDiff, maxGameDiff) * 2.0;
-                        const champScore = (maxChamps > 0 ? p.championships / maxChamps : 0) * 2.0;
-                        p.mvpScore = mmrScore + winRateScore + gameDiffScore + champScore;
+                        const normalize = (val, min, max) => (max - min) > 0 ? (val - min) / (max - min) : 0;
+                        const mmrScore = normalize(p.mmr, minMmr, maxMmr) * 3.0; // MMR (30%)
+                        const winRateScore = (p.wins / (p.wins + p.losses)) * 3.0; // 승률 (30%)
+                        const gameDiffScore = normalize(p.gameDiff, minGameDiff, maxGameDiff) * 2.0; // 게임득실 (20%)
+                        const champScore = (maxChamps > 0 ? p.championships / maxChamps : 0) * 2.0; // 우승 (20%)
+                        p.mvpScore = mmrScore + winRateScore + gameDiffScore + champScore; // 총 10점 만점
                     });
                      awards.mvp = sortedPlayers.reduce((prev, curr) => (prev.mvpScore >= curr.mvpScore) ? prev : curr);
                 }
                 
-                awards.formKing = sortedPlayers.reduce((prev, curr) => ((prev.totalSets > 0 ? prev.dominantWins / prev.totalSets : 0) >= (curr.totalSets > 0 ? curr.dominantWins / curr.totalSets : 0)) ? prev : curr);
-                awards.victoryFairy = sortedPlayers.reduce((prev, curr) => (prev.championships >= curr.championships) ? prev : curr);
-                awards.mostImproved = sortedPlayers.reduce((prev, curr) => ((prev.mmr - BASE_MMR) >= (curr.mmr - BASE_MMR)) ? prev : curr);
-                awards.clutchKing = sortedPlayers.reduce((prev, curr) => ((prev.closeSets > 0 ? prev.closeWins / prev.closeSets : 0) >= (curr.closeSets > 0 ? curr.closeWins / curr.closeSets : 0)) ? prev : curr);
-                awards.courtKiller = sortedPlayers.reduce((prev, curr) => (prev.gameDiff >= curr.gameDiff) ? prev : curr);
-
+                awards.formKing = sortedPlayers.reduce((prev, curr) => ((prev.totalSets > 0 ? prev.dominantWins / prev.totalSets : 0) >= (curr.totalSets > 0 ? curr.dominantWins / curr.totalSets : 0)) ? prev : curr, sortedPlayers[0]);
+                awards.victoryFairy = sortedPlayers.reduce((prev, curr) => (prev.championships >= curr.championships) ? prev : curr, sortedPlayers[0]);
+                awards.mostImproved = sortedPlayers.reduce((prev, curr) => ((prev.mmr - BASE_MMR) >= (curr.mmr - BASE_MMR)) ? prev : curr, sortedPlayers[0]);
+                awards.clutchKing = sortedPlayers.reduce((prev, curr) => ((prev.closeSets > 0 ? prev.closeWins / prev.closeSets : 0) >= (curr.closeSets > 0 ? curr.closeWins / curr.closeSets : 0)) ? prev : curr, sortedPlayers[0]);
+                awards.courtKiller = sortedPlayers.reduce((prev, curr) => (prev.gameDiff >= curr.gameDiff) ? prev : curr, sortedPlayers[0]);
+                
                 let giantKillerName = '-', maxKills = 0;
                 Object.keys(giantKillStats).forEach(name => { if(giantKillStats[name] > maxKills) { maxKills = giantKillStats[name]; giantKillerName = name; }});
                 awards.giantKiller = { name: giantKillerName, value: maxKills };
