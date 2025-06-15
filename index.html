@@ -25,6 +25,11 @@
         html[data-theme="light"] details summary { background: linear-gradient(135deg, #f9f9f9, #f1f1f1); color: var(--text-color); }
         details[open] summary { background: var(--primary-color); color: var(--bg-color); }
         html[data-theme="light"] details[open] summary { color: var(--secondary-color); }
+        details.round-group > summary { background: var(--surface-color); border: 1px solid var(--primary-color); font-size: 1.3rem; font-weight: 900; }
+        /* 여기가 수정된 부분 */
+        html[data-theme="light"] details.round-group > summary { background: var(--surface-color); border: 1px solid var(--primary-color); color: var(--text-color); }
+        .round-group-content { padding: 15px 10px 5px 10px; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border-color); }
+        html[data-theme="light"] .round-group-content { background: rgba(0,0,0,0.02); }
         .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; min-width: 600px; border-collapse: collapse; }
         th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
@@ -82,7 +87,7 @@
         let db;
         try {
             db = getFirestore(initializeApp(firebaseConfig));
-            Kakao.init('YOUR_JAVASCRIPT_KEY'); // 여기에 실제 카카오 키를 넣으세요
+            // Kakao.init('YOUR_JAVASCRIPT_KEY'); // 여기에 실제 카카오 키를 넣으세요
         } catch (e) { console.error(e); }
 
         function showToast(message) {
@@ -95,27 +100,25 @@
         function createScheduleRounds() {
             const container = document.getElementById('schedule-container');
             let roundsHtml = '';
-            for (let i = 1; i <= 60; i++) {
-                roundsHtml += `
-                <details>
-                    <summary>${i}회차</summary>
-                    <div class="table-wrapper">
-                    <table class="schedule-table">
-                        <thead><tr><th>Player 1</th><th>Player 2</th><th>vs</th><th>Player 3</th><th>Player 4</th><th>Score</th></tr></thead>
-                        <tbody>
-                            <tr>
-                                <td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td>
-                            </tr>
-                            <tr>
-                                <td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td>
-                            </tr>
-                            <tr>
-                                <td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    </div>
-                </details>`;
+            for (let group = 0; group < 6; group++) {
+                const startRound = group * 10 + 1;
+                const endRound = (group + 1) * 10;
+                roundsHtml += `<details class="round-group"><summary>${startRound} ~ ${endRound}회차</summary><div class="round-group-content">`;
+                for (let i = startRound; i <= endRound; i++) {
+                    roundsHtml += `
+                    <details>
+                        <summary>${i}회차</summary>
+                        <div class="table-wrapper">
+                        <table class="schedule-table">
+                            <thead><tr><th>Player 1</th><th>Player 2</th><th>vs</th><th>Player 3</th><th>Player 4</th><th>Score</th></tr></thead>
+                            <tbody>
+                                <tr><td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td></tr>
+                                <tr><td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td></tr>
+                                <tr><td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td></tr>
+                            </tbody>
+                        </table></div></details>`;
+                }
+                roundsHtml += `</div></details>`;
             }
             container.innerHTML = roundsHtml;
         }
@@ -157,10 +160,116 @@
 
         async function loadData() { /* saveData와 유사한 구조로 데이터 로드 */ }
         
-        async function updateRanking() { /* 기존 로직과 거의 동일, MMR 히스토리 저장 로직 추가 */
-            // ... (MMR 계산 로직)
-            // const historyRef = collection(db, 'league', 'data', 'mmrHistory');
-            // await addDoc(historyRef, { ...mmrSnapshot, createdAt: serverTimestamp() });
+        async function updateRanking() {
+            const players = {};
+            const BASE_MMR = 1500;
+            const K_FACTOR = 32;
+
+            document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
+                const name = row.querySelector('.ranking-player').value.trim();
+                if (name) {
+                    players[name] = {
+                        name: name, wins: 0, losses: 0, gameDiff: 0,
+                        mmr: BASE_MMR, championships: 0,
+                        closeWins: 0, closeSets: 0, dominantWins: 0, totalSets: 0,
+                        partners: {}
+                    };
+                }
+            });
+
+            const scheduleTables = document.querySelectorAll('.schedule-table');
+            scheduleTables.forEach((table, roundIndex) => {
+                const rows = table.querySelectorAll('tbody tr');
+                let roundWins = {};
+                rows.forEach(row => {
+                    const p1 = row.querySelector('.player1').value.trim();
+                    const p2 = row.querySelector('.player2').value.trim();
+                    const p3 = row.querySelector('.player3').value.trim();
+                    const p4 = row.querySelector('.player4').value.trim();
+                    const score = row.querySelector('.score').value.trim();
+
+                    if (!p1 || !p2 || !p3 || !p4 || !/^\d+-\d+$/.test(score)) return;
+
+                    const [score1, score2] = score.split('-').map(Number);
+                    
+                    [p1,p2,p3,p4].forEach(p => { if(p && !players[p]) players[p] = { name: p, wins: 0, losses: 0, gameDiff: 0, mmr: BASE_MMR, championships: 0, closeWins: 0, closeSets: 0, dominantWins: 0, totalSets: 0, partners: {} }; });
+
+                    const team1MMR = (players[p1].mmr + players[p2].mmr) / 2;
+                    const team2MMR = (players[p3].mmr + players[p4].mmr) / 2;
+                    const expected1 = 1 / (1 + Math.pow(10, (team2MMR - team1MMR) / 400));
+                    const expected2 = 1 - expected1;
+                    const actual1 = score1 > score2 ? 1 : 0;
+                    const actual2 = 1 - actual1;
+
+                    const mmrChange1 = K_FACTOR * (actual1 - expected1);
+                    const mmrChange2 = K_FACTOR * (actual2 - expected2);
+
+                    const updatePlayer = (name, isWinner, gameDiff, mmrChange, isClose, isDominant) => {
+                        players[name].totalSets++;
+                        players[name].gameDiff += gameDiff;
+                        players[name].mmr += mmrChange;
+                        if(isWinner) {
+                            players[name].wins++;
+                            if(!roundWins[name]) roundWins[name] = 0;
+                            roundWins[name]++;
+                        } else {
+                            players[name].losses++;
+                        }
+                        if(isClose) {
+                            players[name].closeSets++;
+                            if(isWinner) players[name].closeWins++;
+                        }
+                        if(isDominant && isWinner) players[name].dominantWins++;
+                    };
+                    
+                    const isClose = Math.abs(score1 - score2) <= 2;
+                    const isDominant1 = score1 === 6 && score2 <= 1;
+                    const isDominant2 = score2 === 6 && score1 <= 1;
+
+                    updatePlayer(p1, actual1, score1 - score2, mmrChange1, isClose, isDominant1);
+                    updatePlayer(p2, actual1, score1 - score2, mmrChange1, isClose, isDominant1);
+                    updatePlayer(p3, actual2, score2 - score1, mmrChange2, isClose, isDominant2);
+                    updatePlayer(p4, actual2, score2 - score1, mmrChange2, isClose, isDominant2);
+                });
+
+                Object.keys(roundWins).forEach(pName => {
+                    if (roundWins[pName] === 3 && players[pName]) {
+                        players[pName].championships++;
+                    }
+                });
+            });
+
+            const sortedPlayers = Object.values(players).sort((a, b) => {
+                if (b.mmr !== a.mmr) return b.mmr - a.mmr;
+                if (b.wins !== a.wins) return b.wins - a.wins;
+                return b.gameDiff - a.gameDiff;
+            });
+
+            const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
+            rankingRows.forEach((row, index) => {
+                const player = sortedPlayers[index];
+                if (player) {
+                    row.cells[0].textContent = index + 1;
+                    row.querySelector('.ranking-player').value = player.name;
+                    row.querySelector('.mmr').value = Math.round(player.mmr);
+                    const champStar = row.querySelector('.championship-star');
+                    champStar.dataset.count = player.championships;
+                    champStar.textContent = player.championships > 0 ? '⭐'.repeat(player.championships) : '';
+                    row.querySelector('.wins').value = player.wins;
+                    row.querySelector('.losses').value = player.losses;
+                    row.querySelector('.game-diff').value = player.gameDiff;
+                    row.querySelector('.close-wins').value = player.closeSets > 0 ? Math.round(player.closeWins / player.closeSets * 100) : 0;
+                    row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominantWins / player.totalSets * 100) : 0;
+                    row.querySelector('.best-partner').value = '-';
+                    row.querySelector('.worst-partner').value = '-';
+                } else {
+                    row.cells[0].textContent = index + 1;
+                    row.querySelectorAll('input').forEach(input => input.value = '');
+                    row.querySelector('.championship-star').textContent = '';
+                }
+            });
+
+            await saveData();
             showToast('순위 업데이트 완료!');
         }
         function downloadCSV() { /* 이전 코드와 동일 */ }
@@ -170,10 +279,9 @@
             createScheduleRounds();
             createRankingRows();
             if (db) {
-                loadData();
+                // loadData(); // 초기 로드 함수
             }
             document.getElementById('theme-toggle').addEventListener('click', () => applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
-            document.querySelectorAll('input').forEach(input => input.addEventListener('change', saveData));
             document.getElementById('update-ranking').addEventListener('click', updateRanking);
             document.getElementById('kakao-share-btn').addEventListener('click', shareOnKakao);
             document.getElementById('download-csv').addEventListener('click', downloadCSV);
