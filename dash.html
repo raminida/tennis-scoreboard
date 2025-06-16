@@ -70,7 +70,7 @@
         .award-title { font-family: 'Poppins', sans-serif; font-size: 1.3rem; color: var(--primary-variant-color); margin-bottom: 5px; }
         .award-winner { font-size: 1.1rem; font-weight: 700; color: var(--text-color); }
         .award-value { font-size: 0.9rem; color: var(--text-secondary-color); }
-        .btn { display: inline-block; padding: 12px 28px; margin: 10px 5px; background: linear-gradient(135deg, var(--primary-color), var--variant-color)); color: #FFFFFF; text-decoration: none; border-radius: 8px; font-weight: 700; border: none; }
+        .btn { display: inline-block; padding: 12px 28px; margin: 10px 5px; background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: 8px; font-weight: 700; border: none; }
         html[data-theme="dark"] .btn { color: var(--bg-color); }
         .theme-toggle { position: fixed; top: 20px; right: 20px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .toast {
@@ -111,7 +111,7 @@
         <div class="section">
             <h2>통계 차트</h2>
             <div class="charts-container">
-                <div>
+                <div id="mmr-chart-container">
                     <h3>TOP 5 MMR 추이</h3>
                     <canvas id="mmr-chart"></canvas>
                 </div>
@@ -133,7 +133,7 @@
     </div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
     const firebaseConfig = { 
         apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU", 
@@ -161,6 +161,7 @@
             return;
         }
 
+        // 1. 랭킹 데이터 로드
         try {
             const rankingSnap = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
             allPlayersData = rankingSnap.exists() ? rankingSnap.data().players || [] : [];
@@ -169,23 +170,166 @@
                 showToast("랭킹 데이터 없음!");
             }
         } catch (error) {
-            console.error("랭킹 데이터 로딩 중 에러:", error);
+            console.error("랭킹 데이터 로딩 중 에러:", error.message);
             showToast("랭킹 데이터 로드 실패!");
             return;
         }
 
+        // 2. MMR 히스토리 로드
         try {
             const historySnap = await getDoc(doc(db, 'league', 'data', 'mmrHistory', 'v1'));
-            fullMmrHistory = historySnap.exists() ? historySnap.data().snapshots || [] : [];
-            console.log("MMR 히스토리:", fullMmrHistory);
-            if (fullMmrHistory.length === 0) {
-                showToast("MMR 히스토리 없음! 승률 그래프로 전환.");
+            if (historySnap.exists()) {
+                fullMmrHistory = historySnap.data().snapshots || [];
+                console.log("MMR 히스토리:", fullMmrHistory);
+                if (fullMmrHistory.length === 0) {
+                    showToast("MMR 히스토리 데이터 비어 있음! 승률 그래프로 전환.");
+                }
+            } else {
+                console.error("mmrHistory/v1 문서 없음!");
+                showToast("MMR 히스토리 문서 없음! 승률 그래프로 전환.");
+                fullMmrHistory = [];
             }
         } catch (error) {
-            console.error("MMR 히스토리 로딩 중 에러:", error);
+            console.error("MMR 히스토리 로딩 중 에러:", error.message);
             showToast("MMR 히스토리 로드 실패! 승률 그래프로 전환.");
+            fullMmrHistory = [];
         }
 
+        // 3. 어워드 데이터 로드
+        let awardsData = {};
+        try {
+            const awardsSnap = await getDoc(doc(db, 'league', 'data', 'awards', 'v1'));
+            awardsData = awardsSnap.exists() ? awardsSnap.data() || {} : {};
+            console.log("어워드 데이터:", awardsData);
+        } catch (error) {
+            console.error("어워드 데이터 로딩 중 에러:", error.message);
+            showToast("어워드 데이터 로드 실패!");
+        }
+
+        // 4. 어워드 계산 및 저장
+        if (allPlayersData.length > 0) {
+            const playedPlayers = allPlayersData.filter(p => (parseInt(p.wins || 0) + parseInt(p.losses || 0)) >= 5); // 최소 5경기
+            if (playedPlayers.length > 0) {
+                const getRank = (p, stat) => [...playedPlayers].sort((a, b) => (b[stat] || 0) - (a[stat] || 0)).findIndex(pl => pl.name === p.name) + 1;
+                const getPercentileScore = (rank) => playedPlayers.length <= 1 ? 100 : Math.pow((playedPlayers.length - rank) / (playedPlayers.length - 1), 0.7) * 100;
+
+                // 시즌 MVP 계산
+                let mvpPlayer = null;
+                let maxMvpScore = -Infinity;
+
+                // 시즌 발전상 계산
+                let mostImprovedPlayer = null;
+                let maxImprovedScore = -Infinity;
+
+                // 시즌 코트 킬러 계산
+                let courtKillerPlayer = null;
+                let maxCourtKillerScore = -Infinity;
+
+                playedPlayers.forEach(player => {
+                    // MMR 점수 (MVP용)
+                    const mmrRank = getRank(player, 'mmr');
+                    const mmrScore = getPercentileScore(mmrRank) / 10;
+
+                    // 승률 점수
+                    player.winRate = (player.wins + player.losses) > 0 ? player.wins / (player.wins + player.losses) : 0;
+                    const winRateRank = getRank(player, 'winRate');
+                    const winRateScore = getPercentileScore(winRateRank) / 10;
+
+                    // 우승 횟수 점수
+                    const champRank = getRank(player, 'championships');
+                    const champScore = getPercentileScore(champRank) / 10;
+
+                    // 압도승률 점수
+                    player.dominantRate = player.totalSets > 0 ? (player.dominantWins || 0) / player.totalSets : 0;
+                    const dominantRank = getRank(player, 'dominantRate');
+                    const dominantScore = getPercentileScore(dominantRank) / 10;
+
+                    // 게임 득실률 점수
+                    player.gameDiffRate = player.totalSets > 0 ? (player.gameDiff || 0) / player.totalSets : 0;
+                    const gameDiffRank = getRank(player, 'gameDiffRate');
+                    const gameDiffScore = getPercentileScore(gameDiffRank) / 10;
+
+                    // MVP 종합 점수
+                    const mvpScore = ((mmrScore + winRateScore + champScore + dominantScore + gameDiffScore) / 5).toFixed(1);
+                    if (parseFloat(mvpScore) > maxMvpScore) {
+                        maxMvpScore = parseFloat(mvpScore);
+                        mvpPlayer = { name: player.name, value: mvpScore };
+                    }
+
+                    // 발전상 계산
+                    // MMR 증가율
+                    const playerHistory = fullMmrHistory.map(h => h[player.name.replace(/\*/g, '').replace(/\./g, '_')]).filter(mmr => mmr !== undefined);
+                    const initialMMR = playerHistory.length > 0 ? playerHistory[0] : 1500;
+                    player.mmrGrowthRate = initialMMR > 0 ? ((player.mmr - initialMMR) / initialMMR * 100) : 0;
+                    const mmrGrowthRank = getRank(player, 'mmrGrowthRate');
+                    const mmrGrowthScore = getPercentileScore(mmrGrowthRank) / 10;
+
+                    // 승률 개선 (첫 3경기 vs 마지막 3경기)
+                    const earlyGames = playerHistory.slice(0, 3);
+                    const lateGames = playerHistory.slice(-3);
+                    const earlyWins = earlyGames.filter((_, i) => i % 2 === 0 && earlyGames[i + 1] > earlyGames[i]).length;
+                    const earlyLosses = earlyGames.filter((_, i) => i % 2 === 0 && earlyGames[i + 1] < earlyGames[i]).length;
+                    const lateWins = lateGames.filter((_, i) => i % 2 === 0 && lateGames[i + 1] > lateGames[i]).length;
+                    const lateLosses = lateGames.filter((_, i) => i % 2 === 0 && lateGames[i + 1] < lateGames[i]).length;
+                    const earlyWinRate = (earlyWins + earlyLosses) > 0 ? earlyWins / (earlyWins + earlyLosses) : 0;
+                    const lateWinRate = (lateWins + lateLosses) > 0 ? lateWins / (lateWins + lateLosses) : 0;
+                    player.winRateImprovement = lateWinRate - earlyWinRate;
+                    const winRateImproveRank = getRank(player, 'winRateImprovement');
+                    const winRateImproveScore = getPercentileScore(winRateImproveRank) / 10;
+
+                    // 압도승 비율 증가
+                    const earlyDominant = earlyGames.filter((_, i) => i % 2 === 0 && earlyGames[i] >= 6 && earlyGames[i + 1] <= 1).length;
+                    const lateDominant = lateGames.filter((_, i) => i % 2 === 0 && lateGames[i] >= 6 && lateGames[i + 1] <= 1).length;
+                    const earlyDominantRate = earlyGames.length > 0 ? earlyDominant / (earlyGames.length / 2) : 0;
+                    const lateDominantRate = lateGames.length > 0 ? lateDominant / (lateGames.length / 2) : 0;
+                    player.dominantRateImprovement = lateDominantRate - earlyDominantRate;
+                    const dominantImproveRank = getRank(player, 'dominantRateImprovement');
+                    const dominantImproveScore = getPercentileScore(dominantImproveRank) / 10;
+
+                    // 발전상 종합 점수
+                    const improvedScore = ((mmrGrowthScore * 0.4) + (winRateImproveScore * 0.3) + (dominantImproveScore * 0.3)).toFixed(1);
+                    if (parseFloat(improvedScore) > maxImprovedScore) {
+                        maxImprovedScore = parseFloat(improvedScore);
+                        mostImprovedPlayer = { name: player.name, value: improvedScore };
+                    }
+
+                    // 코트 킬러 점수
+                    const courtKillerRank = getRank(player, 'gameDiffRate');
+                    const courtKillerScore = getPercentileScore(courtKillerRank) / 10;
+                    if (courtKillerScore > maxCourtKillerScore) {
+                        maxCourtKillerScore = courtKillerScore;
+                        courtKillerPlayer = { name: player.name, value: courtKillerScore.toFixed(1) };
+                    }
+                });
+
+                // awards/v1에 저장
+                try {
+                    await setDoc(doc(db, 'league', 'data', 'awards', 'v1'), {
+                        mvp: mvpPlayer || { name: '-', value: '-' },
+                        mostImproved: mostImprovedPlayer || { name: '-', value: '-' },
+                        courtKiller: courtKillerPlayer || { name: '-', value: '-' },
+                        formKing: awardsData.formKing || { name: '-', value: '-' },
+                        victoryFairy: awardsData.victoryFairy || { name: '-', value: '-' },
+                        clutchKing: awardsData.clutchKing || { name: '-', value: '-' },
+                        bestDoubles: awardsData.bestDoubles || { name: '-', value: '-' },
+                        giantKiller: awardsData.giantKiller || { name: '-', value: '-' },
+                        rivalPair: awardsData.rivalPair || { name: '-', value: '-' }
+                    }, { merge: true });
+                    console.log("어워드 저장 완료:", { mvp: mvpPlayer, mostImproved: mostImprovedPlayer, courtKiller: courtKillerPlayer });
+                } catch (error) {
+                    console.error("어워드 저장 실패:", error.message);
+                    showToast("어워드 저장 실패!");
+                }
+            } else {
+                console.warn("경기한 플레이어 없음!");
+                showToast("어워드 계산을 위한 데이터 부족!");
+            }
+        } else {
+            console.warn("플레이어 데이터 없음!");
+            showToast("랭킹 데이터 부족!");
+        }
+
+        // 5. TOP 5 플레이어 및 그래프 렌더링
         const top5PlayerNames = allPlayersData.slice(0, 5).map(p => p.name);
         console.log("TOP 5 플레이어:", top5PlayerNames);
 
@@ -196,6 +340,7 @@
             showToast("TOP 5 플레이어 데이터 부족!");
         }
 
+        // 6. 레이더 차트 및 어워드 그리드
         if (allPlayersData.length > 0) {
             setupPlayerSelector();
             renderPlayerRadarChart(allPlayersData[0].name);
@@ -214,16 +359,6 @@
             giantKiller: { title: "시즌 자이언트 킬러", icon: "🎯" },
             rivalPair: { title: "시즌 라이벌", icon: "⚔️" }
         };
-
-        let awardsData = {};
-        try {
-            const awardsSnap = await getDoc(doc(db, 'league', 'data', 'awards', 'v1'));
-            awardsData = awardsSnap.exists() ? awardsSnap.data() || {} : {};
-            console.log("어워드 데이터:", awardsData);
-        } catch (error) {
-            console.error("어워드 데이터 로딩 중 에러:", error);
-            showToast("어워드 데이터 로드 실패!");
-        }
 
         const grid = document.querySelector('.awards-grid');
         if (!grid) {
@@ -366,7 +501,7 @@
             radarChart = new Chart(ctx, { type: 'radar', data: data, options: radarOptions });
             console.log(`레이더 차트 렌더링 완료: ${playerName}`);
         } catch (error) {
-            console.error("레이더 차트 렌더링 에러:", error);
+            console.error("레이더 차트 렌더링 에러:", error.message);
             showToast("레이더 차트 렌더링 실패!");
         }
     }
@@ -375,7 +510,7 @@
         const ctx = document.getElementById('mmr-chart')?.getContext('2d');
         if (!ctx) {
             console.error("mmr-chart 캔버스 없음!");
-            showToast("MMR 그래프 캔버스 오류!");
+            showToast("그래프 캔버스 오류!");
             return;
         }
 
@@ -385,10 +520,20 @@
             return;
         }
 
+        // <h3> 요소 안전 처리 및 디버깅
+        const chartContainer = document.getElementById('mmr-chart-container');
+        const titleElement = chartContainer?.querySelector('h3');
+        console.log("MMR 차트 컨테이너:", chartContainer);
+        console.log("MMR 차트 제목(h3):", titleElement);
+        if (titleElement) {
+            titleElement.textContent = useWinRate ? "TOP 5 승률 추이" : "TOP 5 MMR 추이";
+        } else {
+            console.warn("MMR 그래프 제목(h3) 요소를 찾을 수 없음! HTML 구조 확인 필요.");
+            showToast("MMR 그래프 제목 오류!");
+        }
+
         let datasets, labels, yAxisConfig;
         if (useWinRate) {
-            // 승률 추이 그래프
-            document.querySelector('#mmr-chart').parentElement.querySelector('h3').textContent = "TOP 5 승률 추이";
             const winRateHistory = [];
             let maxGames = 0;
             topPlayers.forEach(name => {
@@ -444,7 +589,6 @@
                 title: { display: true, text: '승률 (%)', color: 'var(--text-color)' }
             };
         } else {
-            // MMR 추이 그래프
             if (!history || history.length === 0) {
                 console.error("MMR 히스토리 데이터 없음:", history);
                 showToast("MMR 히스토리 데이터 부족! 승률 그래프로 전환.");
@@ -520,7 +664,7 @@
             });
             console.log(`${useWinRate ? '승률' : 'MMR'} 차트 렌더링 완료!`);
         } catch (error) {
-            console.error("Chart.js 렌더링 에러:", error);
+            console.error("Chart.js 렌더링 에러:", error.message);
             showToast("그래프 렌더링 실패!");
         }
     }
@@ -557,14 +701,21 @@
     document.addEventListener('DOMContentLoaded', () => {
         const savedTheme = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
-        document.getElementById('theme-toggle').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        } else {
+            console.warn("theme-toggle 요소를 찾을 수 없음!");
+        }
         
         loadDashboard();
 
-        document.getElementById('theme-toggle').addEventListener('click', () => {
-            const newTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            applyTheme(newTheme);
-        });
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const newTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                applyTheme(newTheme);
+            });
+        }
     });
 </script>
 </body>
