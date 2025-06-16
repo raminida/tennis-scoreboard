@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -92,6 +53,9 @@
         <div class="section">
             <h2>경기 일정</h2>
             <div id="schedule-container"></div>
+            <button id="save-schedule" class="btn">일정 저장</button>
+            <button id="save-matches" class="btn">매치 데이터 저장</button>
+            <button id="save-rankings" class="btn">랭킹 저장</button>
             <button id="update-ranking" class="update-btn">순위 업데이트</button>
         </div>
         <div class="section">
@@ -145,8 +109,8 @@
 </script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
-    
+    import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+
     const firebaseConfig = { 
         apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU", 
         authDomain: "tennis-plan-jibung.firebaseapp.com", 
@@ -155,7 +119,7 @@
         messagingSenderId: "491083537160", 
         appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd" 
     };
-    
+
     let db;
     try {
         db = getFirestore(initializeApp(firebaseConfig));
@@ -208,7 +172,7 @@
         container.innerHTML = roundsHtml;
         console.log("회차 일정표 렌더링 완료!");
     }
-    
+
     function createRankingRows() {
         const rankingBody = document.querySelector('#ranking-table tbody');
         if (!rankingBody) {
@@ -227,22 +191,105 @@
         console.log("순위표 렌더링 완료!");
     }
 
-    async function saveData() {
+    async function saveSchedule() {
         if (!db) {
             showToast('DB 연결 실패');
             return;
         }
         try {
-            const scheduleRows = document.querySelectorAll('.schedule-table tbody tr');
-            const scheduleData = Array.from(scheduleRows).map(row => ({
-                player1: row.querySelector('.player1').value.trim(),
-                player2: row.querySelector('.player2').value.trim(),
-                player3: row.querySelector('.player3').value.trim(),
-                player4: row.querySelector('.player4').value.trim(),
-                score: row.querySelector('.score').value.trim()
-            }));
-            await setDoc(doc(db, 'league', 'data', 'schedule', 'v1'), { matches: scheduleData });
+            const scheduleTables = document.querySelectorAll('.schedule-table');
+            const scheduleData = [];
 
+            scheduleTables.forEach(table => {
+                const roundId = table.getAttribute('data-round-id');
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const player1 = row.querySelector('.player1').value.trim();
+                    const player2 = row.querySelector('.player2').value.trim();
+                    const player3 = row.querySelector('.player3').value.trim();
+                    const player4 = row.querySelector('.player4').value.trim();
+                    const scoreInput = row.querySelector('.score').value.trim();
+
+                    if (player1 && player2 && player3 && player4) {
+                        scheduleData.push({
+                            round: parseInt(roundId),
+                            players: [player1, player2, player3, player4],
+                            score: scoreInput || ''
+                        });
+                    }
+                });
+            });
+
+            await setDoc(doc(db, 'league', 'data', 'schedule', 'v1'), { matches: scheduleData, timestamp: serverTimestamp() }, { merge: true });
+            console.log("일정 데이터 저장 성공:", scheduleData);
+            showToast("일정 저장 완료!");
+        } catch (e) {
+            console.error("일정 저장 실패:", e.message);
+            showToast(`일정 저장 실패: ${e.message}`);
+        }
+    }
+
+async function saveMatches() {
+    if (!db) {
+        console.error("DB 객체 없음!");
+        showToast('DB 연결 실패');
+        return;
+    }
+    console.log("DB 객체:", db);
+    try {
+        const matchDataList = [];
+        const scheduleTables = document.querySelectorAll('.schedule-table');
+        scheduleTables.forEach(table => {
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const player1 = row.querySelector('.player1').value.trim();
+                const player2 = row.querySelector('.player2').value.trim();
+                const player3 = row.querySelector('.player3').value.trim();
+                const player4 = row.querySelector('.player4').value.trim();
+                const scoreInput = row.querySelector('.score').value.trim();
+
+                if (player1 && player2 && player3 && player4 && scoreInput && /^\d+-\d+$/.test(scoreInput)) {
+                    const [score1, score2] = scoreInput.split('-').map(Number);
+                    const winner = score1 > score2 ? (player1 || player2) : (player3 || player4);
+                    const gameDiff = Math.abs(score1 - score2);
+
+                    const matchEntry = {
+                        player1: player1 || player2,
+                        player2: player3 || player4,
+                        winner: winner,
+                        gameDiff: gameDiff,
+                        timestamp: serverTimestamp()
+                    };
+                    matchDataList.push(matchEntry);
+                }
+            });
+        });
+
+        console.log("저장할 매치 데이터:", matchDataList);
+        if (matchDataList.length === 0) {
+            showToast("저장할 매치 데이터 없음!");
+            return;
+        }
+
+        const batch = writeBatch(db);
+        matchDataList.forEach((match, index) => {
+            const docRef = doc(collection(db, 'league/matches/data'), `match_${Date.now()}_${index}`);
+            batch.set(docRef, match);
+        });
+        await batch.commit();
+        console.log("매치 데이터 저장 성공:", matchDataList);
+        showToast("매치 데이터 저장 완료!");
+    } catch (e) {
+        console.error("매치 데이터 저장 실패:", e);
+        showToast(`매치 데이터 저장 실패: ${e.message}`);
+    }
+}
+    async function saveRankings() {
+        if (!db) {
+            showToast('DB 연결 실패');
+            return;
+        }
+        try {
             const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
             const rankingData = Array.from(rankingRows).map(row => {
                 const rawName = row.querySelector('.ranking-player').value.trim();
@@ -258,11 +305,13 @@
                     seasonMMRIncrease: parseFloat(row.querySelector('.mmr').dataset.seasonMMRIncrease) || 0
                 };
             }).filter(player => player.name);
-            await setDoc(doc(db, 'league', 'data', 'rankings', 'v1'), { players: rankingData });
-            console.log("데이터 저장 완료:", rankingData);
+
+            await setDoc(doc(db, 'league', 'data', 'rankings', 'v1'), { players: rankingData, timestamp: serverTimestamp() }, { merge: true });
+            console.log("랭킹 데이터 저장 성공:", rankingData);
+            showToast("랭킹 저장 완료!");
         } catch (e) {
-            console.error("저장 실패:", e.message);
-            showToast(`저장 실패: ${e.message}`);
+            console.error("랭킹 저장 실패:", e.message);
+            showToast(`랭킹 저장 실패: ${e.message}`);
         }
     }
 
@@ -276,12 +325,13 @@
             if (scheduleDoc.exists()) {
                 const scheduleData = scheduleDoc.data().matches || [];
                 document.querySelectorAll('.schedule-table tbody tr').forEach((row, index) => {
-                    if (scheduleData[index]) {
-                        row.querySelector('.player1').value = scheduleData[index].player1 || '';
-                        row.querySelector('.player2').value = scheduleData[index].player2 || '';
-                        row.querySelector('.player3').value = scheduleData[index].player3 || '';
-                        row.querySelector('.player4').value = scheduleData[index].player4 || '';
-                        row.querySelector('.score').value = scheduleData[index].score || '';
+                    const match = scheduleData[index];
+                    if (match) {
+                        row.querySelector('.player1').value = match.players[0] || '';
+                        row.querySelector('.player2').value = match.players[1] || '';
+                        row.querySelector('.player3').value = match.players[2] || '';
+                        row.querySelector('.player4').value = match.players[3] || '';
+                        row.querySelector('.score').value = match.score || '';
                     }
                 });
                 console.log("스케줄 데이터 로드 완료:", scheduleData);
@@ -294,10 +344,10 @@
                     if (player) {
                         row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
                         row.querySelector('.mmr').value = player.mmr || '0';
-                        row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease || '0';
+                        row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease.toFixed(2);
                         const champStar = row.querySelector('.championship-star');
-                        champStar.dataset.count = player.championships || '0';
-                        champStar.textContent = '⭐'.repeat(parseInt(player.championships) || 0);
+                        champStar.dataset.count = player.championships;
+                        champStar.textContent = '⭐'.repeat(player.championships);
                         row.querySelector('.wins').value = player.wins || '0';
                         row.querySelector('.losses').value = player.losses || '0';
                         row.querySelector('.game-diff').value = player.gameDiff || '0';
@@ -571,7 +621,7 @@
                 showToast("MMR 히스토리 데이터 부족!");
             }
         } catch (e) {
-            console.error("MMR ힸ스토리 저장 중 오류:", e.message);
+            console.error("MMR 히스토리 저장 중 오류:", e.message);
             showToast(`MMR 히스토리 저장 실패: ${e.message}`);
         }
 
@@ -591,7 +641,7 @@
                 row.querySelector('.losses').value = player.losses;
                 row.querySelector('.game-diff').value = player.gameDiff;
                 row.querySelector('.close-wins').value = player.closeSets > 0 ? Math.round(player.closeWins / player.closeSets * 100) : 'N/A';
-                row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominantWins / player.totalSets * 100) : 'N/A';
+                row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominateWins / player.totalSets * 100) : 'N/A';
                 
                 let bestPartner = { name: '-', score: -Infinity };
                 let worstPartner = { name: '-', score: Infinity };
@@ -614,7 +664,7 @@
             }
         });
 
-        await saveData();
+        await saveRankings();
         showToast('순위 업데이트 완료!');
     }
 
@@ -633,7 +683,7 @@
         console.log("카카오톡 공유 기능 호출");
         // 형의 원본 카카오 공유 로직 삽입 필요
     }
-    
+
     function downloadCSV() {
         let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,게임득실,접전승률(%),압도승률(%),최고 파트너,최하 파트너\n';
         document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
@@ -653,7 +703,7 @@
                 rankingCSV += `${rank},"${player}",${mmr},${championships},${wins},${losses},${gameDiff},${closeWins},${dominantWins},"${bestPartner}","${worstPartner}"\n`;
             }
         });
-        
+
         const blob = new Blob([rankingCSV], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -662,18 +712,21 @@
         link.click();
         document.body.removeChild(link);
     }
-    
+
     function setupInputListeners() {
-        const inputs = document.querySelectorAll('#schedule-container input, #ranking-table .ranking-player');
-        if (inputs.length === 0) {
-            console.warn("입력 요소 없음!");
-            showToast("입력 요소 로드 실패!");
+        const saveScheduleBtn = document.getElementById('save-schedule');
+        const saveMatchesBtn = document.getElementById('save-matches');
+        const saveRankingsBtn = document.getElementById('save-rankings');
+        const updateRankingBtn = document.getElementById('update-ranking');
+        if (!saveScheduleBtn || !saveMatchesBtn || !saveRankingsBtn || !updateRankingBtn) {
+            console.warn("저장 버튼 요소 없음!");
+            showToast("버튼 로드 실패!");
             return;
         }
-        inputs.forEach(input => {
-            input.addEventListener('change', saveData);
-        });
-        console.log("입력 리스너 설정 완료!");
+        saveScheduleBtn.addEventListener('click', saveSchedule);
+        saveMatchesBtn.addEventListener('click', saveMatches);
+        saveRankingsBtn.addEventListener('click', saveRankings);
+        updateRankingBtn.addEventListener('click', updateRanking);
     }
 
     function waitForElements(selector, callback, retries = 10, delay = 100) {
@@ -702,18 +755,15 @@
             createScheduleRounds();
             createRankingRows();
             if (db) {
-                loadData().then(() => setupInputListeners());
+                loadData();
             } else {
                 console.warn("DB 연결 없음!");
                 showToast("DB 연결 실패!");
             }
+            setupInputListeners();
             const themeToggle = document.getElementById('theme-toggle');
             if (themeToggle) {
                 themeToggle.addEventListener('click', () => applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
-            }
-            const updateRankingBtn = document.getElementById('update-ranking');
-            if (updateRankingBtn) {
-                updateRankingBtn.addEventListener('click', updateRanking);
             }
             const kakaoShareBtn = document.getElementById('kakao-share-btn');
             if (kakaoShareBtn) {
