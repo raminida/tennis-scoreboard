@@ -1,4 +1,43 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -56,13 +95,13 @@
             <button id="save-schedule" class="btn">일정 저장</button>
             <button id="save-matches" class="btn">매치 데이터 저장</button>
             <button id="save-rankings" class="btn">랭킹 저장</button>
-            <button id="update-ranking" class="update-btn">순위 업데이트</button>
+            <button id="update-ranking" class="btn update-btn">순위 업데이트</button>
         </div>
         <div class="section">
             <h2>시즌 순위표</h2>
             <div class="table-wrapper">
                 <table id="ranking-table">
-                    <thead><tr><th>순위</th><th>선수</th><th>MMR</th><th>우승</th><th>승</th><th>패</th><th>게임득실</th><th>접전승률(%)</th><th>압도승률(%)</th><th>최고 파트너</th><th>최하 파트너</th></tr></thead>
+                    <thead><tr><th>순위</th><th>선수</th><th>MMR</th><th>우승</th><th>승</th><th>패</th><th>경기당 평균 게임 득실</th><th>접전률(%)</th><th>압도승률(%)</th><th>최고 파트너</th><th>최하 파트너</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -184,7 +223,7 @@
         for (let i = 1; i <= 30; i++) {
             rowsHtml += `
             <tr>
-                <td class="rank-cell">${i}</td><td><input type="text" placeholder="선수 ${i}" class="ranking-player"></td><td><input type="text" class="mmr readonly" readonly></td><td><span class="championship-star"></span></td><td><input type="text" class="wins readonly" readonly></td><td><input type="text" class="losses readonly" readonly></td><td><input type="text" class="game-diff readonly" readonly></td><td><input type="text" class="close-wins readonly" readonly></td><td><input type="text" class="dominant-wins readonly" readonly></td><td><input type="text" class="best-partner readonly" readonly></td><td><input type="text" class="worst-partner readonly" readonly></td>
+                <td class="rank-cell">${i}</td><td><input type="text" placeholder="선수 ${i}" class="ranking-player"></td><td><input type="text" class="mmr readonly" readonly></td><td><span class="championship-star"></span></td><td><input type="text" class="wins readonly" readonly></td><td><input type="text" class="losses readonly" readonly></td><td><input type="text" class="avg-game-diff readonly" readonly></td><td><input type="text" class="close-rate readonly" readonly></td><td><input type="text" class="dominant-wins readonly" readonly></td><td><input type="text" class="best-partner readonly" readonly></td><td><input type="text" class="worst-partner readonly" readonly></td>
             </tr>`;
         }
         rankingBody.innerHTML = rowsHtml;
@@ -229,61 +268,62 @@
         }
     }
 
-async function saveMatches() {
-    if (!db) {
-        console.error("DB 객체 없음!");
-        showToast('DB 연결 실패');
-        return;
-    }
-    console.log("DB 객체:", db);
-    try {
-        const matchDataList = [];
-        const scheduleTables = document.querySelectorAll('.schedule-table');
-        scheduleTables.forEach(table => {
-            const rows = table.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                const player1 = row.querySelector('.player1').value.trim();
-                const player2 = row.querySelector('.player2').value.trim();
-                const player3 = row.querySelector('.player3').value.trim();
-                const player4 = row.querySelector('.player4').value.trim();
-                const scoreInput = row.querySelector('.score').value.trim();
-
-                if (player1 && player2 && player3 && player4 && scoreInput && /^\d+-\d+$/.test(scoreInput)) {
-                    const [score1, score2] = scoreInput.split('-').map(Number);
-                    const winner = score1 > score2 ? (player1 || player2) : (player3 || player4);
-                    const gameDiff = Math.abs(score1 - score2);
-
-                    const matchEntry = {
-                        player1: player1 || player2,
-                        player2: player3 || player4,
-                        winner: winner,
-                        gameDiff: gameDiff,
-                        timestamp: serverTimestamp()
-                    };
-                    matchDataList.push(matchEntry);
-                }
-            });
-        });
-
-        console.log("저장할 매치 데이터:", matchDataList);
-        if (matchDataList.length === 0) {
-            showToast("저장할 매치 데이터 없음!");
+    async function saveMatches() {
+        if (!db) {
+            console.error("DB 객체 없음!");
+            showToast('DB 연결 실패');
             return;
         }
+        console.log("DB 객체:", db);
+        try {
+            const matchDataList = [];
+            const scheduleTables = document.querySelectorAll('.schedule-table');
+            scheduleTables.forEach(table => {
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const player1 = row.querySelector('.player1').value.trim();
+                    const player2 = row.querySelector('.player2').value.trim();
+                    const player3 = row.querySelector('.player3').value.trim();
+                    const player4 = row.querySelector('.player4').value.trim();
+                    const scoreInput = row.querySelector('.score').value.trim();
 
-        const batch = writeBatch(db);
-        matchDataList.forEach((match, index) => {
-            const docRef = doc(collection(db, 'league/matches/data'), `match_${Date.now()}_${index}`);
-            batch.set(docRef, match);
-        });
-        await batch.commit();
-        console.log("매치 데이터 저장 성공:", matchDataList);
-        showToast("매치 데이터 저장 완료!");
-    } catch (e) {
-        console.error("매치 데이터 저장 실패:", e);
-        showToast(`매치 데이터 저장 실패: ${e.message}`);
+                    if (player1 && player2 && player3 && player4 && scoreInput && /^\d+-\d+$/.test(scoreInput)) {
+                        const [score1, score2] = scoreInput.split('-').map(Number);
+                        const winner = score1 > score2 ? (player1 || player2) : (player3 || player4);
+                        const gameDiff = Math.abs(score1 - score2);
+
+                        const matchEntry = {
+                            player1: player1 || player2,
+                            player2: player3 || player4,
+                            winner: winner,
+                            gameDiff: gameDiff,
+                            timestamp: serverTimestamp()
+                        };
+                        matchDataList.push(matchEntry);
+                    }
+                });
+            });
+
+            console.log("저장할 매치 데이터:", matchDataList);
+            if (matchDataList.length === 0) {
+                showToast("저장할 매치 데이터 없음!");
+                return;
+            }
+
+            const batch = writeBatch(db);
+            matchDataList.forEach((match, index) => {
+                const docRef = doc(collection(db, 'league/matches/data'), `match_${Date.now()}_${index}`);
+                batch.set(docRef, match);
+            });
+            await batch.commit();
+            console.log("매치 데이터 저장 성공:", matchDataList);
+            showToast("매치 데이터 저장 완료!");
+        } catch (e) {
+            console.error("매치 데이터 저장 실패:", e);
+            showToast(`매치 데이터 저장 실패: ${e.message}`);
+        }
     }
-}
+
     async function saveRankings() {
         if (!db) {
             showToast('DB 연결 실패');
@@ -300,7 +340,11 @@ async function saveMatches() {
                     championships: row.querySelector('.championship-star')?.dataset.count || '0',
                     wins: row.querySelector('.wins').value || '0',
                     losses: row.querySelector('.losses').value || '0',
-                    gameDiff: row.querySelector('.game-diff').value || '0',
+                    avgGameDiff: row.querySelector('.avg-game-diff').value || '0',
+                    closeRate: row.querySelector('.close-rate').value || '0',
+                    dominantWins: row.querySelector('.dominant-wins').value || '0',
+                    bestPartner: row.querySelector('.best-partner').value || '-',
+                    worstPartner: row.querySelector('.worst-partner').value || '-',
                     isFemale: rawName.includes('*'),
                     seasonMMRIncrease: parseFloat(row.querySelector('.mmr').dataset.seasonMMRIncrease) || 0
                 };
@@ -350,11 +394,16 @@ async function saveMatches() {
                         champStar.textContent = '⭐'.repeat(player.championships);
                         row.querySelector('.wins').value = player.wins || '0';
                         row.querySelector('.losses').value = player.losses || '0';
-                        row.querySelector('.game-diff').value = player.gameDiff || '0';
+                        row.querySelector('.avg-game-diff').value = player.avgGameDiff || '0';
+                        row.querySelector('.close-rate').value = player.closeRate || '0';
+                        row.querySelector('.dominant-wins').value = player.dominantWins || '0';
+                        row.querySelector('.best-partner').value = player.bestPartner || '-';
+                        row.querySelector('.worst-partner').value = player.worstPartner || '-';
                     }
                 });
                 console.log("랭킹 데이터 로드 완료:", rankingData);
             }
+            await updateRanking();
         } catch (e) {
             console.error("로드 실패:", e.message);
             showToast(`데이터 로드 실패: ${e.message}`);
@@ -385,10 +434,12 @@ async function saveMatches() {
                     wins: 0,
                     losses: 0,
                     gameDiff: 0,
+                    avgGameDiff: 0,
                     mmr: BASE_MMR,
                     championships: 0,
                     closeWins: 0,
                     closeSets: 0,
+                    closeLosses: 0,
                     dominantWins: 0,
                     totalSets: 0,
                     isFemale: rawName.includes('*'),
@@ -425,10 +476,12 @@ async function saveMatches() {
                             wins: 0,
                             losses: 0,
                             gameDiff: 0,
+                            avgGameDiff: 0,
                             mmr: BASE_MMR,
                             championships: 0,
                             closeWins: 0,
                             closeSets: 0,
+                            closeLosses: 0,
                             dominantWins: 0,
                             totalSets: 0,
                             isFemale: [p1Raw, p2Raw, p3Raw, p4Raw][idx].includes('*'),
@@ -527,9 +580,9 @@ async function saveMatches() {
                     mmrChange4 *= MIXED_TEAM_LOSS_HANDICAP;
                 }
 
-                const isClose = Math.abs(score1 - score2) <= 2;
-                const isDominant1 = !team1IsMixed && !team2IsMixed && score1 === 6 && score2 <= 1;
-                const isDominant2 = !team1IsMixed && !team2IsMixed && score2 === 6 && score1 <= 1;
+                const isClose = score1 - score2 === 1 || score2 - score1 === 1 || score1 - score2 === 2 || score2 - score1 === 2;
+                const isDominant1 = (score1 === 6 && score2 <= 1);
+                const isDominant2 = (score2 === 6 && score1 <= 1);
 
                 const updatePlayer = (name, isWinner, gameDiff, mmrChangeVal, isCloseGame, isDominantGame) => {
                     if (!players[name]) return;
@@ -541,12 +594,13 @@ async function saveMatches() {
                         players[name].wins++;
                         if (!roundWins[name]) roundWins[name] = 0;
                         roundWins[name]++;
+                        if (isCloseGame) players[name].closeWins++;
                     } else {
                         players[name].losses++;
+                        if (isCloseGame) players[name].closeLosses++;
                     }
                     if (isCloseGame) {
                         players[name].closeSets++;
-                        if (isWinner) players[name].closeWins++;
                     }
                     if (isDominantGame && isWinner) players[name].dominantWins++;
                 };
@@ -630,6 +684,7 @@ async function saveMatches() {
         rankingRows.forEach((row, index) => {
             const player = sortedPlayers[index];
             if (player) {
+                player.avgGameDiff = player.totalSets > 0 ? (player.gameDiff / player.totalSets).toFixed(1) : '0.0';
                 row.cells[0].textContent = index + 1;
                 row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
                 row.querySelector('.mmr').value = Math.round(player.mmr);
@@ -639,15 +694,17 @@ async function saveMatches() {
                 champStar.textContent = '⭐'.repeat(player.championships);
                 row.querySelector('.wins').value = player.wins;
                 row.querySelector('.losses').value = player.losses;
-                row.querySelector('.game-diff').value = player.gameDiff;
-                row.querySelector('.close-wins').value = player.closeSets > 0 ? Math.round(player.closeWins / player.closeSets * 100) : 'N/A';
-                row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominateWins / player.totalSets * 100) : 'N/A';
+                row.querySelector('.avg-game-diff').value = player.avgGameDiff;
+                row.querySelector('.close-rate').value = player.totalSets >= 2 ? (player.closeSets === 0 ? '0' : Math.round(player.closeSets / player.totalSets * 100)) : '0';
+                row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominantWins / player.totalSets * 100) : '0';
                 
                 let bestPartner = { name: '-', score: -Infinity };
                 let worstPartner = { name: '-', score: Infinity };
                 if (partnerStats[player.name]) {
                     for (const partnerName in partnerStats[player.name]) {
+                        if (partnerName === MANDATORY_PLAYER) continue; // 정래민 제외
                         const stats = partnerStats[player.name][partnerName];
+                        if (stats.matches < 2) continue; // 최소 2경기 이상
                         const winRate = stats.matches > 0 ? stats.wins / stats.matches : 0;
                         const avgGameDiff = stats.matches > 0 ? stats.gameDiffSum / stats.matches : 0;
                         const chemistryScore = (winRate * 70) + (avgGameDiff * 3);
@@ -685,7 +742,7 @@ async function saveMatches() {
     }
 
     function downloadCSV() {
-        let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,게임득실,접전승률(%),압도승률(%),최고 파트너,최하 파트너\n';
+        let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,경기당 평균 게임 득실,접전률(%),압도승률(%),최고 파트너,최하 파트너\n';
         document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
             const rawName = row.querySelector('.ranking-player').value.trim();
             const player = rawName.replace(/\*/g, '');
@@ -695,12 +752,12 @@ async function saveMatches() {
                 const championships = row.querySelector('.championship-star')?.dataset.count || '0';
                 const wins = row.querySelector('.wins').value;
                 const losses = row.querySelector('.losses').value;
-                const gameDiff = row.querySelector('.game-diff').value;
-                const closeWins = row.querySelector('.close-wins').value;
+                const avgGameDiff = row.querySelector('.avg-game-diff').value;
+                const closeRate = row.querySelector('.close-rate').value;
                 const dominantWins = row.querySelector('.dominant-wins').value;
                 const bestPartner = row.querySelector('.best-partner').value;
                 const worstPartner = row.querySelector('.worst-partner').value;
-                rankingCSV += `${rank},"${player}",${mmr},${championships},${wins},${losses},${gameDiff},${closeWins},${dominantWins},"${bestPartner}","${worstPartner}"\n`;
+                rankingCSV += `${rank},"${player}",${mmr},${championships},${wins},${losses},${avgGameDiff},${closeRate},${dominantWins},"${bestPartner}","${worstPartner}"\n`;
             }
         });
 
