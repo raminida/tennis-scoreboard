@@ -131,6 +131,15 @@
             <div style="text-align: center; margin-top: 30px;"><a href="index.html" class="btn">메인으로 돌아가기</a></div>
         </div>
     </div>
+<style>
+    /* 기존 스타일 유지, 2위 표시용 스타일 추가 */
+    .award-runner-up {
+        font-size: 0.9rem;
+        color: var(--text-secondary-color);
+        margin-top: 5px;
+        font-weight: 500;
+    }
+</style>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
     import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
@@ -206,65 +215,70 @@
             showToast("어워드 데이터 로드 실패!");
         }
 
-        // 4. 어워드 계산 및 저장
+        // 4. 어워드 계산 및 저장 (2위 추가, 정래민 보정)
         if (allPlayersData.length > 0) {
-            const playedPlayers = allPlayersData.filter(p => (parseInt(p.wins || 0) + parseInt(p.losses || 0)) >= 5); // 최소 5경기
+            const BASE_GAMES = 20; // 기준 경기수
+            const playedPlayers = allPlayersData.filter(p => (parseInt(p.wins || 0) + parseInt(p.losses || 0)) >= 5);
             if (playedPlayers.length > 0) {
                 const getRank = (p, stat) => [...playedPlayers].sort((a, b) => (b[stat] || 0) - (a[stat] || 0)).findIndex(pl => pl.name === p.name) + 1;
                 const getPercentileScore = (rank) => playedPlayers.length <= 1 ? 100 : Math.pow((playedPlayers.length - rank) / (playedPlayers.length - 1), 0.7) * 100;
 
-                // 시즌 MVP 계산
-                let mvpPlayer = null;
-                let maxMvpScore = -Infinity;
-
-                // 시즌 발전상 계산
-                let mostImprovedPlayer = null;
-                let maxImprovedScore = -Infinity;
-
-                // 시즌 코트 킬러 계산
-                let courtKillerPlayer = null;
-                let maxCourtKillerScore = -Infinity;
+                let mvpPlayer = null, maxMvpScore = -Infinity, mvpRunnerUp = null, secondMvpScore = -Infinity;
+                let mostImprovedPlayer = null, maxImprovedScore = -Infinity, improvedRunnerUp = null, secondImprovedScore = -Infinity;
+                let courtKillerPlayer = null, maxCourtKillerScore = -Infinity, courtKillerRunnerUp = null, secondCourtKillerScore = -Infinity;
 
                 playedPlayers.forEach(player => {
-                    // MMR 점수 (MVP용)
+                    const totalGames = (parseInt(player.wins || 0) + parseInt(player.losses || 0)) || 1;
+                    // 로그 스케일링 보정
+                    const normFactor = Math.min(1, BASE_GAMES / Math.log(totalGames + 1) * Math.log(BASE_GAMES + 1));
+                    const normalizedWins = (player.wins || 0) * normFactor;
+                    const normalizedGameDiff = (player.gameDiff || 0) * normFactor;
+                    const normalizedDominantWins = (player.dominantWins || 0) * normFactor;
+                    const normalizedChampionships = (player.championships || 0) * normFactor;
+
+                    // MMR 점수
                     const mmrRank = getRank(player, 'mmr');
                     const mmrScore = getPercentileScore(mmrRank) / 10;
 
                     // 승률 점수
-                    player.winRate = (player.wins + player.losses) > 0 ? player.wins / (player.wins + player.losses) : 0;
+                    player.winRate = totalGames > 0 ? normalizedWins / BASE_GAMES : 0;
                     const winRateRank = getRank(player, 'winRate');
                     const winRateScore = getPercentileScore(winRateRank) / 10;
 
                     // 우승 횟수 점수
-                    const champRank = getRank(player, 'championships');
+                    player.normChampionships = normalizedChampionships;
+                    const champRank = getRank(player, 'normChampionships');
                     const champScore = getPercentileScore(champRank) / 10;
 
                     // 압도승률 점수
-                    player.dominantRate = player.totalSets > 0 ? (player.dominantWins || 0) / player.totalSets : 0;
+                    player.dominantRate = BASE_GAMES > 0 ? normalizedDominantWins / BASE_GAMES : 0;
                     const dominantRank = getRank(player, 'dominantRate');
                     const dominantScore = getPercentileScore(dominantRank) / 10;
 
                     // 게임 득실률 점수
-                    player.gameDiffRate = player.totalSets > 0 ? (player.gameDiff || 0) / player.totalSets : 0;
+                    player.gameDiffRate = totalGames > 0 ? normalizedGameDiff / BASE_GAMES : 0;
                     const gameDiffRank = getRank(player, 'gameDiffRate');
                     const gameDiffScore = getPercentileScore(gameDiffRank) / 10;
 
                     // MVP 종합 점수
                     const mvpScore = ((mmrScore + winRateScore + champScore + dominantScore + gameDiffScore) / 5).toFixed(1);
                     if (parseFloat(mvpScore) > maxMvpScore) {
+                        secondMvpScore = maxMvpScore;
+                        mvpRunnerUp = mvpPlayer;
                         maxMvpScore = parseFloat(mvpScore);
                         mvpPlayer = { name: player.name, value: mvpScore };
+                    } else if (parseFloat(mvpScore) > secondMvpScore && parseFloat(mvpScore) < maxMvpScore) {
+                        secondMvpScore = parseFloat(mvpScore);
+                        mvpRunnerUp = { name: player.name, value: mvpScore };
                     }
 
                     // 발전상 계산
-                    // MMR 증가율
                     const playerHistory = fullMmrHistory.map(h => h[player.name.replace(/\*/g, '').replace(/\./g, '_')]).filter(mmr => mmr !== undefined);
                     const initialMMR = playerHistory.length > 0 ? playerHistory[0] : 1500;
                     player.mmrGrowthRate = initialMMR > 0 ? ((player.mmr - initialMMR) / initialMMR * 100) : 0;
                     const mmrGrowthRank = getRank(player, 'mmrGrowthRate');
                     const mmrGrowthScore = getPercentileScore(mmrGrowthRank) / 10;
 
-                    // 승률 개선 (첫 3경기 vs 마지막 3경기)
                     const earlyGames = playerHistory.slice(0, 3);
                     const lateGames = playerHistory.slice(-3);
                     const earlyWins = earlyGames.filter((_, i) => i % 2 === 0 && earlyGames[i + 1] > earlyGames[i]).length;
@@ -277,37 +291,45 @@
                     const winRateImproveRank = getRank(player, 'winRateImprovement');
                     const winRateImproveScore = getPercentileScore(winRateImproveRank) / 10;
 
-                    // 압도승 비율 증가
                     const earlyDominant = earlyGames.filter((_, i) => i % 2 === 0 && earlyGames[i] >= 6 && earlyGames[i + 1] <= 1).length;
-                    const lateDominant = lateGames.filter((_, i) => i % 2 === 0 && lateGames[i] >= 6 && lateGames[i + 1] <= 1).length;
+                    const lateDominant = lateGames.filter((_, i) => i % 2 === 0 && lateGames[i] >= 6 && earlyGames[i + 1] <= 1).length;
                     const earlyDominantRate = earlyGames.length > 0 ? earlyDominant / (earlyGames.length / 2) : 0;
                     const lateDominantRate = lateGames.length > 0 ? lateDominant / (lateGames.length / 2) : 0;
                     player.dominantRateImprovement = lateDominantRate - earlyDominantRate;
                     const dominantImproveRank = getRank(player, 'dominantRateImprovement');
                     const dominantImproveScore = getPercentileScore(dominantImproveRank) / 10;
 
-                    // 발전상 종합 점수
                     const improvedScore = ((mmrGrowthScore * 0.4) + (winRateImproveScore * 0.3) + (dominantImproveScore * 0.3)).toFixed(1);
                     if (parseFloat(improvedScore) > maxImprovedScore) {
+                        secondImprovedScore = maxImprovedScore;
+                        improvedRunnerUp = mostImprovedPlayer;
                         maxImprovedScore = parseFloat(improvedScore);
                         mostImprovedPlayer = { name: player.name, value: improvedScore };
+                    } else if (parseFloat(improvedScore) > secondImprovedScore && parseFloat(improvedScore) < maxImprovedScore) {
+                        secondImprovedScore = parseFloat(improvedScore);
+                        improvedRunnerUp = { name: player.name, value: improvedScore };
                     }
 
-                    // 코트 킬러 점수
+                    // 코트 킬러
                     const courtKillerRank = getRank(player, 'gameDiffRate');
                     const courtKillerScore = getPercentileScore(courtKillerRank) / 10;
                     if (courtKillerScore > maxCourtKillerScore) {
+                        secondCourtKillerScore = maxCourtKillerScore;
+                        courtKillerRunnerUp = courtKillerPlayer;
                         maxCourtKillerScore = courtKillerScore;
                         courtKillerPlayer = { name: player.name, value: courtKillerScore.toFixed(1) };
+                    } else if (courtKillerScore > secondCourtKillerScore && courtKillerScore < maxCourtKillerScore) {
+                        secondCourtKillerScore = courtKillerScore;
+                        courtKillerRunnerUp = { name: player.name, value: courtKillerScore.toFixed(1) };
                     }
                 });
 
-                // awards/v1에 저장
+                // 어워드 저장 (2위 포함)
                 try {
                     await setDoc(doc(db, 'league', 'data', 'awards', 'v1'), {
-                        mvp: mvpPlayer || { name: '-', value: '-' },
-                        mostImproved: mostImprovedPlayer || { name: '-', value: '-' },
-                        courtKiller: courtKillerPlayer || { name: '-', value: '-' },
+                        mvp: { winner: mvpPlayer || { name: '-', value: '-' }, runnerUp: mvpRunnerUp || { name: '-', value: '-' } },
+                        mostImproved: { winner: mostImprovedPlayer || { name: '-', value: '-' }, runnerUp: improvedRunnerUp || { name: '-', value: '-' } },
+                        courtKiller: { winner: courtKillerPlayer || { name: '-', value: '-' }, runnerUp: courtKillerRunnerUp || { name: '-', value: '-' } },
                         formKing: awardsData.formKing || { name: '-', value: '-' },
                         victoryFairy: awardsData.victoryFairy || { name: '-', value: '-' },
                         clutchKing: awardsData.clutchKing || { name: '-', value: '-' },
@@ -315,7 +337,11 @@
                         giantKiller: awardsData.giantKiller || { name: '-', value: '-' },
                         rivalPair: awardsData.rivalPair || { name: '-', value: '-' }
                     }, { merge: true });
-                    console.log("어워드 저장 완료:", { mvp: mvpPlayer, mostImproved: mostImprovedPlayer, courtKiller: courtKillerPlayer });
+                    console.log("어워드 저장 완료:", { 
+                        mvp: { winner: mvpPlayer, runnerUp: mvpRunnerUp },
+                        mostImproved: { winner: mostImprovedPlayer, runnerUp: improvedRunnerUp },
+                        courtKiller: { winner: courtKillerPlayer, runnerUp: courtKillerRunnerUp }
+                    });
                 } catch (error) {
                     console.error("어워드 저장 실패:", error.message);
                     showToast("어워드 저장 실패!");
@@ -370,17 +396,20 @@
 
         for (const key in awardDetails) {
             const awardInfo = awardDetails[key];
-            const data = awardsData[key] || { name: '-', value: '-' };
-            const winner = data.name || '-';
-            const value = data.value || '-';
-            
+            const data = awardsData[key] || { winner: { name: '-', value: '-' }, runnerUp: { name: '-', value: '-' } };
+            const winner = data.winner?.name || data.name || '-';
+            const winnerValue = data.winner?.value || data.value || '-';
+            const runnerUp = data.runnerUp?.name || '-';
+            const runnerUpValue = data.runnerUp?.value || '-';
+
             const card = document.createElement('div');
             card.className = 'award-card';
             card.innerHTML = `
                 <div class="award-icon">${awardInfo.icon}</div>
                 <div class="award-title">${awardInfo.title}</div>
                 <div class="award-winner">${winner}</div>
-                <div class="award-value">${value}</div>
+                <div class="award-value">점수: ${winnerValue}</div>
+                <div class="award-runner-up">2위: ${runnerUp} (점수: ${runnerUpValue})</div>
             `;
             grid.appendChild(card);
         }
@@ -520,7 +549,6 @@
             return;
         }
 
-        // <h3> 요소 안전 처리 및 디버깅
         const chartContainer = document.getElementById('mmr-chart-container');
         const titleElement = chartContainer?.querySelector('h3');
         console.log("MMR 차트 컨테이너:", chartContainer);
@@ -718,5 +746,25 @@
         }
     });
 </script>
+
+<style>
+    /* 기존 CSS 유지, 2위 표시 스타일 추가 */
+    .award-runner-up {
+        font-size: 0.85rem;
+        color: var(--text-secondary-color);
+        margin-top: 8px;
+        font-weight: 500;
+        opacity: 0.8;
+        transition: opacity 0.3s;
+    }
+    .award-card:hover .award-runner-up {
+        opacity: 1;
+    }
+    .award-value {
+        font-size: 0.95rem;
+        color: var(--text-color);
+        margin-top: 5px;
+    }
+</style>
 </body>
 </html>
