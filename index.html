@@ -72,14 +72,14 @@
         th, td { padding: var(--spacing-md) 10px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
         th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
         html[data-theme="light"] th { background-color: #F9FAFB; }
-        .rank-cell { font-weight: 900; color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); position: relative; padding-right: 30px; } /* 간격 확보 */
-        .rank-change { font-size: 0.7rem; position: absolute; right: 18px; top: 50%; transform: translateY(-50%); line-height: 1.2; } /* 간격 조정 */
+        .rank-cell { font-weight: 900; color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); line-height: 1.5; padding-right: 30px; } /* 순위 숫자 여백 */
+        .rank-change { font-size: 0.7rem; display: block; margin-top: var(--spacing-sm); text-align: right; } /* 변동 아래 배치, 간격 */
         .rank-up { color: #4CAF50; }
         .rank-down { color: #F44336; }
         .rank-nochange { color: var(--text-secondary-color); }
         input[type="text"] { width: 100%; min-width: 80px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
-        input[type="text"].readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
-        html[data-theme="light"] input[type="text"].readonly { background-color: #f0f0f0; }
+        input.readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
+        html[data-theme="light"] input.readonly { background-color: #f0f0f0; }
         .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: var(--spacing-lg); }
         .btn { display: inline-block; padding: var(--spacing-md) var(--spacing-lg); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; }
         html[data-theme="dark"] .btn { color: var(--bg-color); }
@@ -689,7 +689,7 @@
         if (currentFilter === 'male') sortedPlayers = sortedPlayers.filter(p => !p.isFemale);
         else if (currentFilter === 'female') sortedPlayers = sortedPlayers.filter(p => p.isFemale);
 
-        // MMR �is토리 저장
+        // MMR 히스토리 저장
         try {
             const historyDocRef = doc(db, 'league', 'data', 'mmrHistory', 'v1');
             const historyDocSnap = await getDoc(historyDocRef);
