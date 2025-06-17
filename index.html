@@ -50,17 +50,18 @@
     <style>
         :root {
             --bg-color: #121212; --surface-color: #1E1E1E; --primary-color: #4CAF50; --primary-variant-color: #81C784; --secondary-color: #FFFFFF; --text-color: #E0E0E0; --text-secondary-color: #A0A0A0; --accent-gold: #FFD700; --border-color: #333333; --shadow-color: rgba(0, 0, 0, 0.5);
+            --spacing-sm: 8px; --spacing-md: 12px; --spacing-lg: 20px; --radius: 8px;
         }
         html[data-theme="light"] {
             --bg-color: #F0F4F8; --surface-color: #FFFFFF; --primary-color: #1A3C34; --primary-variant-color: #2A6B5B; --text-color: #1F2937; --text-secondary-color: #6B7280; --border-color: #E5E7EB; --shadow-color: rgba(0, 0, 0, 0.1);
         }
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 15px; transition: background-color 0.3s, color 0.3s; }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
         .container { max-width: 1100px; margin: 0 auto; }
-        h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; color: var(--secondary-color); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: 20px; margin-bottom: 2rem; letter-spacing: -2px; text-shadow: 2px 2px 10px var(--shadow-color); }
-        .section { background: var(--surface-color); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
-        h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: 10px; padding-bottom: 10px; border-bottom: 2px solid var(--border-color); }
-        details { margin-bottom: 1rem; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
-        details summary { padding: 12px 15px; cursor: pointer; font-size: 1.1rem; font-weight: 700; outline: none; transition: background 0.3s ease, color 0.3s ease; background: linear-gradient(135deg, #2a2a2a, #222222); color: var(--secondary-color); }
+        h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; color: var(--secondary-color); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: var(--spacing-lg); margin-bottom: 2rem; letter-spacing: -2px; text-shadow: 2px 2px 10px var(--shadow-color); }
+        .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
+        h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--border-color); }
+        details { margin-bottom: 1rem; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-color); }
+        details summary { padding: var(--spacing-md) 15px; cursor: pointer; font-size: 1.1rem; font-weight: 700; outline: none; transition: background 0.3s ease, color 0.3s ease; background: linear-gradient(135deg, #2a2a2a, #222222); color: var(--secondary-color); }
         html[data-theme="light"] details summary { background: linear-gradient(135deg, #f9f9f9, #f1f1f1); color: var(--text-color); }
         details[open] > summary { background: var(--primary-color); color: var(--bg-color); }
         html[data-theme="light"] details[open] > summary { color: var(--secondary-color); }
@@ -68,26 +69,32 @@
         html[data-theme="light"] .round-group-content { background: rgba(0,0,0,0.02); }
         .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; min-width: 600px; border-collapse: collapse; }
-        th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
+        th, td { padding: var(--spacing-md) 10px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
         th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
         html[data-theme="light"] th { background-color: #F9FAFB; }
-        .rank-cell { font-weight: 900; color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); position: relative; }
-        .rank-change { font-size: 0.75rem; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); }
+        .rank-cell { font-weight: 900; color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); position: relative; padding-right: 30px; } /* 간격 확보 */
+        .rank-change { font-size: 0.7rem; position: absolute; right: 18px; top: 50%; transform: translateY(-50%); line-height: 1.2; } /* 간격 조정 */
         .rank-up { color: #4CAF50; }
         .rank-down { color: #F44336; }
         .rank-nochange { color: var(--text-secondary-color); }
-        input[type="text"] { width: 100%; min-width: 80px; padding: 8px; background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
+        input[type="text"] { width: 100%; min-width: 80px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
         input[type="text"].readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
         html[data-theme="light"] input[type="text"].readonly { background-color: #f0f0f0; }
-        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        .btn { display: inline-block; padding: 12px 20px; background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; }
+        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: var(--spacing-lg); }
+        .btn { display: inline-block; padding: var(--spacing-md) var(--spacing-lg); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; }
         html[data-theme="dark"] .btn { color: var(--bg-color); }
-        .update-btn { width: 100%; margin-top: 20px; padding: 15px; background: linear-gradient(135deg, var(--accent-gold), #F5B02E); color: var(--bg-color); border: none; border-radius: 8px; font-size: 1.2rem; font-weight: 900; cursor: pointer; }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #333, #111); color: #fff; padding: 12px 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 1000; }
+        .update-btn { width: 100%; margin-top: var(--spacing-lg); padding: 15px; background: linear-gradient(135deg, var(--accent-gold), #F5B02E); color: var(--bg-color); border: none; border-radius: var(--radius); font-size: 1.2rem; font-weight: 900; cursor: pointer; }
+        .toast { position: fixed; bottom: var(--spacing-lg); left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #333, #111); color: #fff; padding: var(--spacing-md) 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 1000; }
         .toast.show { opacity: 1; }
         .championship-star { color: var(--accent-gold); text-shadow: 0 0 5px var(--accent-gold); font-size: 1.1rem; font-weight: 900; }
         .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .ranking-player[value$="*"] { color: var(--primary-variant-color); }
+        .ranking-filter { display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-md); }
+        .filter-btn { padding: var(--spacing-sm) var(--spacing-md); background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer; color: var(--text-color); font-weight: 700; }
+        .filter-btn.active { background: var(--primary-color); color: var(--bg-color); }
+        .toggle-btn { padding: var(--spacing-sm) var(--spacing-md); margin: var(--spacing-sm) auto; display: block; }
+        tr.lower-rank { display: none; }
+        tr.lower-rank.show { display: table-row; }
     </style>
 </head>
 <body>
@@ -104,12 +111,18 @@
         </div>
         <div class="section">
             <h2>시즌 순위표</h2>
+            <div class="ranking-filter">
+                <button class="filter-btn active" data-filter="all">통합 순위</button>
+                <button class="filter-btn" data-filter="male">남자 순위</button>
+                <button class="filter-btn" data-filter="female">여자 순위</button>
+            </div>
             <div class="table-wrapper">
                 <table id="ranking-table">
                     <thead><tr><th>순위</th><th>선수</th><th>MMR</th><th>우승</th><th>승</th><th>패</th><th>경기당 평균 게임 득실</th><th>접전률(%)</th><th>압도승률(%)</th><th>최고 파트너</th><th>최하 파트너</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
+            <button id="toggle-rankings" class="btn toggle-btn">더보기</button>
             <div class="btn-group">
                 <a href="dash.html" class="btn" id="dashboard-link">통계 대시보드</a>
                 <button id="kakao-share-btn" class="btn">카카오톡 공유</button>
@@ -172,6 +185,8 @@
         showToast("Firebase 초기화 실패!");
     }
 
+    let currentFilter = 'all';
+
     function showToast(message) {
         const toast = document.getElementById('toast');
         if (toast) {
@@ -225,9 +240,9 @@
             return;
         }
         let rowsHtml = '';
-        for (let i = 1; i <= 30; i++) {
+        for (let i = 1; i <= 50; i++) {
             rowsHtml += `
-            <tr>
+            <tr${i > 20 ? ' class="lower-rank"' : ''}>
                 <td class="rank-cell">${i}<span class="rank-change"></span></td><td><input type="text" placeholder="선수 ${i}" class="ranking-player"></td><td><input type="text" class="mmr readonly" readonly></td><td><span class="championship-star"></span></td><td><input type="text" class="wins readonly" readonly></td><td><input type="text" class="losses readonly" readonly></td><td><input type="text" class="avg-game-diff readonly" readonly></td><td><input type="text" class="close-rate readonly" readonly></td><td><input type="text" class="dominant-wins readonly" readonly></td><td><input type="text" class="best-partner readonly" readonly></td><td><input type="text" class="worst-partner readonly" readonly></td>
             </tr>`;
         }
@@ -415,352 +430,354 @@
         }
     }
 
-async function updateRanking() {
-    const BASE_MMR = 1500;
-    const BASE_K = 28;
-    const BASE_GAMES = 30;
-    const MALE_TEAM_WIN_HANDICAP = 0.5;
-    const MIXED_TEAM_LOSS_HANDICAP = 0.5;
-    const HANDICAP_BASE_POINT = 1500;
-    const HANDICAP_ZERO_POINT = 1650;
-    const HANDICAP_MAX = 150;
-    const MANDATORY_PLAYER = "정래민";
-    const MANDATORY_PLAYER_MMR_WEIGHT = 0.7;
+    async function updateRanking() {
+        const BASE_MMR = 1500;
+        const BASE_K = 28;
+        const BASE_GAMES = 30;
+        const MALE_TEAM_WIN_HANDICAP = 0.5;
+        const MIXED_TEAM_LOSS_HANDICAP = 0.5;
+        const HANDICAP_BASE_POINT = 1500;
+        const HANDICAP_ZERO_POINT = 1650;
+        const HANDICAP_MAX = 150;
+        const MANDATORY_PLAYER = "정래민";
+        const MANDATORY_PLAYER_MMR_WEIGHT = 0.7;
 
-    const players = {};
-    const partnerStats = {};
+        const players = {};
+        const partnerStats = {};
 
-    // 이전 순위 저장을 위한 변수
-    let previousRankings = {};
-    try {
-        const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-        if (rankingDoc.exists()) {
-            const rankingData = rankingDoc.data().players || [];
-            rankingData.forEach((player, index) => {
-                const name = player.name;
-                previousRankings[name] = index + 1;
-            });
+        // 이전 순위 저장을 위한 변수
+        let previousRankings = {};
+        try {
+            const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
+            if (rankingDoc.exists()) {
+                const rankingData = rankingDoc.data().players || [];
+                rankingData.forEach((player, index) => {
+                    const name = player.name;
+                    previousRankings[name] = index + 1;
+                });
+            }
+        } catch (e) {
+            console.error("이전 랭킹 로드 실패:", e.message);
         }
-    } catch (e) {
-        console.error("이전 랭킹 로드 실패:", e.message);
-    }
 
-    document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
-        const rawName = row.querySelector('.ranking-player').value.trim();
-        const name = rawName.replace(/\*/g, '');
-        if (name && !players[name]) {
-            players[name] = {
-                name,
-                wins: 0,
-                losses: 0,
-                gameDiff: 0,
-                avgGameDiff: 0,
-                mmr: BASE_MMR,
-                championships: 0,
-                closeWins: 0,
-                closeSets: 0,
-                closeLosses: 0,
-                dominantWins: 0,
-                totalSets: 0,
-                isFemale: rawName.includes('*'),
-                seasonMMRIncrease: 0
-            };
-            partnerStats[name] = {};
-        }
-    });
+        document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
+            const rawName = row.querySelector('.ranking-player').value.trim();
+            const name = rawName.replace(/\*/g, '');
+            if (name && !players[name]) {
+                players[name] = {
+                    name,
+                    wins: 0,
+                    losses: 0,
+                    gameDiff: 0,
+                    avgGameDiff: 0,
+                    mmr: BASE_MMR,
+                    championships: 0,
+                    closeWins: 0,
+                    closeSets: 0,
+                    closeLosses: 0,
+                    dominantWins: 0,
+                    totalSets: 0,
+                    isFemale: rawName.includes('*'),
+                    seasonMMRIncrease: 0
+                };
+                partnerStats[name] = {};
+            }
+        });
 
-    const scheduleTables = document.querySelectorAll('.schedule-table');
-    scheduleTables.forEach((table) => {
-        let roundHasMixedMatch = false;
-        const rows = table.querySelectorAll('tbody tr');
-        let roundWins = {};
+        const scheduleTables = document.querySelectorAll('.schedule-table');
+        scheduleTables.forEach((table) => {
+            let roundHasMixedMatch = false;
+            const rows = table.querySelectorAll('tbody tr');
+            let roundWins = {};
 
-        rows.forEach(row => {
-            const p1Raw = row.querySelector('.player1').value.trim();
-            const p2Raw = row.querySelector('.player2').value.trim();
-            const p3Raw = row.querySelector('.player3').value.trim();
-            const p4Raw = row.querySelector('.player4').value.trim();
-            const score = row.querySelector('.score').value.trim();
+            rows.forEach(row => {
+                const p1Raw = row.querySelector('.player1').value.trim();
+                const p2Raw = row.querySelector('.player2').value.trim();
+                const p3Raw = row.querySelector('.player3').value.trim();
+                const p4Raw = row.querySelector('.player4').value.trim();
+                const score = row.querySelector('.score').value.trim();
 
-            const p1 = p1Raw.replace(/\*/g, '');
-            const p2 = p2Raw.replace(/\*/g, '');
-            const p3 = p3Raw.replace(/\*/g, '');
-            const p4 = p4Raw.replace(/\*/g, '');
+                const p1 = p1Raw.replace(/\*/g, '');
+                const p2 = p2Raw.replace(/\*/g, '');
+                const p3 = p3Raw.replace(/\*/g, '');
+                const p4 = p4Raw.replace(/\*/g, '');
 
-            if (!p1 || !p2 || !p3 || !p4 || !/^\d+-\d+$/.test(score)) return;
+                if (!p1 || !p2 || !p3 || !p4 || !/^\d+-\d+$/.test(score)) return;
 
-            [p1, p2, p3, p4].forEach((name, idx) => {
-                if (name && !players[name]) {
-                    players[name] = {
-                        name,
-                        wins: 0,
-                        losses: 0,
-                        gameDiff: 0,
-                        avgGameDiff: 0,
-                        mmr: BASE_MMR,
-                        championships: 0,
-                        closeWins: 0,
-                        closeSets: 0,
-                        closeLosses: 0,
-                        dominantWins: 0,
-                        totalSets: 0,
-                        isFemale: [p1Raw, p2Raw, p3Raw, p4Raw][idx].includes('*'),
-                        seasonMMRIncrease: 0
-                    };
-                    partnerStats[name] = {};
+                [p1, p2, p3, p4].forEach((name, idx) => {
+                    if (name && !players[name]) {
+                        players[name] = {
+                            name,
+                            wins: 0,
+                            losses: 0,
+                            gameDiff: 0,
+                            avgGameDiff: 0,
+                            mmr: BASE_MMR,
+                            championships: 0,
+                            closeWins: 0,
+                            closeSets: 0,
+                            closeLosses: 0,
+                            dominantWins: 0,
+                            totalSets: 0,
+                            isFemale: [p1Raw, p2Raw, p3Raw, p4Raw][idx].includes('*'),
+                            seasonMMRIncrease: 0
+                        };
+                        partnerStats[name] = {};
+                    }
+                });
+
+                const team1IsMixed = p1Raw.includes('*') || p2Raw.includes('*');
+                const team2IsMixed = p3Raw.includes('*') || p4Raw.includes('*');
+                const team1IsMale = !team1IsMixed;
+                const team2IsMale = !team2IsMixed;
+
+                if (team1IsMixed || team2IsMixed) {
+                    roundHasMixedMatch = true;
                 }
-            });
 
-            const team1IsMixed = p1Raw.includes('*') || p2Raw.includes('*');
-            const team2IsMixed = p3Raw.includes('*') || p4Raw.includes('*');
-            const team1IsMale = !team1IsMixed;
-            const team2IsMale = !team2IsMixed;
+                const getDynamicHandicap = (mmr) => {
+                    if (mmr >= HANDICAP_ZERO_POINT) return 0;
+                    if (mmr <= HANDICAP_BASE_POINT) return HANDICAP_MAX;
+                    const progress = (mmr - HANDICAP_BASE_POINT) / (HANDICAP_ZERO_POINT - HANDICAP_BASE_POINT);
+                    return Math.max(0, HANDICAP_MAX * (1 - progress));
+                };
 
-            if (team1IsMixed || team2IsMixed) {
-                roundHasMixedMatch = true;
-            }
+                let team1MMR = (players[p1].mmr + players[p2].mmr) / 2;
+                let team2MMR = (players[p3].mmr + players[p4].mmr) / 2;
+                let effectiveTeam1MMR = team1MMR;
+                let effectiveTeam2MMR = team2MMR;
 
-            const getDynamicHandicap = (mmr) => {
-                if (mmr >= HANDICAP_ZERO_POINT) return 0;
-                if (mmr <= HANDICAP_BASE_POINT) return HANDICAP_MAX;
-                const progress = (mmr - HANDICAP_BASE_POINT) / (HANDICAP_ZERO_POINT - HANDICAP_BASE_POINT);
-                return Math.max(0, HANDICAP_MAX * (1 - progress));
-            };
-
-            let team1MMR = (players[p1].mmr + players[p2].mmr) / 2;
-            let team2MMR = (players[p3].mmr + players[p4].mmr) / 2;
-            let effectiveTeam1MMR = team1MMR;
-            let effectiveTeam2MMR = team2MMR;
-
-            if (team1IsMixed) {
-                let handicap = 0;
-                if (p1Raw.includes('*')) handicap += getDynamicHandicap(players[p1].mmr);
-                if (p2Raw.includes('*')) handicap += getDynamicHandicap(players[p2].mmr);
-                effectiveTeam1MMR += handicap / (p1Raw.includes('*') && p2Raw.includes('*') ? 2 : 1);
-                effectiveTeam1MMR *= 1.5;
-            }
-            if (team2IsMixed) {
-                let handicap = 0;
-                if (p3Raw.includes('*')) handicap += getDynamicHandicap(players[p3].mmr);
-                if (p4Raw.includes('*')) handicap += getDynamicHandicap(players[p4].mmr);
-                effectiveTeam2MMR += handicap / (p3Raw.includes('*') && p4Raw.includes('*') ? 2 : 1);
-                effectiveTeam2MMR *= 1.5;
-            }
-
-            const expected1 = 1 / (1 + Math.pow(10, (effectiveTeam2MMR - effectiveTeam1MMR) / 400));
-            const [score1, score2] = score.split('-').map(Number);
-            const actual1 = score1 > score2 ? 1 : 0;
-            const gameDiff = Math.abs(score1 - score2);
-            const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
-
-            const updatePlayerMMR = (player, opponentTeamMMR, isWinner) => {
-                const totalGames = player.wins + player.losses;
-                let K = BASE_K / (1 + Math.log10(totalGames / BASE_GAMES + 1));
-                
-                if (player.mmr > 1800) {
-                    K *= Math.max(0.3, 1 - (player.mmr - 1800) / 1000);
+                if (team1IsMixed) {
+                    let handicap = 0;
+                    if (p1Raw.includes('*')) handicap += getDynamicHandicap(players[p1].mmr);
+                    if (p2Raw.includes('*')) handicap += getDynamicHandicap(players[p2].mmr);
+                    effectiveTeam1MMR += handicap / (p1Raw.includes('*') && p2Raw.includes('*') ? 2 : 1);
+                    effectiveTeam1MMR *= 1.5;
                 }
-                
-                const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - player.mmr) / 400));
-                let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate);
-                
-                let opponentWeight = Math.min(1, opponentTeamMMR / player.mmr);
-                if (player.mmr > 1800) {
-                    opponentWeight *= Math.max(0.5, 1 - (player.mmr - 1800) / 2000);
+                if (team2IsMixed) {
+                    let handicap = 0;
+                    if (p3Raw.includes('*')) handicap += getDynamicHandicap(players[p3].mmr);
+                    if (p4Raw.includes('*')) handicap += getDynamicHandicap(players[p4].mmr);
+                    effectiveTeam2MMR += handicap / (p3Raw.includes('*') && p4Raw.includes('*') ? 2 : 1);
+                    effectiveTeam2MMR *= 1.5;
                 }
-                mmrChange *= opponentWeight * scoreWeight;
-                
-                if (player.name === MANDATORY_PLAYER) {
-                    mmrChange *= MANDATORY_PLAYER_MMR_WEIGHT;
+
+                const expected1 = 1 / (1 + Math.pow(10, (effectiveTeam2MMR - effectiveTeam1MMR) / 400));
+                const [score1, score2] = score.split('-').map(Number);
+                const actual1 = score1 > score2 ? 1 : 0;
+                const gameDiff = Math.abs(score1 - score2);
+                const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
+
+                const updatePlayerMMR = (player, opponentTeamMMR, isWinner) => {
+                    const totalGames = player.wins + player.losses;
+                    let K = BASE_K / (1 + Math.log10(totalGames / BASE_GAMES + 1));
+                    
+                    if (player.mmr > 1800) {
+                        K *= Math.max(0.3, 1 - (player.mmr - 1800) / 1000);
+                    }
+                    
+                    const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - player.mmr) / 400));
+                    let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate);
+                    
+                    let opponentWeight = Math.min(1, opponentTeamMMR / player.mmr);
+                    if (player.mmr > 1800) {
+                        opponentWeight *= Math.max(0.5, 1 - (player.mmr - 1800) / 2000);
+                    }
+                    mmrChange *= opponentWeight * scoreWeight;
+                    
+                    if (player.name === MANDATORY_PLAYER) {
+                        mmrChange *= MANDATORY_PLAYER_MMR_WEIGHT;
+                    }
+                    
+                    return mmrChange;
+                };
+
+                let mmrChange1 = updatePlayerMMR(players[p1], team2MMR, actual1);
+                let mmrChange2 = updatePlayerMMR(players[p2], team2MMR, actual1);
+                let mmrChange3 = updatePlayerMMR(players[p3], team1MMR, 1 - actual1);
+                let mmrChange4 = updatePlayerMMR(players[p4], team1MMR, 1 - actual1);
+
+                if (team1IsMale && team2IsMixed && actual1 === 1) {
+                    mmrChange1 *= MALE_TEAM_WIN_HANDICAP;
+                    mmrChange2 *= MALE_TEAM_WIN_HANDICAP;
+                    mmrChange3 *= MALE_TEAM_WIN_HANDICAP;
+                    mmrChange4 *= MALE_TEAM_WIN_HANDICAP;
+                } else if (team2IsMale && team1IsMixed && actual1 === 0) {
+                    mmrChange1 *= MALE_TEAM_WIN_HANDICAP;
+                    mmrChange2 *= MALE_TEAM_WIN_HANDICAP;
+                    mmrChange3 *= MALE_TEAM_WIN_HANDICAP;
+                    mmrChange4 *= MALE_TEAM_WIN_HANDICAP;
                 }
-                
-                return mmrChange;
-            };
 
-            let mmrChange1 = updatePlayerMMR(players[p1], team2MMR, actual1);
-            let mmrChange2 = updatePlayerMMR(players[p2], team2MMR, actual1);
-            let mmrChange3 = updatePlayerMMR(players[p3], team1MMR, 1 - actual1);
-            let mmrChange4 = updatePlayerMMR(players[p4], team1MMR, 1 - actual1);
+                if (team1IsMixed && actual1 === 0) {
+                    mmrChange1 *= MIXED_TEAM_LOSS_HANDICAP;
+                    mmrChange2 *= MIXED_TEAM_LOSS_HANDICAP;
+                } else if (team2IsMixed && actual1 === 1) {
+                    mmrChange3 *= MIXED_TEAM_LOSS_HANDICAP;
+                    mmrChange4 *= MIXED_TEAM_LOSS_HANDICAP;
+                }
 
-            if (team1IsMale && team2IsMixed && actual1 === 1) {
-                mmrChange1 *= MALE_TEAM_WIN_HANDICAP;
-                mmrChange2 *= MALE_TEAM_WIN_HANDICAP;
-                mmrChange3 *= MALE_TEAM_WIN_HANDICAP;
-                mmrChange4 *= MALE_TEAM_WIN_HANDICAP;
-            } else if (team2IsMale && team1IsMixed && actual1 === 0) {
-                mmrChange1 *= MALE_TEAM_WIN_HANDICAP;
-                mmrChange2 *= MALE_TEAM_WIN_HANDICAP;
-                mmrChange3 *= MALE_TEAM_WIN_HANDICAP;
-                mmrChange4 *= MALE_TEAM_WIN_HANDICAP;
-            }
+                const isClose = score1 - score2 === 1 || score2 - score1 === 1 || score1 - score2 === 2 || score2 - score1 === 2;
+                const isDominant1 = (score1 === 6 && score2 <= 1);
+                const isDominant2 = (score2 === 6 && score1 <= 1);
 
-            if (team1IsMixed && actual1 === 0) {
-                mmrChange1 *= MIXED_TEAM_LOSS_HANDICAP;
-                mmrChange2 *= MIXED_TEAM_LOSS_HANDICAP;
-            } else if (team2IsMixed && actual1 === 1) {
-                mmrChange3 *= MIXED_TEAM_LOSS_HANDICAP;
-                mmrChange4 *= MIXED_TEAM_LOSS_HANDICAP;
-            }
+                const updatePlayer = (name, isWinner, gameDiff, mmrChangeVal, isCloseGame, isDominantGame) => {
+                    if (!players[name]) return;
+                    players[name].totalSets++;
+                    players[name].gameDiff += gameDiff;
+                    players[name].mmr += mmrChangeVal;
+                    players[name].seasonMMRIncrease += mmrChangeVal;
+                    if (isWinner) {
+                        players[name].wins++;
+                        if (!roundWins[name]) roundWins[name] = 0;
+                        roundWins[name]++;
+                        if (isCloseGame) players[name].closeWins++;
+                    } else {
+                        players[name].losses++;
+                        if (isCloseGame) players[name].closeLosses++;
+                    }
+                    if (isCloseGame) {
+                        players[name].closeSets++;
+                    }
+                    if (isDominantGame && isWinner) players[name].dominantWins++;
+                };
 
-            const isClose = score1 - score2 === 1 || score2 - score1 === 1 || score1 - score2 === 2 || score2 - score1 === 2;
-            const isDominant1 = (score1 === 6 && score2 <= 1);
-            const isDominant2 = (score2 === 6 && score1 <= 1);
+                updatePlayer(p1, actual1, score1 - score2, mmrChange1, isClose, isDominant1);
+                updatePlayer(p2, actual1, score1 - score2, mmrChange2, isClose, isDominant1);
+                updatePlayer(p3, 1 - actual1, score2 - score1, mmrChange3, isClose, isDominant2);
+                updatePlayer(p4, 1 - actual1, score2 - score1, mmrChange4, isClose, isDominant2);
 
-            const updatePlayer = (name, isWinner, gameDiff, mmrChangeVal, isCloseGame, isDominantGame) => {
-                if (!players[name]) return;
-                players[name].totalSets++;
-                players[name].gameDiff += gameDiff;
-                players[name].mmr += mmrChangeVal;
-                players[name].seasonMMRIncrease += mmrChangeVal;
-                if (isWinner) {
-                    players[name].wins++;
-                    if (!roundWins[name]) roundWins[name] = 0;
-                    roundWins[name]++;
-                    if (isCloseGame) players[name].closeWins++;
+                const updatePartnerStats = (player, partner, isWin, gameDiff) => {
+                    if (!players[player] || !players[partner]) return;
+                    if (!partnerStats[player]) partnerStats[player] = {};
+                    if (!partnerStats[player][partner]) {
+                        partnerStats[player][partner] = { wins: 0, losses: 0, gameDiffSum: 0, matches: 0 };
+                    }
+                    const stats = partnerStats[player][partner];
+                    stats.matches++;
+                    stats.gameDiffSum += gameDiff;
+                    if (isWin) stats.wins++; else stats.losses++;
+                };
+
+                if (actual1 > 0) {
+                    updatePartnerStats(p1, p2, true, score1 - score2);
+                    updatePartnerStats(p2, p1, true, score1 - score2);
+                    updatePartnerStats(p3, p4, false, score2 - score1);
+                    updatePartnerStats(p4, p3, false, score2 - score1);
                 } else {
-                    players[name].losses++;
-                    if (isCloseGame) players[name].closeLosses++;
+                    updatePartnerStats(p1, p2, false, score1 - score2);
+                    updatePartnerStats(p2, p1, false, score1 - score2);
+                    updatePartnerStats(p3, p4, true, score2 - score1);
+                    updatePartnerStats(p4, p3, true, score2 - score1);
                 }
-                if (isCloseGame) {
-                    players[name].closeSets++;
+            });
+
+            Object.keys(roundWins).forEach(pName => {
+                if (roundWins[pName] === 3 && players[pName]) {
+                    const isMalePlayer = !players[pName].isFemale;
+                    const isMixedTeamPlayer = roundHasMixedMatch && !isMalePlayer;
+                    if ((isMalePlayer && roundHasMixedMatch) || isMixedTeamPlayer) {
+                        // 우승 제외
+                    } else {
+                        players[pName].championships++;
+                    }
                 }
-                if (isDominantGame && isWinner) players[name].dominantWins++;
-            };
-
-            updatePlayer(p1, actual1, score1 - score2, mmrChange1, isClose, isDominant1);
-            updatePlayer(p2, actual1, score1 - score2, mmrChange2, isClose, isDominant1);
-            updatePlayer(p3, 1 - actual1, score2 - score1, mmrChange3, isClose, isDominant2);
-            updatePlayer(p4, 1 - actual1, score2 - score1, mmrChange4, isClose, isDominant2);
-
-            const updatePartnerStats = (player, partner, isWin, gameDiff) => {
-                if (!players[player] || !players[partner]) return;
-                if (!partnerStats[player]) partnerStats[player] = {};
-                if (!partnerStats[player][partner]) {
-                    partnerStats[player][partner] = { wins: 0, losses: 0, gameDiffSum: 0, matches: 0 };
-                }
-                const stats = partnerStats[player][partner];
-                stats.matches++;
-                stats.gameDiffSum += gameDiff;
-                if (isWin) stats.wins++; else stats.losses++;
-            };
-
-            if (actual1 > 0) {
-                updatePartnerStats(p1, p2, true, score1 - score2);
-                updatePartnerStats(p2, p1, true, score1 - score2);
-                updatePartnerStats(p3, p4, false, score2 - score1);
-                updatePartnerStats(p4, p3, false, score2 - score1);
-            } else {
-                updatePartnerStats(p1, p2, false, score1 - score2);
-                updatePartnerStats(p2, p1, false, score1 - score2);
-                updatePartnerStats(p3, p4, true, score2 - score1);
-                updatePartnerStats(p4, p3, true, score2 - score1);
-            }
+            });
         });
 
-        Object.keys(roundWins).forEach(pName => {
-            if (roundWins[pName] === 3 && players[pName]) {
-                const isMalePlayer = !players[pName].isFemale;
-                const isMixedTeamPlayer = roundHasMixedMatch && !isMalePlayer;
-                if ((isMalePlayer && roundHasMixedMatch) || isMixedTeamPlayer) {
-                    // 우승 제외
+        let sortedPlayers = Object.values(players).sort((a, b) => b.mmr - a.mmr);
+        if (currentFilter === 'male') sortedPlayers = sortedPlayers.filter(p => !p.isFemale);
+        else if (currentFilter === 'female') sortedPlayers = sortedPlayers.filter(p => p.isFemale);
+
+        // MMR �is토리 저장
+        try {
+            const historyDocRef = doc(db, 'league', 'data', 'mmrHistory', 'v1');
+            const historyDocSnap = await getDoc(historyDocRef);
+            const existingHistory = historyDocSnap.exists() ? historyDocSnap.data().snapshots || [] : [];
+            const newSnapshot = { 
+                game: existingHistory.length + 1,
+                createdAt: new Date().toISOString()
+            };
+            sortedPlayers.forEach(p => {
+                if (p.wins > 0 || p.losses > 0) {
+                    const cleanName = p.name.replace(/[@.*]+/g, '_').replace(/_+/g, '_').trim();
+                    newSnapshot[cleanName] = Math.round(p.mmr);
+                }
+            });
+            console.log("newSnapshot:", newSnapshot);
+            if (Object.keys(newSnapshot).length > 1) {
+                existingHistory.push(newSnapshot);
+                await setDoc(historyDocRef, { snapshots: existingHistory });
+                console.log("MMR 히스토리 저장 완료:", newSnapshot);
+            } else {
+                console.warn("MMR 히스토리 스냅샷 데이터 부족:", newSnapshot);
+                showToast("MMR 히스토리 데이터 부족!");
+            }
+        } catch (e) {
+            console.error("MMR 히스토리 저장 중 오류:", e.message);
+            showToast(`MMR 히스토리 저장 실패: ${e.message}`);
+        }
+
+        // 랭킹 테이블 업데이트
+        const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
+        rankingRows.forEach((row, index) => {
+            const player = sortedPlayers[index];
+            if (player) {
+                player.avgGameDiff = player.totalSets > 0 ? (player.gameDiff / player.totalSets).toFixed(1) : '0.0';
+                const currentRank = index + 1;
+                const previousRank = previousRankings[player.name] || currentRank;
+                const rankChange = previousRank - currentRank;
+                let rankChangeText = '';
+                let rankChangeClass = 'rank-nochange';
+                if (rankChange > 0) {
+                    rankChangeText = `↑${rankChange}`;
+                    rankChangeClass = 'rank-up';
+                } else if (rankChange < 0) {
+                    rankChangeText = `↓${Math.abs(rankChange)}`;
+                    rankChangeClass = 'rank-down';
                 } else {
-                    players[pName].championships++;
+                    rankChangeText = '–';
                 }
-            }
-        });
-    });
 
-    const sortedPlayers = Object.values(players).sort((a, b) => b.mmr - a.mmr);
-
-    // MMR 히스토리 저장
-    try {
-        const historyDocRef = doc(db, 'league', 'data', 'mmrHistory', 'v1');
-        const historyDocSnap = await getDoc(historyDocRef);
-        const existingHistory = historyDocSnap.exists() ? historyDocSnap.data().snapshots || [] : [];
-        const newSnapshot = { 
-            game: existingHistory.length + 1,
-            createdAt: new Date().toISOString()
-        };
-        sortedPlayers.forEach(p => {
-            if (p.wins > 0 || p.losses > 0) {
-                const cleanName = p.name.replace(/[@.*]+/g, '_').replace(/_+/g, '_').trim();
-                newSnapshot[cleanName] = Math.round(p.mmr);
-            }
-        });
-        console.log("newSnapshot:", newSnapshot);
-        if (Object.keys(newSnapshot).length > 1) {
-            existingHistory.push(newSnapshot);
-            await setDoc(historyDocRef, { snapshots: existingHistory });
-            console.log("MMR 히스토리 저장 완료:", newSnapshot);
-        } else {
-            console.warn("MMR 히스토리 스냅샷 데이터 부족:", newSnapshot);
-            showToast("MMR 히스토리 데이터 부족!");
-        }
-    } catch (e) {
-        console.error("MMR 히스토리 저장 중 오류:", e.message);
-        showToast(`MMR 히스토리 저장 실패: ${e.message}`);
-    }
-
-    // 랭킹 테이블 업데이트
-    const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
-    rankingRows.forEach((row, index) => {
-        const player = sortedPlayers[index];
-        if (player) {
-            player.avgGameDiff = player.totalSets > 0 ? (player.gameDiff / player.totalSets).toFixed(1) : '0.0';
-            const currentRank = index + 1;
-            const previousRank = previousRankings[player.name] || currentRank;
-            const rankChange = previousRank - currentRank;
-            let rankChangeText = '';
-            let rankChangeClass = 'rank-nochange';
-            if (rankChange > 0) {
-                rankChangeText = `↑${rankChange}`;
-                rankChangeClass = 'rank-up';
-            } else if (rankChange < 0) {
-                rankChangeText = `↓${Math.abs(rankChange)}`;
-                rankChangeClass = 'rank-down';
+                row.cells[0].innerHTML = `${currentRank}<span class="rank-change ${rankChangeClass}">${rankChangeText}</span>`;
+                row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
+                row.querySelector('.mmr').value = Math.round(player.mmr);
+                row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease.toFixed(2);
+                const champStar = row.querySelector('.championship-star');
+                champStar.dataset.count = player.championships;
+                champStar.textContent = '⭐'.repeat(player.championships);
+                row.querySelector('.wins').value = player.wins;
+                row.querySelector('.losses').value = player.losses;
+                row.querySelector('.avg-game-diff').value = player.avgGameDiff;
+                row.querySelector('.close-rate').value = player.totalSets >= 2 ? (player.closeSets === 0 ? '0' : Math.round(player.closeSets / player.totalSets * 100)) : '0';
+                row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominantWins / player.totalSets * 100) : '0';
+                
+                let bestPartner = { name: '-', score: -Infinity };
+                let worstPartner = { name: '-', score: Infinity };
+                if (partnerStats[player.name]) {
+                    for (const partnerName in partnerStats[player.name]) {
+                        if (partnerName === MANDATORY_PLAYER) continue;
+                        const stats = partnerStats[player.name][partnerName];
+                        if (stats.matches < 2) continue;
+                        const winRate = stats.matches > 0 ? stats.wins / stats.matches : 0;
+                        const avgGameDiff = stats.matches > 0 ? stats.gameDiffSum / stats.matches : 0;
+                        const chemistryScore = (winRate * 70) + (avgGameDiff * 3);
+                        if (chemistryScore > bestPartner.score) { bestPartner = { name: partnerName, score: chemistryScore }; }
+                        if (chemistryScore < worstPartner.score) { worstPartner = { name: partnerName, score: chemistryScore }; }
+                    }
+                }
+                row.querySelector('.best-partner').value = bestPartner.name.replace(/\*/g, '');
+                row.querySelector('.worst-partner').value = worstPartner.name.replace(/\*/g, '');
             } else {
-                rankChangeText = '–';
+                row.cells[0].innerHTML = `${index + 1}<span class="rank-change rank-nochange">–</span>`;
+                row.querySelectorAll('input:not([type=button])').forEach(input => input.value = '');
+                row.querySelector('.championship-star').textContent = '';
             }
+        });
 
-            row.cells[0].innerHTML = `${currentRank}<span class="rank-change ${rankChangeClass}">${rankChangeText}</span>`;
-            row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
-            row.querySelector('.mmr').value = Math.round(player.mmr);
-            row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease.toFixed(2);
-            const champStar = row.querySelector('.championship-star');
-            champStar.dataset.count = player.championships;
-            champStar.textContent = '⭐'.repeat(player.championships);
-            row.querySelector('.wins').value = player.wins;
-            row.querySelector('.losses').value = player.losses;
-            row.querySelector('.avg-game-diff').value = player.avgGameDiff;
-            row.querySelector('.close-rate').value = player.totalSets >= 2 ? (player.closeSets === 0 ? '0' : Math.round(player.closeSets / player.totalSets * 100)) : '0';
-            row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominantWins / player.totalSets * 100) : '0';
-            
-            let bestPartner = { name: '-', score: -Infinity };
-            let worstPartner = { name: '-', score: Infinity };
-            if (partnerStats[player.name]) {
-                for (const partnerName in partnerStats[player.name]) {
-                    if (partnerName === MANDATORY_PLAYER) continue;
-                    const stats = partnerStats[player.name][partnerName];
-                    if (stats.matches < 2) continue;
-                    const winRate = stats.matches > 0 ? stats.wins / stats.matches : 0;
-                    const avgGameDiff = stats.matches > 0 ? stats.gameDiffSum / stats.matches : 0;
-                    const chemistryScore = (winRate * 70) + (avgGameDiff * 3);
-                    if (chemistryScore > bestPartner.score) { bestPartner = { name: partnerName, score: chemistryScore }; }
-                    if (chemistryScore < worstPartner.score) { worstPartner = { name: partnerName, score: chemistryScore }; }
-                }
-            }
-            row.querySelector('.best-partner').value = bestPartner.name.replace(/\*/g, '');
-            row.querySelector('.worst-partner').value = worstPartner.name.replace(/\*/g, '');
-        } else {
-            row.cells[0].innerHTML = `${index + 1}<span class="rank-change rank-nochange">–</span>`;
-            row.querySelectorAll('input:not([type=button])').forEach(input => input.value = '');
-            row.querySelector('.championship-star').textContent = '';
-        }
-    });
-
-    await saveRankings();
-    showToast('순위 업데이트 완료!');
-}
+        await saveRankings();
+        showToast('순위 업데이트 완료!');
+    }
 
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
@@ -812,7 +829,8 @@ async function updateRanking() {
         const saveMatchesBtn = document.getElementById('save-matches');
         const saveRankingsBtn = document.getElementById('save-rankings');
         const updateRankingBtn = document.getElementById('update-ranking');
-        if (!saveScheduleBtn || !saveMatchesBtn || !saveRankingsBtn || !updateRankingBtn) {
+        const toggleRankingsBtn = document.getElementById('toggle-rankings');
+        if (!saveScheduleBtn || !saveMatchesBtn || !saveRankingsBtn || !updateRankingBtn || !toggleRankingsBtn) {
             console.warn("저장 버튼 요소 없음!");
             showToast("버튼 로드 실패!");
             return;
@@ -821,6 +839,21 @@ async function updateRanking() {
         saveMatchesBtn.addEventListener('click', saveMatches);
         saveRankingsBtn.addEventListener('click', saveRankings);
         updateRankingBtn.addEventListener('click', updateRanking);
+        toggleRankingsBtn.addEventListener('click', () => {
+            const lowerRanks = document.querySelectorAll('.lower-rank');
+            const isVisible = lowerRanks[0]?.classList.contains('show');
+            lowerRanks.forEach(row => row.classList.toggle('show'));
+            toggleRankingsBtn.textContent = isVisible ? '더보기' : '접기';
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                updateRanking();
+            });
+        });
     }
 
     function waitForElements(selector, callback, retries = 10, delay = 100) {
