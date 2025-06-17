@@ -94,6 +94,38 @@
             <div style="text-align:center;margin-top:30px"><a href="index.html" class="btn">메인으로 돌아가기</a></div>
         </div>
     </div>
+<script type="text/javascript">
+var gk_isXlsx = false;
+var gk_xlsxFileLookup = {};
+var gk_fileData = {};
+function filledCell(cell) {
+    return cell !== '' && cell != null;
+}
+function loadFileData(filename) {
+    if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+        try {
+            var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+            var firstSheetName = workbook.SheetNames[0];
+            var worksheet = workbook.Sheets[firstSheetName];
+            var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+            var filteredData = jsonData.filter(row => row.some(filledCell));
+            var headerRowIndex = filteredData.findIndex((row, index) =>
+                row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+            );
+            if (headerRowIndex === -1 || headerRowIndex > 25) {
+                headerRowIndex = 0;
+            }
+            var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+            csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+            return csv;
+        } catch (e) {
+            console.error(e);
+            return "";
+        }
+    }
+    return gk_fileData[filename] || "";
+}
+</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
@@ -164,7 +196,7 @@ const generatePlayerComment=(player,scores,totalGamesPlayed)=>{
     else if(consistencyScore<50&&pointsScore<50)comment=`${player.name}: 포인트도 꾸준함도 없는 코트 방랑자!`;
     else if(consistencyScore<50&&winRateScore<50)comment=`${player.name}: 기복 심한 패배의 달인, 정신 차려!`;
     else if(pointsScore>=80&&avgGameDiffScore>=80)comment=`${player.name}: 득점 기계, 점수판 불태움!`;
-    else if(topStats.includes("MMR")&&topStats.includes("압도력"))comment=`${player.name}: MMR 깡패, 상대를 박살냄!`;
+    else if(topStats.includes("MMR")&&topStats.includes("압도력"))comment=`${player.name}: MMR 깡패, 상대를 박살�냄!`;
     else if(topStats.includes("승률")&&topStats.includes("꾸준함"))comment=`${player.name}: 승리 장인, 흔들림 없이 쭉쭉!`;
     else if(topStats.includes("평균 포인트")&&topStats.includes("평균 게임득실"))comment=`${player.name}: 포인트 득실 콤보, 코트의 계산기!`;
     else if(bottomStats.includes("압도력")&&bottomStats.includes("승률"))comment=`${player.name}: 압도도 승리도 없는 코트의 조용한 손님!`;
@@ -258,18 +290,20 @@ const renderMmrChart=(history,topPlayers,useWinRate=false)=>{
         }
         datasets=topPlayers.map((name,i)=>{
             const colors=['#FF1744','#40C4FF','#FFD600','#00E676','#F50057'];
-            return{label:name,data:winRateHistory.map(h=>h[name.replace(/\*/g,'').replace(/\./g,'_')]),borderColor:colors[i%colors.length],backgroundColor:`${colors[i%colors.length]}33`,fill:true,tension:0.3,pointRadius:5,pointHoverRadius:8,borderWidth:3};
+            return{label:name,data:winRateHistory.map(h=>h[name.replace(/\*/g,'').replace(/\./g,'_')]),borderColor:colors[i%colors.length],fill:false,tension:0.3,pointRadius:5,pointHoverRadius:8,borderWidth:3};
         });
         labels=winRateHistory.map((_,i)=>`${i+1}회차`);
         yAxisConfig={ticks:{color:'var(--text-sec)',font:{size:12},stepSize:10,callback:v=>`${v}%`},grid:{color:'var(--border)'},min:0,max:100,title:{display:true,text:'승률 (%)',color:'var(--text)',font:{size:14}}};
     }else{
         if(!history.length)return renderMmrChart([],topPlayers,true);
-        const rounds=matchesData.filter(m=>m.round&&!isNaN(parseInt(m.round))&&parseInt(m.round)<=6).map(m=>parseInt(m.round));
-        const maxRound=rounds.length?Math.min(6,Math.max(...rounds)):Math.min(6,history.length);
-        const displayRounds=Array.from({length:Math.min(maxRound,6)},(_,i)=>maxRound-i).filter(r=>r>0).reverse();
+        const rounds=matchesData.filter(m=>m.round&&typeof m.round!=='undefined').map(m=>parseInt(m.round.toString()));
+        const maxRound=rounds.length?Math.max(...rounds):history.length;
+        const startRound=Math.max(1,maxRound-5);
+        const displayRounds=Array.from({length:Math.min(6,maxRound)},(_,i)=>startRound+i);
+        console.log("MMR 차트 회차:",displayRounds);
         datasets=topPlayers.map((name,i)=>{
             const colors=['#FF1744','#40C4FF','#FFD600','#00E676','#F50057'];
-            return{label:name,data:displayRounds.map(r=>history[r-1]?.[name.replace(/\*/g,'').replace(/\./g,'_')]||null),borderColor:colors[i%colors.length],backgroundColor:`${colors[i%colors.length]}33`,fill:true,tension:0.3,pointRadius:5,pointHoverRadius:8,borderWidth:3};
+            return{label:name,data:displayRounds.map(r=>history[r-1]?.[name.replace(/\*/g,'').replace(/\./g,'_')]||null),borderColor:colors[i%colors.length],fill:false,tension:0.3,pointRadius:5,pointHoverRadius:8,borderWidth:3};
         });
         labels=displayRounds.map(r=>`${r}회차`);
         yAxisConfig={ticks:{color:'var(--text-sec)',font:{size:12},stepSize:20},grid:{color:'var(--border)'},min:1450,max:1750,title:{display:true,text:'MMR',color:'var(--text)',font:{size:14}}};
@@ -307,19 +341,29 @@ const applyTheme=theme=>{
 
 const loadDashboard=async()=>{
     try{
-        const[rankingSnap,historySnap,matchesSnap,awardsSnap]=await Promise.all([
-            getDoc(doc(db,'league','data','rankings','v1')),
-            getDoc(doc(db,'league','data','mmrHistory','v1')),
-            getDocs(collection(db,'league','matches','data')),
-            getDoc(doc(db,'league','data','awards','v1'))
-        ]);
+        console.log("loadDashboard 시작");
+        const rankingPromise=getDoc(doc(db,'league','data','rankings','v1')).catch(e=>{console.error("랭킹 로드 실패:",e);return null;});
+        const historyPromise=getDoc(doc(db,'league','data','mmrHistory','v1')).catch(e=>{console.error("MMR 히스토리 로드 실패:",e);return null;});
+        const matchesPromise=getDocs(collection(db,'league','matches','data')).catch(e=>{console.error("매치 데이터 로드 실패:",e);return null;});
+        const awardsPromise=getDoc(doc(db,'league','data','awards','v1')).catch(e=>{console.error("어워드 로드 실패:",e);return null;});
 
-        allPlayersData=rankingSnap.exists()?rankingSnap.data().players||[]:[];
-        fullMmrHistory=historySnap.exists()?historySnap.data().snapshots||[]:[];
-        matchesData=matchesSnap.docs.map(doc=>({...doc.data(),id:doc.id}));
-        awardsData=awardsSnap.exists()?awardsSnap.data()||{}:{};
+        const [rankingSnap,historySnap,matchesSnap,awardsSnap]=await Promise.all([rankingPromise,historyPromise,matchesPromise,awardsPromise]);
 
-        if(!allPlayersData.length)return showToast("랭킹 데이터 없음!");
+        allPlayersData=rankingSnap&&rankingSnap.exists()?(rankingSnap.data().players||[]):[];
+        console.log("랭킹 데이터:",allPlayersData.length,"명");
+        if(!allPlayersData.length){
+            showToast("랭킹 데이터 없음!");
+            return;
+        }
+
+        fullMmrHistory=historySnap&&historySnap.exists()?(historySnap.data().snapshots||[]):[];
+        console.log("MMR 히스토리:",fullMmrHistory.length,"스냅샷");
+
+        matchesData=matchesSnap?matchesSnap.docs.map(doc=>({...doc.data(),id:doc.id})):[];
+        console.log("매치 데이터:",matchesData.length,"경기");
+
+        awardsData=awardsSnap&&awardsSnap.exists()?(awardsSnap.data()||{}):{};
+        console.log("어워드 데이터:",Object.keys(awardsData).length,"개");
 
         allPlayersData=allPlayersData.map(player=>{
             const cleanName=normalizePlayerName(player.name);
@@ -466,8 +510,8 @@ const loadDashboard=async()=>{
                 const dominantImproveScore=getPercentileScore(dominantImproveRank)/10;
 
                 let earlyPartnerScore=0,latePartnerScore=0;
-                const earlyMatches=matchesData.filter(m=>(normalizePlayerName(m.player1)===normalizePlayerName(player.name)||normalizePlayerName(m.player2)===normalizePlayerName(player.name))&&parseInt(m.round)<=3);
-                const lateMatches=matchesData.filter(m=>(normalizePlayerName(m.player1)===normalizePlayerName(player.name)||normalizePlayerName(m.player2)===normalizePlayerName(player.name))&&parseInt(m.round)>3);
+                const earlyMatches=matchesData.filter(m=>(normalizePlayerName(m.player1)===normalizePlayerName(player.name)||normalizePlayerName(m.player2)===normalizePlayerName(player.name))&&parseInt(m.round||0)<=3);
+                const lateMatches=matchesData.filter(m=>(normalizePlayerName(m.player1)===normalizePlayerName(player.name)||normalizePlayerName(m.player2)===normalizePlayerName(player.name))&&parseInt(m.round||0)>3);
                 if(partnerStats[player.name]){
                     let bestEarlyPartner={score:-Infinity,name:'-'},bestLatePartner={score:-Infinity,name:'-'};
                     for(const partner in partnerStats[player.name]){
@@ -539,7 +583,7 @@ const loadDashboard=async()=>{
                         secondImpactScore=maxImpactScore;impactRunnerUp=impactPlayer;
                         maxImpactScore=impactScore;impactPlayer={name:player.name,value:impactScore.toFixed(2),upsetWins};
                     }else if((impactScore>secondImpactScore||(impactScore===secondImpactScore&&upsetWins>(impactRunnerUp?.upsetWins||0)))&&impactScore<maxImpactScore){
-                        secondImpactScore=impactScore;impactRunnerUp={name:player.name,value:impactScore.toFixed(2),upsetWins};
+                        secondImpactScore=impactScore;impactRunnerUp={name:player.name,value:courtKillerScore.toFixed(2),upsetWins};
                     }
                 }
 
@@ -610,7 +654,7 @@ const loadDashboard=async()=>{
                 diamondHand:{winner:diamondHandPlayer||{name:'-',value:'-'},runnerUp:diamondHandRunnerUp||{name:'-',value:'-'}},
                 rivalPair:{winner:rivalPair||{name:'-',value:'-'},runnerUp:rivalRunnerUp||{name:'-',value:'-'}},
                 formKing:{winner:formKing||{name:'-',value:'-'},runnerUp:formRunnerUp||{name:'-',value:'-'}}
-            },{merge:true});
+            },{merge:true}).catch(e=>console.error("어워드 저장 실패:",e));
 
             const awardDetails={
                 mvpMale:{title:"시즌 MVP (남)",icon:"👑"},
@@ -653,9 +697,10 @@ const loadDashboard=async()=>{
             setupPlayerSelector();
             renderPlayerRadarChart(allPlayersData[0].name);
         }
+        console.log("loadDashboard 완료");
     }catch(error){
-        console.error("데이터 로드 실패:",error.message);
-        showToast("데이터 로드 실패!");
+        console.error("loadDashboard 전체 실패:",error);
+        showToast("데이터 로드 실패! 관리자에게 문의하세요.");
     }
 };
 
