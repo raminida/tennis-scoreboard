@@ -145,7 +145,7 @@ const generatePlayerComment=(player,scores,totalGamesPlayed)=>{
     let comment;
     if(mmrScore>=80&&dominantScore>=80)comment=`${player.name}: 코트 위의 학살자, 라켓이 폭탄임!`;
     else if(mmrScore>=80&&winRateScore>=80)comment=`${player.name}: 승리의 화신, 코트가 놀이터임!`;
-    else if(mmrScore>=80&&consistencyScore>=80)comment=`${player.name}: 믿고 보는 에이스, 언제나 제 몫함!`;
+    else if(mmrScore>=80&&consistencyScore>=80)comment=`${player.name}: 믿고 보는 에이스, 안정감 끝판왕!`;
     else if(mmrScore>=80&&pointsScore>=80)comment=`${player.name}: MMR 포인트 공장장, 점수판 박살!`;
     else if(winRateScore>=80&&dominantScore>=80)comment=`${player.name}: 상대 찢어버리는 핵펀치러, 무자비함!`;
     else if(winRateScore>=80&&avgGameDiffScore>=80)comment=`${player.name}: 득실 장인, 점수 차이로 상대 굴욕!`;
@@ -160,8 +160,9 @@ const generatePlayerComment=(player,scores,totalGamesPlayed)=>{
     else if(winRateScore<50&&avgGameDiffScore<50)comment=`${player.name}: 득실도 승리도 없는 코트 유령!`;
     else if(dominantScore<50&&pointsScore<50)comment=`${player.name}: 살살 치는 연습 상대, 진지하게 좀!`;
     else if(dominantScore<50&&avgGameDiffScore<50)comment=`${player.name}: 압도력 제로, 코트에서 졸았나?`;
-    else if(consistencyScore<50&&mmrScore>=80)comment=`${player.name}: 기복 심한 천재, 오늘은 어떤 얼굴?`;
+    else if(consistencyScore<50&&mmrScore>=80)comment=`${player.name}: 롤러코스터 에이스, 오늘은 어떤 얼굴?`;
     else if(consistencyScore<50&&pointsScore<50)comment=`${player.name}: 포인트도 꾸준함도 없는 코트 방랑자!`;
+    else if(consistencyScore<50&&winRateScore<50)comment=`${player.name}: 기복 심한 패배의 달인, 정신 차려!`;
     else if(pointsScore>=80&&avgGameDiffScore>=80)comment=`${player.name}: 득점 기계, 점수판 불태움!`;
     else if(topStats.includes("MMR")&&topStats.includes("압도력"))comment=`${player.name}: MMR 깡패, 상대를 박살냄!`;
     else if(topStats.includes("승률")&&topStats.includes("꾸준함"))comment=`${player.name}: 승리 장인, 흔들림 없이 쭉쭉!`;
@@ -199,8 +200,14 @@ const renderPlayerRadarChart=playerName=>{
     allPlayersData.forEach(p=>p.dominantRate=parseFloat(p.dominantWins||0));
     const dominantScore=getPercentileScore(getRank(player,'dominantRate'));
 
-    const playerMmrHistory=fullMmrHistory.map(h=>h[playerName.replace(/\*/g,'').replace(/\./g,'_')]).filter(mmr=>mmr!==undefined);
-    let consistencyScore=playerMmrHistory.length<2||playerMmrHistory.every((v,i,a)=>!i||v>=a[i-1])?100:Math.max(0,100-2*Math.sqrt(playerMmrHistory.map(x=>Math.pow(x-playerMmrHistory.reduce((a,b)=>a+b,0)/playerMmrHistory.length,2)).reduce((a,b)=>a+b,0)/playerMmrHistory.length));
+    const playerMatches=matchesData.filter(m=>normalizePlayerName(m.player1)===normalizePlayerName(player.name)||normalizePlayerName(m.player2)===normalizePlayerName(player.name)).slice(-5);
+    const wins=playerMatches.map(m=>normalizePlayerName(m.winner)===normalizePlayerName(player.name)?1:0);
+    const gameDiffs=playerMatches.map(m=>normalizePlayerName(m.winner)===normalizePlayerName(player.name)?parseFloat(m.gameDiff||0):-parseFloat(m.gameDiff||0));
+    const winRateStdDev=wins.length>=3?Math.sqrt(wins.map(x=>Math.pow(x-wins.reduce((a,b)=>a+b,0)/wins.length,2)).reduce((a,b)=>a+b,0)/wins.length):0;
+    const gameDiffStdDev=gameDiffs.length>=3?Math.sqrt(gameDiffs.map(x=>Math.pow(x-gameDiffs.reduce((a,b)=>a+b,0)/gameDiffs.length,2)).reduce((a,b)=>a+b,0)/gameDiffs.length):0;
+    let consistencyScore=totalGames(player)>=3?Math.max(0,100-(winRateStdDev*50+gameDiffStdDev*5)):50;
+    consistencyScore=getPercentileScore([...playedPlayers].sort((a,b)=>(b.consistencyScore||0)-(a.consistencyScore||0)).findIndex(p=>p.name===player.name)+1);
+    player.consistencyScore=consistencyScore;
 
     allPlayersData.forEach(p=>p.avgPointsPerGame=totalGames(p)>0?(parseInt(p.totalPoints||0)/totalGames(p)):0);
     const pointsScore=getPercentileScore(getRank(player,'avgPointsPerGame'));
@@ -208,8 +215,7 @@ const renderPlayerRadarChart=playerName=>{
     const scores={mmrScore,winRateScore,avgGameDiffScore,dominantScore,consistencyScore,pointsScore};
     const data={
         labels:['MMR','승률','평균 게임득실','압도력','꾸준함','평균 포인트'],
-        datasets:[{label:player.name,data:[mmrScore,winRateScore,avgGameDiffScore,dominantScore,consistencyScore,pointsScore],backgroundColor:'rgba(76,175,80,0.2)',borderColor:'rgba(76,175,80,1)',pointBackgroundColor:'rgba(76,175,80,1)'}
-        ]
+        datasets:[{label:player.name,data:[mmrScore,winRateScore,avgGameDiffScore,dominantScore,consistencyScore,pointsScore],backgroundColor:'rgba(76,175,80,0.2)',borderColor:'rgba(76,175,80,1)',pointBackgroundColor:'rgba(76,175,80,1)'}]
     };
 
     if(radarChart)radarChart.destroy();
