@@ -67,10 +67,10 @@
         html[data-theme="light"] details[open] > summary { color: var(--secondary-color); }
         .round-group-content { padding: 15px 10px 5px 10px; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border-color); }
         html[data-theme="light"] .round-group-content { background: rgba(0,0,0,0.02); }
-        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; -webkit-overflow-scrolling: touch; } /* 상하 스크롤 지원 */
         table { width: 100%; min-width: 600px; border-collapse: collapse; }
         th, td { padding: var(--spacing-md) 10px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
-        #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 2; } /* 상단 고정 */
+        #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; } /* 상단 고정, z-index 증가 */
         th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
         html[data-theme="light"] th { background-color: #F9FAFB; }
         .rank-cell { font-weight: 900; color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); position: relative; padding-right: 40px; line-height: 1.2; } /* 순위 숫자 여백 */
