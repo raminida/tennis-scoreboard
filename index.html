@@ -410,320 +410,322 @@
         }
     }
 
-    async function updateRanking() {
-        const BASE_MMR = 1500;
-        const BASE_K = 32;
-        const BASE_GAMES = 30;
-        const MALE_TEAM_WIN_HANDICAP = 0.5;
-        const MIXED_TEAM_LOSS_HANDICAP = 0.5;
-        const HANDICAP_BASE_POINT = 1500;
-        const HANDICAP_ZERO_POINT = 1650;
-        const HANDICAP_MAX = 150;
-        const MANDATORY_PLAYER = "정래민";
-        const MANDATORY_PLAYER_MMR_WEIGHT = 0.7;
+async function updateRanking() {
+    const BASE_MMR = 1500;
+    const BASE_K = 28; // K 값 조정 (점수 차이 반영으로 변동성 줄임)
+    const BASE_GAMES = 30;
+    const MALE_TEAM_WIN_HANDICAP = 0.5;
+    const MIXED_TEAM_LOSS_HANDICAP = 0.5;
+    const HANDICAP_BASE_POINT = 1500;
+    const HANDICAP_ZERO_POINT = 1650;
+    const HANDICAP_MAX = 150;
+    const MANDATORY_PLAYER = "정래민";
+    const MANDATORY_PLAYER_MMR_WEIGHT = 0.7;
 
-        const players = {};
-        const partnerStats = {};
+    const players = {};
+    const partnerStats = {};
 
-        document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
-            const rawName = row.querySelector('.ranking-player').value.trim();
-            const name = rawName.replace(/\*/g, '');
-            if (name && !players[name]) {
-                players[name] = {
-                    name,
-                    wins: 0,
-                    losses: 0,
-                    gameDiff: 0,
-                    avgGameDiff: 0,
-                    mmr: BASE_MMR,
-                    championships: 0,
-                    closeWins: 0,
-                    closeSets: 0,
-                    closeLosses: 0,
-                    dominantWins: 0,
-                    totalSets: 0,
-                    isFemale: rawName.includes('*'),
-                    seasonMMRIncrease: 0
-                };
-                partnerStats[name] = {};
-            }
-        });
-
-        const scheduleTables = document.querySelectorAll('.schedule-table');
-        scheduleTables.forEach((table) => {
-            let roundHasMixedMatch = false;
-            const rows = table.querySelectorAll('tbody tr');
-            let roundWins = {};
-
-            rows.forEach(row => {
-                const p1Raw = row.querySelector('.player1').value.trim();
-                const p2Raw = row.querySelector('.player2').value.trim();
-                const p3Raw = row.querySelector('.player3').value.trim();
-                const p4Raw = row.querySelector('.player4').value.trim();
-                const score = row.querySelector('.score').value.trim();
-
-                const p1 = p1Raw.replace(/\*/g, '');
-                const p2 = p2Raw.replace(/\*/g, '');
-                const p3 = p3Raw.replace(/\*/g, '');
-                const p4 = p4Raw.replace(/\*/g, '');
-
-                if (!p1 || !p2 || !p3 || !p4 || !/^\d+-\d+$/.test(score)) return;
-
-                [p1, p2, p3, p4].forEach((name, idx) => {
-                    if (name && !players[name]) {
-                        players[name] = {
-                            name,
-                            wins: 0,
-                            losses: 0,
-                            gameDiff: 0,
-                            avgGameDiff: 0,
-                            mmr: BASE_MMR,
-                            championships: 0,
-                            closeWins: 0,
-                            closeSets: 0,
-                            closeLosses: 0,
-                            dominantWins: 0,
-                            totalSets: 0,
-                            isFemale: [p1Raw, p2Raw, p3Raw, p4Raw][idx].includes('*'),
-                            seasonMMRIncrease: 0
-                        };
-                        partnerStats[name] = {};
-                    }
-                });
-
-                const team1IsMixed = p1Raw.includes('*') || p2Raw.includes('*');
-                const team2IsMixed = p3Raw.includes('*') || p4Raw.includes('*');
-                const team1IsMale = !team1IsMixed;
-                const team2IsMale = !team2IsMixed;
-
-                if (team1IsMixed || team2IsMixed) {
-                    roundHasMixedMatch = true;
-                }
-
-                const getDynamicHandicap = (mmr) => {
-                    if (mmr >= HANDICAP_ZERO_POINT) return 0;
-                    if (mmr <= HANDICAP_BASE_POINT) return HANDICAP_MAX;
-                    const progress = (mmr - HANDICAP_BASE_POINT) / (HANDICAP_ZERO_POINT - HANDICAP_BASE_POINT);
-                    return Math.max(0, HANDICAP_MAX * (1 - progress));
-                };
-
-                let team1MMR = (players[p1].mmr + players[p2].mmr) / 2;
-                let team2MMR = (players[p3].mmr + players[p4].mmr) / 2;
-                let effectiveTeam1MMR = team1MMR;
-                let effectiveTeam2MMR = team2MMR;
-
-                if (team1IsMixed) {
-                    let handicap = 0;
-                    if (p1Raw.includes('*')) handicap += getDynamicHandicap(players[p1].mmr);
-                    if (p2Raw.includes('*')) handicap += getDynamicHandicap(players[p2].mmr);
-                    effectiveTeam1MMR += handicap / (p1Raw.includes('*') && p2Raw.includes('*') ? 2 : 1);
-                    effectiveTeam1MMR *= 1.5;
-                }
-                if (team2IsMixed) {
-                    let handicap = 0;
-                    if (p3Raw.includes('*')) handicap += getDynamicHandicap(players[p3].mmr);
-                    if (p4Raw.includes('*')) handicap += getDynamicHandicap(players[p4].mmr);
-                    effectiveTeam2MMR += handicap / (p3Raw.includes('*') && p4Raw.includes('*') ? 2 : 1);
-                    effectiveTeam2MMR *= 1.5;
-                }
-
-                const expected1 = 1 / (1 + Math.pow(10, (effectiveTeam2MMR - effectiveTeam1MMR) / 400));
-                const [score1, score2] = score.split('-').map(Number);
-                const actual1 = score1 > score2 ? 1 : 0;
-
-                const updatePlayerMMR = (player, opponentTeamMMR, isWinner) => {
-                    const totalGames = player.wins + player.losses;
-                    let K = BASE_K / (1 + Math.log10(totalGames / BASE_GAMES + 1));
-                    
-                    if (player.mmr > 1800) {
-                        K *= Math.max(0.3, 1 - (player.mmr - 1800) / 1000);
-                    }
-                    
-                    const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - player.mmr) / 400));
-                    let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate);
-                    
-                    let opponentWeight = Math.min(1, opponentTeamMMR / player.mmr);
-                    if (player.mmr > 1800) {
-                        opponentWeight *= Math.max(0.5, 1 - (player.mmr - 1800) / 2000);
-                    }
-                    mmrChange *= opponentWeight;
-                    
-                    if (player.name === MANDATORY_PLAYER) {
-                        mmrChange *= MANDATORY_PLAYER_MMR_WEIGHT;
-                    }
-                    
-                    return mmrChange;
-                };
-
-                let mmrChange1 = updatePlayerMMR(players[p1], team2MMR, actual1);
-                let mmrChange2 = updatePlayerMMR(players[p2], team2MMR, actual1);
-                let mmrChange3 = updatePlayerMMR(players[p3], team1MMR, 1 - actual1);
-                let mmrChange4 = updatePlayerMMR(players[p4], team1MMR, 1 - actual1);
-
-                if (team1IsMale && team2IsMixed && actual1 === 1) {
-                    mmrChange1 *= MALE_TEAM_WIN_HANDICAP;
-                    mmrChange2 *= MALE_TEAM_WIN_HANDICAP;
-                    mmrChange3 *= MALE_TEAM_WIN_HANDICAP;
-                    mmrChange4 *= MALE_TEAM_WIN_HANDICAP;
-                } else if (team2IsMale && team1IsMixed && actual1 === 0) {
-                    mmrChange1 *= MALE_TEAM_WIN_HANDICAP;
-                    mmrChange2 *= MALE_TEAM_WIN_HANDICAP;
-                    mmrChange3 *= MALE_TEAM_WIN_HANDICAP;
-                    mmrChange4 *= MALE_TEAM_WIN_HANDICAP;
-                }
-
-                if (team1IsMixed && actual1 === 0) {
-                    mmrChange1 *= MIXED_TEAM_LOSS_HANDICAP;
-                    mmrChange2 *= MIXED_TEAM_LOSS_HANDICAP;
-                } else if (team2IsMixed && actual1 === 1) {
-                    mmrChange3 *= MIXED_TEAM_LOSS_HANDICAP;
-                    mmrChange4 *= MIXED_TEAM_LOSS_HANDICAP;
-                }
-
-                const isClose = score1 - score2 === 1 || score2 - score1 === 1 || score1 - score2 === 2 || score2 - score1 === 2;
-                const isDominant1 = (score1 === 6 && score2 <= 1);
-                const isDominant2 = (score2 === 6 && score1 <= 1);
-
-                const updatePlayer = (name, isWinner, gameDiff, mmrChangeVal, isCloseGame, isDominantGame) => {
-                    if (!players[name]) return;
-                    players[name].totalSets++;
-                    players[name].gameDiff += gameDiff;
-                    players[name].mmr += mmrChangeVal;
-                    players[name].seasonMMRIncrease += mmrChangeVal;
-                    if (isWinner) {
-                        players[name].wins++;
-                        if (!roundWins[name]) roundWins[name] = 0;
-                        roundWins[name]++;
-                        if (isCloseGame) players[name].closeWins++;
-                    } else {
-                        players[name].losses++;
-                        if (isCloseGame) players[name].closeLosses++;
-                    }
-                    if (isCloseGame) {
-                        players[name].closeSets++;
-                    }
-                    if (isDominantGame && isWinner) players[name].dominantWins++;
-                };
-
-                updatePlayer(p1, actual1, score1 - score2, mmrChange1, isClose, isDominant1);
-                updatePlayer(p2, actual1, score1 - score2, mmrChange2, isClose, isDominant1);
-                updatePlayer(p3, 1 - actual1, score2 - score1, mmrChange3, isClose, isDominant2);
-                updatePlayer(p4, 1 - actual1, score2 - score1, mmrChange4, isClose, isDominant2);
-
-                const updatePartnerStats = (player, partner, isWin, gameDiff) => {
-                    if (!players[player] || !players[partner]) return;
-                    if (!partnerStats[player]) partnerStats[player] = {};
-                    if (!partnerStats[player][partner]) {
-                        partnerStats[player][partner] = { wins: 0, losses: 0, gameDiffSum: 0, matches: 0 };
-                    }
-                    const stats = partnerStats[player][partner];
-                    stats.matches++;
-                    stats.gameDiffSum += gameDiff;
-                    if (isWin) stats.wins++; else stats.losses++;
-                };
-
-                if (actual1 > 0) {
-                    updatePartnerStats(p1, p2, true, score1 - score2);
-                    updatePartnerStats(p2, p1, true, score1 - score2);
-                    updatePartnerStats(p3, p4, false, score2 - score1);
-                    updatePartnerStats(p4, p3, false, score2 - score1);
-                } else {
-                    updatePartnerStats(p1, p2, false, score1 - score2);
-                    updatePartnerStats(p2, p1, false, score1 - score2);
-                    updatePartnerStats(p3, p4, true, score2 - score1);
-                    updatePartnerStats(p4, p3, true, score2 - score1);
-                }
-            });
-
-            Object.keys(roundWins).forEach(pName => {
-                if (roundWins[pName] === 3 && players[pName]) {
-                    const isMalePlayer = !players[pName].isFemale;
-                    const isMixedTeamPlayer = roundHasMixedMatch && !isMalePlayer;
-                    if ((isMalePlayer && roundHasMixedMatch) || isMixedTeamPlayer) {
-                        // 우승 제외
-                    } else {
-                        players[pName].championships++;
-                    }
-                }
-            });
-        });
-
-        const sortedPlayers = Object.values(players).sort((a, b) => b.mmr - a.mmr);
-
-        // MMR 히스토리 저장
-        try {
-            const historyDocRef = doc(db, 'league', 'data', 'mmrHistory', 'v1');
-            const historyDocSnap = await getDoc(historyDocRef);
-            const existingHistory = historyDocSnap.exists() ? historyDocSnap.data().snapshots || [] : [];
-            const newSnapshot = { 
-                game: existingHistory.length + 1,
-                createdAt: new Date().toISOString()
+    document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
+        const rawName = row.querySelector('.ranking-player').value.trim();
+        const name = rawName.replace(/\*/g, '');
+        if (name && !players[name]) {
+            players[name] = {
+                name,
+                wins: 0,
+                losses: 0,
+                gameDiff: 0,
+                avgGameDiff: 0,
+                mmr: BASE_MMR,
+                championships: 0,
+                closeWins: 0,
+                closeSets: 0,
+                closeLosses: 0,
+                dominantWins: 0,
+                totalSets: 0,
+                isFemale: rawName.includes('*'),
+                seasonMMRIncrease: 0
             };
-            sortedPlayers.forEach(p => {
-                if (p.wins > 0 || p.losses > 0) {
-                    const cleanName = p.name.replace(/[@.*]+/g, '_').replace(/_+/g, '_').trim();
-                    newSnapshot[cleanName] = Math.round(p.mmr);
+            partnerStats[name] = {};
+        }
+    });
+
+    const scheduleTables = document.querySelectorAll('.schedule-table');
+    scheduleTables.forEach((table) => {
+        let roundHasMixedMatch = false;
+        const rows = table.querySelectorAll('tbody tr');
+        let roundWins = {};
+
+        rows.forEach(row => {
+            const p1Raw = row.querySelector('.player1').value.trim();
+            const p2Raw = row.querySelector('.player2').value.trim();
+            const p3Raw = row.querySelector('.player3').value.trim();
+            const p4Raw = row.querySelector('.player4').value.trim();
+            const score = row.querySelector('.score').value.trim();
+
+            const p1 = p1Raw.replace(/\*/g, '');
+            const p2 = p2Raw.replace(/\*/g, '');
+            const p3 = p3Raw.replace(/\*/g, '');
+            const p4 = p4Raw.replace(/\*/g, '');
+
+            if (!p1 || !p2 || !p3 || !p4 || !/^\d+-\d+$/.test(score)) return;
+
+            [p1, p2, p3, p4].forEach((name, idx) => {
+                if (name && !players[name]) {
+                    players[name] = {
+                        name,
+                        wins: 0,
+                        losses: 0,
+                        gameDiff: 0,
+                        avgGameDiff: 0,
+                        mmr: BASE_MMR,
+                        championships: 0,
+                        closeWins: 0,
+                        closeSets: 0,
+                        closeLosses: 0,
+                        dominantWins: 0,
+                        totalSets: 0,
+                        isFemale: [p1Raw, p2Raw, p3Raw, p4Raw][idx].includes('*'),
+                        seasonMMRIncrease: 0
+                    };
+                    partnerStats[name] = {};
                 }
             });
-            console.log("newSnapshot:", newSnapshot);
-            if (Object.keys(newSnapshot).length > 1) {
-                existingHistory.push(newSnapshot);
-                await setDoc(historyDocRef, { snapshots: existingHistory });
-                console.log("MMR 히스토리 저장 완료:", newSnapshot);
-            } else {
-                console.warn("MMR 히스토리 스냅샷 데이터 부족:", newSnapshot);
-                showToast("MMR 히스토리 데이터 부족!");
-            }
-        } catch (e) {
-            console.error("MMR 히스토리 저장 중 오류:", e.message);
-            showToast(`MMR 히스토리 저장 실패: ${e.message}`);
-        }
 
-        // 랭킹 테이블 업데이트
-        const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
-        rankingRows.forEach((row, index) => {
-            const player = sortedPlayers[index];
-            if (player) {
-                player.avgGameDiff = player.totalSets > 0 ? (player.gameDiff / player.totalSets).toFixed(1) : '0.0';
-                row.cells[0].textContent = index + 1;
-                row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
-                row.querySelector('.mmr').value = Math.round(player.mmr);
-                row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease.toFixed(2);
-                const champStar = row.querySelector('.championship-star');
-                champStar.dataset.count = player.championships;
-                champStar.textContent = '⭐'.repeat(player.championships);
-                row.querySelector('.wins').value = player.wins;
-                row.querySelector('.losses').value = player.losses;
-                row.querySelector('.avg-game-diff').value = player.avgGameDiff;
-                row.querySelector('.close-rate').value = player.totalSets >= 2 ? (player.closeSets === 0 ? '0' : Math.round(player.closeSets / player.totalSets * 100)) : '0';
-                row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominantWins / player.totalSets * 100) : '0';
+            const team1IsMixed = p1Raw.includes('*') || p2Raw.includes('*');
+            const team2IsMixed = p3Raw.includes('*') || p4Raw.includes('*');
+            const team1IsMale = !team1IsMixed;
+            const team2IsMale = !team2IsMixed;
+
+            if (team1IsMixed || team2IsMixed) {
+                roundHasMixedMatch = true;
+            }
+
+            const getDynamicHandicap = (mmr) => {
+                if (mmr >= HANDICAP_ZERO_POINT) return 0;
+                if (mmr <= HANDICAP_BASE_POINT) return HANDICAP_MAX;
+                const progress = (mmr - HANDICAP_BASE_POINT) / (HANDICAP_ZERO_POINT - HANDICAP_BASE_POINT);
+                return Math.max(0, HANDICAP_MAX * (1 - progress));
+            };
+
+            let team1MMR = (players[p1].mmr + players[p2].mmr) / 2;
+            let team2MMR = (players[p3].mmr + players[p4].mmr) / 2;
+            let effectiveTeam1MMR = team1MMR;
+            let effectiveTeam2MMR = team2MMR;
+
+            if (team1IsMixed) {
+                let handicap = 0;
+                if (p1Raw.includes('*')) handicap += getDynamicHandicap(players[p1].mmr);
+                if (p2Raw.includes('*')) handicap += getDynamicHandicap(players[p2].mmr);
+                effectiveTeam1MMR += handicap / (p1Raw.includes('*') && p2Raw.includes('*') ? 2 : 1);
+                effectiveTeam1MMR *= 1.5;
+            }
+            if (team2IsMixed) {
+                let handicap = 0;
+                if (p3Raw.includes('*')) handicap += getDynamicHandicap(players[p3].mmr);
+                if (p4Raw.includes('*')) handicap += getDynamicHandicap(players[p4].mmr);
+                effectiveTeam2MMR += handicap / (p3Raw.includes('*') && p4Raw.includes('*') ? 2 : 1);
+                effectiveTeam2MMR *= 1.5;
+            }
+
+            const expected1 = 1 / (1 + Math.pow(10, (effectiveTeam2MMR - effectiveTeam1MMR) / 400));
+            const [score1, score2] = score.split('-').map(Number);
+            const actual1 = score1 > score2 ? 1 : 0;
+            const gameDiff = Math.abs(score1 - score2);
+            const scoreWeight = 0.8 + (gameDiff / 6) * 0.7; // 6-5: 0.8, 6-4: 0.97, 6-0: 1.5
+
+            const updatePlayerMMR = (player, opponentTeamMMR, isWinner) => {
+                const totalGames = player.wins + player.losses;
+                let K = BASE_K / (1 + Math.log10(totalGames / BASE_GAMES + 1));
                 
-                let bestPartner = { name: '-', score: -Infinity };
-                let worstPartner = { name: '-', score: Infinity };
-                if (partnerStats[player.name]) {
-                    for (const partnerName in partnerStats[player.name]) {
-                        if (partnerName === MANDATORY_PLAYER) continue; // 정래민 제외
-                        const stats = partnerStats[player.name][partnerName];
-                        if (stats.matches < 2) continue; // 최소 2경기 이상
-                        const winRate = stats.matches > 0 ? stats.wins / stats.matches : 0;
-                        const avgGameDiff = stats.matches > 0 ? stats.gameDiffSum / stats.matches : 0;
-                        const chemistryScore = (winRate * 70) + (avgGameDiff * 3);
-                        if (chemistryScore > bestPartner.score) { bestPartner = { name: partnerName, score: chemistryScore }; }
-                        if (chemistryScore < worstPartner.score) { worstPartner = { name: partnerName, score: chemistryScore }; }
-                    }
+                if (player.mmr > 1800) {
+                    K *= Math.max(0.3, 1 - (player.mmr - 1800) / 1000);
                 }
-                row.querySelector('.best-partner').value = bestPartner.name.replace(/\*/g, '');
-                row.querySelector('.worst-partner').value = worstPartner.name.replace(/\*/g, '');
+                
+                const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - player.mmr) / 400));
+                let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate);
+                
+                let opponentWeight = Math.min(1, opponentTeamMMR / player.mmr);
+                if (player.mmr > 1800) {
+                    opponentWeight *= Math.max(0.5, 1 - (player.mmr - 1800) / 2000);
+                }
+                mmrChange *= opponentWeight * scoreWeight; // 점수 차이 가중치 추가
+                
+                if (player.name === MANDATORY_PLAYER) {
+                    mmrChange *= MANDATORY_PLAYER_MMR_WEIGHT;
+                }
+                
+                return mmrChange;
+            };
+
+            let mmrChange1 = updatePlayerMMR(players[p1], team2MMR, actual1);
+            let mmrChange2 = updatePlayerMMR(players[p2], team2MMR, actual1);
+            let mmrChange3 = updatePlayerMMR(players[p3], team1MMR, 1 - actual1);
+            let mmrChange4 = updatePlayerMMR(players[p4], team1MMR, 1 - actual1);
+
+            if (team1IsMale && team2IsMixed && actual1 === 1) {
+                mmrChange1 *= MALE_TEAM_WIN_HANDICAP;
+                mmrChange2 *= MALE_TEAM_WIN_HANDICAP;
+                mmrChange3 *= MALE_TEAM_WIN_HANDICAP;
+                mmrChange4 *= MALE_TEAM_WIN_HANDICAP;
+            } else if (team2IsMale && team1IsMixed && actual1 === 0) {
+                mmrChange1 *= MALE_TEAM_WIN_HANDICAP;
+                mmrChange2 *= MALE_TEAM_WIN_HANDICAP;
+                mmrChange3 *= MALE_TEAM_WIN_HANDICAP;
+                mmrChange4 *= MALE_TEAM_WIN_HANDICAP;
+            }
+
+            if (team1IsMixed && actual1 === 0) {
+                mmrChange1 *= MIXED_TEAM_LOSS_HANDICAP;
+                mmrChange2 *= MIXED_TEAM_LOSS_HANDICAP;
+            } else if (team2IsMixed && actual1 === 1) {
+                mmrChange3 *= MIXED_TEAM_LOSS_HANDICAP;
+                mmrChange4 *= MIXED_TEAM_LOSS_HANDICAP;
+            }
+
+            const isClose = score1 - score2 === 1 || score2 - score1 === 1 || score1 - score2 === 2 || score2 - score1 === 2;
+            const isDominant1 = (score1 === 6 && score2 <= 1);
+            const isDominant2 = (score2 === 6 && score1 <= 1);
+
+            const updatePlayer = (name, isWinner, gameDiff, mmrChangeVal, isCloseGame, isDominantGame) => {
+                if (!players[name]) return;
+                players[name].totalSets++;
+                players[name].gameDiff += gameDiff;
+                players[name].mmr += mmrChangeVal;
+                players[name].seasonMMRIncrease += mmrChangeVal;
+                if (isWinner) {
+                    players[name].wins++;
+                    if (!roundWins[name]) roundWins[name] = 0;
+                    roundWins[name]++;
+                    if (isCloseGame) players[name].closeWins++;
+                } else {
+                    players[name].losses++;
+                    if (isCloseGame) players[name].closeLosses++;
+                }
+                if (isCloseGame) {
+                    players[name].closeSets++;
+                }
+                if (isDominantGame && isWinner) players[name].dominantWins++;
+            };
+
+            updatePlayer(p1, actual1, score1 - score2, mmrChange1, isClose, isDominant1);
+            updatePlayer(p2, actual1, score1 - score2, mmrChange2, isClose, isDominant1);
+            updatePlayer(p3, 1 - actual1, score2 - score1, mmrChange3, isClose, isDominant2);
+            updatePlayer(p4, 1 - actual1, score2 - score1, mmrChange4, isClose, isDominant2);
+
+            const updatePartnerStats = (player, partner, isWin, gameDiff) => {
+                if (!players[player] || !players[partner]) return;
+                if (!partnerStats[player]) partnerStats[player] = {};
+                if (!partnerStats[player][partner]) {
+                    partnerStats[player][partner] = { wins: 0, losses: 0, gameDiffSum: 0, matches: 0 };
+                }
+                const stats = partnerStats[player][partner];
+                stats.matches++;
+                stats.gameDiffSum += gameDiff;
+                if (isWin) stats.wins++; else stats.losses++;
+            };
+
+            if (actual1 > 0) {
+                updatePartnerStats(p1, p2, true, score1 - score2);
+                updatePartnerStats(p2, p1, true, score1 - score2);
+                updatePartnerStats(p3, p4, false, score2 - score1);
+                updatePartnerStats(p4, p3, false, score2 - score1);
             } else {
-                row.cells[0].textContent = index + 1;
-                row.querySelectorAll('input:not([type=button])').forEach(input => input.value = '');
-                row.querySelector('.championship-star').textContent = '';
+                updatePartnerStats(p1, p2, false, score1 - score2);
+                updatePartnerStats(p2, p1, false, score1 - score2);
+                updatePartnerStats(p3, p4, true, score2 - score1);
+                updatePartnerStats(p4, p3, true, score2 - score1);
             }
         });
 
-        await saveRankings();
-        showToast('순위 업데이트 완료!');
+        Object.keys(roundWins).forEach(pName => {
+            if (roundWins[pName] === 3 && players[pName]) {
+                const isMalePlayer = !players[pName].isFemale;
+                const isMixedTeamPlayer = roundHasMixedMatch && !isMalePlayer;
+                if ((isMalePlayer && roundHasMixedMatch) || isMixedTeamPlayer) {
+                    // 우승 제외
+                } else {
+                    players[pName].championships++;
+                }
+            }
+        });
+    });
+
+    const sortedPlayers = Object.values(players).sort((a, b) => b.mmr - a.mmr);
+
+    // MMR 히스토리 저장
+    try {
+        const historyDocRef = doc(db, 'league', 'data', 'mmrHistory', 'v1');
+        const historyDocSnap = await getDoc(historyDocRef);
+        const existingHistory = historyDocSnap.exists() ? historyDocSnap.data().snapshots || [] : [];
+        const newSnapshot = { 
+            game: existingHistory.length + 1,
+            createdAt: new Date().toISOString()
+        };
+        sortedPlayers.forEach(p => {
+            if (p.wins > 0 || p.losses > 0) {
+                const cleanName = p.name.replace(/[@.*]+/g, '_').replace(/_+/g, '_').trim();
+                newSnapshot[cleanName] = Math.round(p.mmr);
+            }
+        });
+        console.log("newSnapshot:", newSnapshot);
+        if (Object.keys(newSnapshot).length > 1) {
+            existingHistory.push(newSnapshot);
+            await setDoc(historyDocRef, { snapshots: existingHistory });
+            console.log("MMR 히스토리 저장 완료:", newSnapshot);
+        } else {
+            console.warn("MMR 히스토리 스냅샷 데이터 부족:", newSnapshot);
+            showToast("MMR 히스토리 데이터 부족!");
+        }
+    } catch (e) {
+        console.error("MMR 히스토리 저장 중 오류:", e.message);
+        showToast(`MMR 히스토리 저장 실패: ${e.message}`);
     }
+
+    // 랭킹 테이블 업데이트
+    const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
+    rankingRows.forEach((row, index) => {
+        const player = sortedPlayers[index];
+        if (player) {
+            player.avgGameDiff = player.totalSets > 0 ? (player.gameDiff / player.totalSets).toFixed(1) : '0.0';
+            row.cells[0].textContent = index + 1;
+            row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
+            row.querySelector('.mmr').value = Math.round(player.mmr);
+            row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease.toFixed(2);
+            const champStar = row.querySelector('.championship-star');
+            champStar.dataset.count = player.championships;
+            champStar.textContent = '⭐'.repeat(player.championships);
+            row.querySelector('.wins').value = player.wins;
+            row.querySelector('.losses').value = player.losses;
+            row.querySelector('.avg-game-diff').value = player.avgGameDiff;
+            row.querySelector('.close-rate').value = player.totalSets >= 2 ? (player.closeSets === 0 ? '0' : Math.round(player.closeSets / player.totalSets * 100)) : '0';
+            row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominantWins / player.totalSets * 100) : '0';
+            
+            let bestPartner = { name: '-', score: -Infinity };
+            let worstPartner = { name: '-', score: Infinity };
+            if (partnerStats[player.name]) {
+                for (const partnerName in partnerStats[player.name]) {
+                    if (partnerName === MANDATORY_PLAYER) continue; // 정래민 제외
+                    const stats = partnerStats[player.name][partnerName];
+                    if (stats.matches < 2) continue; // 최소 2경기 이상
+                    const winRate = stats.matches > 0 ? stats.wins / stats.matches : 0;
+                    const avgGameDiff = stats.matches > 0 ? stats.gameDiffSum / stats.matches : 0;
+                    const chemistryScore = (winRate * 70) + (avgGameDiff * 3);
+                    if (chemistryScore > bestPartner.score) { bestPartner = { name: partnerName, score: chemistryScore }; }
+                    if (chemistryScore < worstPartner.score) { worstPartner = { name: partnerName, score: chemistryScore }; }
+                }
+            }
+            row.querySelector('.best-partner').value = bestPartner.name.replace(/\*/g, '');
+            row.querySelector('.worst-partner').value = worstPartner.name.replace(/\*/g, '');
+        } else {
+            row.cells[0].textContent = index + 1;
+            row.querySelectorAll('input:not([type=button])').forEach(input => input.value = '');
+            row.querySelector('.championship-star').textContent = '';
+        }
+    });
+
+    await saveRankings();
+    showToast('순위 업데이트 완료!');
+}
 
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
