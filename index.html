@@ -72,11 +72,12 @@
         th, td { padding: var(--spacing-md) 10px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
         th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
         html[data-theme="light"] th { background-color: #F9FAFB; }
-        .rank-cell { font-weight: 900; color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); line-height: 1.5; padding-right: 30px; } /* 순위 숫자 여백 */
-        .rank-change { font-size: 0.7rem; display: block; margin-top: var(--spacing-sm); text-align: right; } /* 변동 아래 배치, 간격 */
+        .rank-cell { font-weight: 900; color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); position: relative; padding-right: 40px; line-height: 1.2; } /* 순위 숫자 여백 */
+        .rank-change { font-size: 0.7rem; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); white-space: nowrap; } /* 변동 옆 배치, 겹침 방지 */
         .rank-up { color: #4CAF50; }
         .rank-down { color: #F44336; }
         .rank-nochange { color: var(--text-secondary-color); }
+        #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; } /* 선수 이름 고정 */
         input[type="text"] { width: 100%; min-width: 80px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
         input.readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
         html[data-theme="light"] input.readonly { background-color: #f0f0f0; }
@@ -796,7 +797,7 @@
     }
 
     function downloadCSV() {
-        let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,경기당 평균 게임 득실,접전률(%),압도승률(%),최고 파트너,최하 파트너\n';
+        let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,경기당 평균 게임 득실,접전률(%),압도승률(%),최고 파트너,최하 파트ner\n';
         document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
             const rawName = row.querySelector('.ranking-player').value.trim();
             const player = rawName.replace(/\*/g, '');
