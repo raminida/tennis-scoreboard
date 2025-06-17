@@ -71,6 +71,11 @@
         th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
         th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
         html[data-theme="light"] th { background-color: #F9FAFB; }
+        .rank-cell { font-weight: 900; color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); position: relative; }
+        .rank-change { font-size: 0.75rem; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); }
+        .rank-up { color: #4CAF50; }
+        .rank-down { color: #F44336; }
+        .rank-nochange { color: var(--text-secondary-color); }
         input[type="text"] { width: 100%; min-width: 80px; padding: 8px; background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
         input[type="text"].readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
         html[data-theme="light"] input[type="text"].readonly { background-color: #f0f0f0; }
@@ -223,7 +228,7 @@
         for (let i = 1; i <= 30; i++) {
             rowsHtml += `
             <tr>
-                <td class="rank-cell">${i}</td><td><input type="text" placeholder="선수 ${i}" class="ranking-player"></td><td><input type="text" class="mmr readonly" readonly></td><td><span class="championship-star"></span></td><td><input type="text" class="wins readonly" readonly></td><td><input type="text" class="losses readonly" readonly></td><td><input type="text" class="avg-game-diff readonly" readonly></td><td><input type="text" class="close-rate readonly" readonly></td><td><input type="text" class="dominant-wins readonly" readonly></td><td><input type="text" class="best-partner readonly" readonly></td><td><input type="text" class="worst-partner readonly" readonly></td>
+                <td class="rank-cell">${i}<span class="rank-change"></span></td><td><input type="text" placeholder="선수 ${i}" class="ranking-player"></td><td><input type="text" class="mmr readonly" readonly></td><td><span class="championship-star"></span></td><td><input type="text" class="wins readonly" readonly></td><td><input type="text" class="losses readonly" readonly></td><td><input type="text" class="avg-game-diff readonly" readonly></td><td><input type="text" class="close-rate readonly" readonly></td><td><input type="text" class="dominant-wins readonly" readonly></td><td><input type="text" class="best-partner readonly" readonly></td><td><input type="text" class="worst-partner readonly" readonly></td>
             </tr>`;
         }
         rankingBody.innerHTML = rowsHtml;
@@ -412,7 +417,7 @@
 
 async function updateRanking() {
     const BASE_MMR = 1500;
-    const BASE_K = 28; // K 값 조정 (점수 차이 반영으로 변동성 줄임)
+    const BASE_K = 28;
     const BASE_GAMES = 30;
     const MALE_TEAM_WIN_HANDICAP = 0.5;
     const MIXED_TEAM_LOSS_HANDICAP = 0.5;
@@ -424,6 +429,21 @@ async function updateRanking() {
 
     const players = {};
     const partnerStats = {};
+
+    // 이전 순위 저장을 위한 변수
+    let previousRankings = {};
+    try {
+        const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
+        if (rankingDoc.exists()) {
+            const rankingData = rankingDoc.data().players || [];
+            rankingData.forEach((player, index) => {
+                const name = player.name;
+                previousRankings[name] = index + 1;
+            });
+        }
+    } catch (e) {
+        console.error("이전 랭킹 로드 실패:", e.message);
+    }
 
     document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
         const rawName = row.querySelector('.ranking-player').value.trim();
@@ -531,7 +551,7 @@ async function updateRanking() {
             const [score1, score2] = score.split('-').map(Number);
             const actual1 = score1 > score2 ? 1 : 0;
             const gameDiff = Math.abs(score1 - score2);
-            const scoreWeight = 0.8 + (gameDiff / 6) * 0.7; // 6-5: 0.8, 6-4: 0.97, 6-0: 1.5
+            const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
 
             const updatePlayerMMR = (player, opponentTeamMMR, isWinner) => {
                 const totalGames = player.wins + player.losses;
@@ -548,7 +568,7 @@ async function updateRanking() {
                 if (player.mmr > 1800) {
                     opponentWeight *= Math.max(0.5, 1 - (player.mmr - 1800) / 2000);
                 }
-                mmrChange *= opponentWeight * scoreWeight; // 점수 차이 가중치 추가
+                mmrChange *= opponentWeight * scoreWeight;
                 
                 if (player.name === MANDATORY_PLAYER) {
                     mmrChange *= MANDATORY_PLAYER_MMR_WEIGHT;
@@ -687,7 +707,22 @@ async function updateRanking() {
         const player = sortedPlayers[index];
         if (player) {
             player.avgGameDiff = player.totalSets > 0 ? (player.gameDiff / player.totalSets).toFixed(1) : '0.0';
-            row.cells[0].textContent = index + 1;
+            const currentRank = index + 1;
+            const previousRank = previousRankings[player.name] || currentRank;
+            const rankChange = previousRank - currentRank;
+            let rankChangeText = '';
+            let rankChangeClass = 'rank-nochange';
+            if (rankChange > 0) {
+                rankChangeText = `↑${rankChange}`;
+                rankChangeClass = 'rank-up';
+            } else if (rankChange < 0) {
+                rankChangeText = `↓${Math.abs(rankChange)}`;
+                rankChangeClass = 'rank-down';
+            } else {
+                rankChangeText = '–';
+            }
+
+            row.cells[0].innerHTML = `${currentRank}<span class="rank-change ${rankChangeClass}">${rankChangeText}</span>`;
             row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
             row.querySelector('.mmr').value = Math.round(player.mmr);
             row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease.toFixed(2);
@@ -704,9 +739,9 @@ async function updateRanking() {
             let worstPartner = { name: '-', score: Infinity };
             if (partnerStats[player.name]) {
                 for (const partnerName in partnerStats[player.name]) {
-                    if (partnerName === MANDATORY_PLAYER) continue; // 정래민 제외
+                    if (partnerName === MANDATORY_PLAYER) continue;
                     const stats = partnerStats[player.name][partnerName];
-                    if (stats.matches < 2) continue; // 최소 2경기 이상
+                    if (stats.matches < 2) continue;
                     const winRate = stats.matches > 0 ? stats.wins / stats.matches : 0;
                     const avgGameDiff = stats.matches > 0 ? stats.gameDiffSum / stats.matches : 0;
                     const chemistryScore = (winRate * 70) + (avgGameDiff * 3);
@@ -717,7 +752,7 @@ async function updateRanking() {
             row.querySelector('.best-partner').value = bestPartner.name.replace(/\*/g, '');
             row.querySelector('.worst-partner').value = worstPartner.name.replace(/\*/g, '');
         } else {
-            row.cells[0].textContent = index + 1;
+            row.cells[0].innerHTML = `${index + 1}<span class="rank-change rank-nochange">–</span>`;
             row.querySelectorAll('input:not([type=button])').forEach(input => input.value = '');
             row.querySelector('.championship-star').textContent = '';
         }
@@ -749,7 +784,7 @@ async function updateRanking() {
             const rawName = row.querySelector('.ranking-player').value.trim();
             const player = rawName.replace(/\*/g, '');
             if (player) {
-                const rank = row.cells[0].textContent;
+                const rank = row.cells[0].textContent.split(' ')[0];
                 const mmr = row.querySelector('.mmr').value;
                 const championships = row.querySelector('.championship-star')?.dataset.count || '0';
                 const wins = row.querySelector('.wins').value;
