@@ -94,41 +94,31 @@
             <div style="text-align:center;margin-top:30px"><a href="index.html" class="btn">메인으로 돌아가기</a></div>
         </div>
     </div>
+    <div id="toast" class="toast"></div>
+
 <script type="text/javascript">
-var gk_isXlsx = false;
-var gk_xlsxFileLookup = {};
-var gk_fileData = {};
-function filledCell(cell) {
-    return cell !== '' && cell != null;
-}
-function loadFileData(filename) {
-    if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-        try {
-            var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-            var firstSheetName = workbook.SheetNames[0];
-            var worksheet = workbook.Sheets[firstSheetName];
-            var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-            var filteredData = jsonData.filter(row => row.some(filledCell));
-            var headerRowIndex = filteredData.findIndex((row, index) =>
-                row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-            );
-            if (headerRowIndex === -1 || headerRowIndex > 25) {
-                headerRowIndex = 0;
-            }
-            var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
-            csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+var gk_isXlsx=false,gk_xlsxFileLookup={},gk_fileData={};
+function filledCell(cell){return cell!==''&&cell!=null;}
+function loadFileData(filename){
+    if(gk_isXlsx&&gk_xlsxFileLookup[filename]){
+        try{
+            var workbook=XLSX.read(gk_fileData[filename],{type:'base64'});
+            var firstSheetName=workbook.SheetNames[0],worksheet=workbook.Sheets[firstSheetName];
+            var jsonData=XLSX.utils.sheet_to_json(worksheet,{header:1,blankrows:false,defval:''});
+            var filteredData=jsonData.filter(row=>row.some(filledCell));
+            var headerRowIndex=filteredData.findIndex((row,index)=>row.filter(filledCell).length>=filteredData[index+1]?.filter(filledCell).length);
+            if(headerRowIndex===-1||headerRowIndex>25)headerRowIndex=0;
+            var csv=XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+            csv=XLSX.utils.sheet_to_csv(csv,{header:1});
             return csv;
-        } catch (e) {
-            console.error(e);
-            return "";
-        }
+        }catch(e){console.error(e);return"";}
     }
-    return gk_fileData[filename] || "";
+    return gk_fileData[filename]||"";
 }
 </script>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+import{initializeApp}from"https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+import{getFirestore,doc,getDoc,setDoc,collection,getDocs}from"https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
 const firebaseConfig={apiKey:"AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",authDomain:"tennis-plan-jibung.firebaseapp.com",projectId:"tennis-plan-jibung",storageBucket:"tennis-plan-jibung.appspot.com",messagingSenderId:"491083537160",appId:"1:491083537160:web:0c2ec53b1285aa1cdc6abd"};
 const db=getFirestore(initializeApp(firebaseConfig));
@@ -175,7 +165,6 @@ const generatePlayerComment=(player,scores,totalGamesPlayed)=>{
     const stats=[{name:"MMR",value:mmrScore},{name:"승률",value:winRateScore},{name:"평균 게임득실",value:avgGameDiffScore},{name:"압도력",value:dominantScore},{name:"꾸준함",value:consistencyScore},{name:"평균 포인트",value:pointsScore}];
     const topStats=stats.sort((a,b)=>b.value-a.value).slice(0,2).map(s=>s.name);
     const bottomStats=stats.sort((a,b)=>a.value-b.value).slice(0,2).map(s=>s.name);
-
     let comment;
     if(mmrScore>=80&&dominantScore>=80)comment=`${player.name}: 코트 위의 학살자, 라켓이 폭탄임!`;
     else if(mmrScore>=80&&winRateScore>=80)comment=`${player.name}: 승리의 화신, 코트가 놀이터임!`;
@@ -203,7 +192,6 @@ const generatePlayerComment=(player,scores,totalGamesPlayed)=>{
     else if(topStats.includes("평균 포인트")&&topStats.includes("평균 게임득실"))comment=`${player.name}: 포인트 득실 콤보, 코트의 계산기!`;
     else if(bottomStats.includes("압도력")&&bottomStats.includes("승률"))comment=`${player.name}: 압도도 승리도 없는 코트의 조용한 손님!`;
     else comment=`${player.name}: ${topStats[0]}와 ${topStats[1]}는 쩔지만, ${bottomStats[0]} 좀 어케 해봐!`;
-
     debugLog(player,'한줄평',comment,{topStats,bottomStats,scores});
     return comment;
 };
@@ -237,10 +225,12 @@ const renderPlayerRadarChart=playerName=>{
     const playerMatches=matchesData.filter(match=>normalizePlayerName(match.player1)===normalizePlayerName(player.name)||normalizePlayerName(match.player2)===normalizePlayerName(player.name)).slice(-5);
     const wins=playerMatches.map(match=>normalizePlayerName(match.winner)===normalizePlayerName(player.name)?1:0);
     const gameDiffs=playerMatches.map(match=>normalizePlayerName(match.winner)===normalizePlayerName(player.name)?parseFloat(match.gameDiff||0):-parseFloat(match.gameDiff||0));
-    const winRateStdDev=wins.length>=3?Math.sqrt(wins.map(x=>Math.pow(x-wins.reduce((a,b)=>a+b,0)/wins.length,2)).reduce((a,b)=>a+b,0)/wins.length):0;
-    const gameDiffStdDev=gameDiffs.length>=3?Math.sqrt(gameDiffs.map(x=>Math.pow(x-gameDiffs.reduce((a,b)=>a+b,0)/gameDiffs.length,2)).reduce((a,b)=>a+b,0)/gameDiffs.length):0;
-    let consistencyScore=totalGames(player)>=3?Math.max(0,100-(winRateStdDev*50+gameDiffStdDev*5)):50;
-    consistencyScore=getPercentileScore([...playedPlayers].sort((a,b)=>(b.consistencyScore||0)-(a.consistencyScore||0)).findIndex(p=>p.name===player.name)+1);
+    const playerHistory=fullMmrHistory.map(h=>h[normalizePlayerName(player.name).replace(/\./g,'_')]).filter(mmr=>mmr!==undefined);
+    const mmrStdDev=playerHistory.length>=5?Math.sqrt(playerHistory.map(x=>Math.pow(x-playerHistory.reduce((a,b)=>a+b,0)/playerHistory.length,2)).reduce((a,b)=>a+b,0)/playerHistory.length):0;
+    const winRateStdDev=playerMatches.length>=5?Math.sqrt(wins.map(x=>Math.pow(x-wins.reduce((a,b)=>a+b,0)/wins.length,2)).reduce((a,b)=>a+b,0)/wins.length):0;
+    const gameDiffStdDev=playerMatches.length>=5?Math.sqrt(gameDiffs.map(x=>Math.pow(x-gameDiffs.reduce((a,b)=>a+b,0)/gameDiffs.length,2)).reduce((a,b)=>a+b,0)/gameDiffs.length):0;
+    const consistencyScore=playerMatches.length>=5?Math.max(0,100-(winRateStdDev*100+gameDiffStdDev*10+mmrStdDev*0.1)):50;
+    console.log(`꾸준 점수 계산: ${player.name}, matches: ${playerMatches.length}, wins: ${wins}, gameDiffs: ${gameDiffs}, mmrStdDev: ${mmrStdDev}, winRateStdDev: ${winRateStdDev}, gameDiffStdDev: ${gameDiffStdDev}, consistencyScore: ${consistencyScore}`);
     player.consistencyScore=consistencyScore;
 
     allPlayersData.forEach(p=>p.avgPointsPerGame=totalGames(p)>0?(parseInt(p.totalPoints||0)/totalGames(p)):0);
@@ -273,43 +263,38 @@ const renderMmrChart=(history,topPlayers,useWinRate=false)=>{
     if(!topPlayers.length)return showToast("TOP 플레이어 데이터 부족!");
     document.querySelector('#mmr-chart-container h3').textContent=useWinRate?"TOP 5 승률 추이":"TOP 5 MMR 추이";
 
-    console.log("TOP 플레이어:",topPlayers);
+    console.log("renderMmrChart 호출, TOP 플레이어:",topPlayers,"히스토리:",history.length);
 
     let datasets,labels,yAxisConfig;
     if(useWinRate){
         const winRateHistory=[];
-        let maxGames=Math.max(...topPlayers.map(name=>totalGames(allPlayersData.find(p=>p.name===name))));
+        let maxGames=Math.max(...topPlayers.map(name=>totalGames(allPlayersData.find(p=>p.name===name))||0));
         for(let i=1;i<=Math.min(maxGames,6);i++){
             const snapshot={round:i};
             topPlayers.forEach(name=>{
                 const player=allPlayersData.find(p=>p.name===name);
                 if(player){
-                    const wins=parseInt(player.wins||0);
-                    const losses=parseInt(player.losses||0);
-                    const gamesPlayed=wins+losses;
-                    snapshot[name.replace(/\*/g,'').replace(/\./g,'_')]=gamesPlayed>=i?(wins/Math.max(gamesPlayed,1))*100:null;
+                    const wins=parseInt(player.wins||0),losses=parseInt(player.losses||0),gamesPlayed=wins+losses;
+                    snapshot[normalizePlayerName(name).replace(/\./g,'_')]=gamesPlayed>=i?(wins/Math.max(gamesPlayed,1))*100:null;
                 }
             });
             winRateHistory.push(snapshot);
         }
-        datasets=topPlayers.map((name,i)=>{
-            const colors=['#FF1744','#40C4FF','#FFD600','#00E676','#F50057'];
-            return{label:name,data:winRateHistory.map(h=>h[name.replace(/\*/g,'').replace(/\./g,'_')]),borderColor:colors[i%colors.length],fill:false,tension:0.3,pointRadius:5,pointHoverRadius:8,borderWidth:3};
-        });
+        datasets=topPlayers.map((name,i)=>({label:name,data:winRateHistory.map(h=>h[normalizePlayerName(name).replace(/\./g,'_')]),borderColor:['#FF1744','#40C4FF','#FFD600','#00E676','#F50057'][i],fill:false,tension:0.3,pointRadius:5,pointHoverRadius:8,borderWidth:3}));
         labels=winRateHistory.map((_,i)=>`${i+1}회차`);
         yAxisConfig={ticks:{color:'var(--text-sec)',font:{size:12},stepSize:10,callback:v=>`${v}%`},grid:{color:'var(--border)'},min:0,max:100,title:{display:true,text:'승률 (%)',color:'var(--text)',font:{size:14}}};
     }else{
-        if(!history.length)return renderMmrChart([],topPlayers,true);
-        const rounds=matchesData.filter(match=>match.round&&(typeof match.round==='string'||typeof match.round==='number')).map(match=>parseInt(match.round.toString()));
-        const maxRound=rounds.length?Math.max(...rounds):history.length;
-        const startRound=Math.max(1,maxRound-5);
-        const displayRounds=Array.from({length:Math.min(6,maxRound)},(_,i)=>startRound+i);
-        console.log("MMR 차트 회차:",displayRounds);
-        datasets=topPlayers.map((name,i)=>{
-            const colors=['#FF1744','#40C4FF','#FFD600','#00E676','#F50057'];
-            return{label:name,data:displayRounds.map(r=>history[r-1]?.[name.replace(/\*/g,'').replace(/\./g,'_')]||null),borderColor:colors[i%colors.length],fill:false,tension:0.3,pointRadius:5,pointHoverRadius:8,borderWidth:3};
-        });
-        labels=displayRounds.map(r=>`${r}회차`);
+        if(!history.length){
+            console.warn("MMR 히스토리 없음, 승률 추이로 폴백");
+            return renderMmrChart([],topPlayers,true);
+        }
+        const displayHistory=history.slice(-6).sort((a,b)=>(b.snapshotId||0)-(a.snapshotId||0));
+        datasets=topPlayers.map((name,i)=>({label:name,data:displayHistory.map(h=>{
+            const mmr=h[normalizePlayerName(name).replace(/\./g,'_')];
+            console.log(`MMR 데이터: ${name}, 값: ${mmr}`);
+            return mmr&&mmr>=1000&&mmr<=2500?mmr:null;
+        }),borderColor:['#FF1744','#40C4FF','#FFD600','#00E676','#F50057'][i],fill:false,tension:0.3,pointRadius:5,pointHoverRadius:8,borderWidth:3}));
+        labels=displayHistory.map(h=>`스냅샷 ${h.snapshotId||'N/A'}`);
         yAxisConfig={ticks:{color:'var(--text-sec)',font:{size:12},stepSize:20},grid:{color:'var(--border)'},min:1450,max:1750,title:{display:true,text:'MMR',color:'var(--text)',font:{size:14}}};
     }
 
@@ -369,15 +354,15 @@ const loadDashboard=async()=>{
 
         matchesData=matchesSnap&&matchesSnap.docs?matchesSnap.docs.map(doc=>({...doc.data(),id:doc.id})):[];
         console.log("매치 데이터:",matchesData.length,"경기");
-        console.log("matchesData 샘플:",matchesData[0]);
+        console.log("matchesData 샘플:",matchesData.slice(0,5));
 
         awardsData=awardsSnap&&awardsSnap.exists()&&typeof awardsSnap.data()==='object'?awardsSnap.data():{};
         console.log("어워드 데이터:",Object.keys(awardsData).length,"개");
 
-        allPlayersData=allPlayersData.map(player=>{
-            const cleanName=normalizePlayerName(player.name);
-            return{...player,gender:femalePlayersList.includes(cleanName)||player.isFemale?'F':'M'};
-        });
+        allPlayersData=allPlayersData.map(player=>({
+            ...player,
+            gender:femalePlayersList.includes(normalizePlayerName(player.name))||player.isFemale?'F':'M'
+        }));
 
         const mixedMatches=matchesData.filter(match=>isMixedTeam(match.winnerPlayer1,match.winnerPlayer2,allPlayersData)||isMixedTeam(match.loserPlayer1,match.loserPlayer2,allPlayersData));
         console.log("혼성 팀 매치:",mixedMatches.length,"경기");
@@ -388,31 +373,12 @@ const loadDashboard=async()=>{
             const getRank=(p,stat)=>[...playedPlayers].sort((a,b)=>(b[stat]||0)-(a[stat]||0)).findIndex(pl=>pl.name===p.name)+1;
             const getPercentileScore=rank=>playedPlayers.length<=1?100:Math.pow((playedPlayers.length-rank)/(playedPlayers.length-1),0.7)*100;
 
-            let mvpMalePlayer=null,maxMvpMaleScore=-Infinity,mvpMaleRunnerUp=null,secondMvpMaleScore=-Infinity;
-            let mvpFemalePlayer=null,maxMvpFemaleScore=-Infinity,mvpFemaleRunnerUp=null,secondMvpFemaleScore=-Infinity;
-            let mostImprovedPlayer=null,maxImprovedScore=-Infinity,improvedRunnerUp=null,secondImprovedScore=-Infinity;
-            let courtKillerPlayer=null,maxCourtKillerScore=-Infinity,courtKillerRunnerUp=null,secondCourtKillerScore=-Infinity;
-            let stormerPlayer=null,maxStormerRate=-Infinity,stormerRunnerUp=null,secondStormerRate=-Infinity;
-            let impactPlayer=null,maxImpactScore=-Infinity,impactRunnerUp=null,secondImpactScore=-Infinity;
-            let diamondHandPlayer=null,maxStabilityScore=-Infinity,diamondHandRunnerUp=null,secondStabilityScore=-Infinity;
-            let rivalPair=null,minRivalDiff=Infinity,rivalRunnerUp=null,secondMinRivalDiff=Infinity;
-            let formKing=null,maxFormScore=-Infinity,formRunnerUp=null,secondFormScore=-Infinity;
-
-            const rivalries={};
-            matchesData.forEach(match=>{
-                if(!match.player1||!match.player2||!match.winner)return;
-                const p1=normalizePlayerName(match.player1),p2=normalizePlayerName(match.player2);
-                if(p1==="정래민"||p2==="정래민")return;
-                const key=[p1,p2].sort().join('-');
-                if(!rivalries[key])rivalries[key]={player1:match.player1,player2:match.player2,games:0,wins1:0,wins2:0};
-                rivalries[key].games++;
-                if(normalizePlayerName(match.winner)===p1)rivalries[key].wins1++;
-                else if(normalizePlayerName(match.winner)===p2)rivalries[key].wins2++;
-            });
-
             const partnerStats={};
             matchesData.forEach(match=>{
-                if(!match.winnerPlayer1||!match.winnerPlayer2||!match.loserPlayer1||!match.loserPlayer2)return;
+                if(!match.winnerPlayer1||!match.winnerPlayer2||!match.loserPlayer1||!match.loserPlayer2){
+                    console.log("파트너 계산용 유효하지 않은 매치 데이터:",match);
+                    return;
+                }
                 const winnerTeam=[match.winnerPlayer1,match.winnerPlayer2];
                 const loserTeam=[match.loserPlayer1,match.loserPlayer2];
                 const gameDiff=parseFloat(match.gameDiff||0);
@@ -433,22 +399,52 @@ const loadDashboard=async()=>{
                     partnerStats[loser][partner].matches++;
                 });
             });
+            console.log("partnerStats 생성 완료:",partnerStats);
 
+            let mvpMalePlayer=null,maxMvpMaleScore=-Infinity,mvpMaleRunnerUp=null,secondMvpMaleScore=-Infinity;
+            let mvpFemalePlayer=null,maxMvpFemaleScore=-Infinity,mvpFemaleRunnerUp=null,secondMvpFemaleScore=-Infinity;
+            let mostImprovedPlayer=null,maxImprovedScore=-Infinity,improvedRunnerUp=null,secondImprovedScore=-Infinity;
+            let courtKillerPlayer=null,maxCourtKillerScore=-Infinity,courtKillerRunnerUp=null,secondCourtKillerScore=-Infinity;
+            let stormerPlayer=null,maxStormerRate=-Infinity,stormerRunnerUp=null,secondStormerRate=-Infinity;
+            let impactPlayer=null,maxImpactScore=-Infinity,impactRunnerUp=null,secondImpactScore=-Infinity;
+            let diamondHandPlayer=null,maxStabilityScore=-Infinity,diamondHandRunnerUp=null,secondStabilityScore=-Infinity;
+            let rivalPair={name:'-',value:'-'},rivalRunnerUp={name:'-',value:'-'};
+            let formKing=null,maxFormScore=-Infinity,formRunnerUp=null,secondFormScore=-Infinity;
+
+            const rivalries={};
             matchesData.forEach(match=>{
-                if(!match.winnerPlayer1||!match.winnerPlayer2||!match.loserPlayer1||!match.loserPlayer2)return;
-                const winnerTeam=[match.winnerPlayer1,match.winnerPlayer2];
-                const loserTeam=[match.loserPlayer1,match.loserPlayer2];
-                winnerTeam.forEach(winner=>{
-                    const mmrChange=calculateMMRChange(winner,loserTeam[0],match,allPlayersData);
-                    const player=allPlayersData.find(p=>normalizePlayerName(p.name)===normalizePlayerName(winner));
-                    if(player)player.mmr=(parseInt(player.mmr)||1500)+mmrChange;
-                });
-                loserTeam.forEach(loser=>{
-                    const mmrChange=calculateMMRChange(winnerTeam[0],loser,match,allPlayersData);
-                    const player=allPlayersData.find(p=>normalizePlayerName(p.name)===normalizePlayerName(loser));
-                    if(player)player.mmr=Math.max(0,(parseInt(player.mmr)||1500)-mmrChange);
-                });
+                if(!match.player1||!match.player2||!match.winner){
+                    console.log("라이벌 계산용 유효하지 않은 매치 데이터:",match);
+                    return;
+                }
+                const p1=normalizePlayerName(match.player1),p2=normalizePlayerName(match.player2);
+                if(p1==="정래민"||p2==="정래민")return;
+                const key=[p1,p2].sort().join('-');
+                if(!rivalries[key])rivalries[key]={player1:match.player1,player2:match.player2,games:0,wins1:0,wins2:0,mmrDiffSum:0};
+                rivalries[key].games++;
+                const player1Data=allPlayersData.find(p=>normalizePlayerName(p.name)===p1);
+                const player2Data=allPlayersData.find(p=>normalizePlayerName(p.name)===p2);
+                const mmrDiff=player1Data&&player2Data?Math.abs((player1Data.mmr||1500)-(player2Data.mmr||1500)):0;
+                rivalries[key].mmrDiffSum+=mmrDiff;
+                if(normalizePlayerName(match.winner)===p1)rivalries[key].wins1++;
+                else if(normalizePlayerName(match.winner)===p2)rivalries[key].wins2++;
             });
+            console.log("라이벌 데이터:",rivalries);
+
+            const rivalDiffs=[];
+            for(const key in rivalries){
+                const rivalry=rivalries[key];
+                if(rivalry.games>=1){
+                    const avgMmrDiff=rivalry.mmrDiffSum/rivalry.games;
+                    rivalDiffs.push({key,mmrDiff:avgMmrDiff,player1:rivalry.player1,player2:rivalry.player2,games:rivalry.games});
+                }
+            }
+            rivalDiffs.sort((a,b)=>b.games-a.games||a.mmrDiff-b.mmrDiff);
+            if(rivalDiffs.length){
+                rivalPair={name:`${rivalDiffs[0].player1} vs ${rivalDiffs[0].player2}`,value:rivalDiffs[0].mmrDiff.toFixed(1)};
+                rivalRunnerUp=rivalDiffs.length>1?{name:`${rivalDiffs[1].player1} vs ${rivalDiffs[1].player2}`,value:rivalDiffs[1].mmrDiff.toFixed(1)}:{name:'-',value:'-'};
+            }
+            console.log("라이벌 계산 결과:",rivalDiffs,rivalPair,rivalRunnerUp);
 
             const top25PercentMMR=[...playedPlayers].sort((a,b)=>(b.mmr||1500)-(a.mmr||1500)).slice(0,Math.ceil(playedPlayers.length*0.25)).map(p=>normalizePlayerName(p.name));
 
@@ -499,7 +495,7 @@ const loadDashboard=async()=>{
                     }
                 }
 
-                const playerHistory=fullMmrHistory.map(h=>h[player.name.replace(/\*/g,'').replace(/\./g,'_')]).filter(mmr=>mmr!==undefined);
+                const playerHistory=fullMmrHistory.map(h=>h[normalizePlayerName(player.name).replace(/\./g,'_')]).filter(mmr=>mmr!==undefined);
                 const initialMMR=playerHistory.length>0?playerHistory[0]:1500;
                 player.mmrGrowthRate=initialMMR>0?((player.mmr-initialMMR)/initialMMR*100):0;
                 const mmrGrowthRank=getRank(player,'mmrGrowthRate');
@@ -529,6 +525,7 @@ const loadDashboard=async()=>{
                 const earlyMatches=matchesData.filter(match=>(normalizePlayerName(match.player1)===normalizePlayerName(player.name)||normalizePlayerName(match.player2)===normalizePlayerName(player.name))&&parseInt(match.round||0)<=3);
                 const lateMatches=matchesData.filter(match=>(normalizePlayerName(match.player1)===normalizePlayerName(player.name)||normalizePlayerName(match.player2)===normalizePlayerName(player.name))&&parseInt(match.round||0)>3);
                 if(partnerStats[player.name]){
+                    console.log(`partnerStats[${player.name}] 존재, 파트너 데이터:`,partnerStats[player.name]);
                     let bestEarlyPartner={score:-Infinity,name:'-'},bestLatePartner={score:-Infinity,name:'-'};
                     for(const partner in partnerStats[player.name]){
                         const stats=partnerStats[player.name][partner];
@@ -544,6 +541,8 @@ const loadDashboard=async()=>{
                     }
                     earlyPartnerScore=bestEarlyPartner.score;
                     latePartnerScore=bestLatePartner.score;
+                }else{
+                    console.log(`partnerStats[${player.name}] 없음, 기본값 사용`);
                 }
                 player.partnerImprovement=latePartnerScore-earlyPartnerScore;
                 const partnerImproveRank=getRank(player,'partnerImprovement');
@@ -565,7 +564,6 @@ const loadDashboard=async()=>{
                 const adjustedWinRate=totalGamesPlayed>0?dominantWinRate/Math.log2(totalGamesPlayed/5+1):0;
                 let courtKillerScore=adjustedWinRate*100*(1+avgGameDiff/10)*(totalGamesPlayed>=20?20/totalGamesPlayed:1);
                 if(totalGamesPlayed<=5||totalGamesPlayed>=20)courtKillerScore*=0.9;
-                if(totalGamesPlayed>=20)console.log(`플레이어 ${player.name} 코트킬러 페널티: 경기 ${totalGamesPlayed}, 보정 ${20/totalGamesPlayed}`);
                 debugLog(player,'코트 킬러 점수',courtKillerScore.toFixed(2),{'압도 승리 비율':(dominantWinRate*100).toFixed(2)+'%','조정 비율':(adjustedWinRate*100).toFixed(2)+'%',avgGameDiff:avgGameDiff.toFixed(2)});
                 if(player.dominantWins>=1&&totalGamesPlayed>=5){
                     if(courtKillerScore>maxCourtKillerScore||(courtKillerScore===maxCourtKillerScore&&player.dominantWins>(courtKillerPlayer?.dominantWins||0))){
@@ -585,18 +583,21 @@ const loadDashboard=async()=>{
                     secondStormerRate=stormerRate;stormerRunnerUp={name:player.name,value:stormerRate.toFixed(1)};
                 }
 
-                let upsetWins=0;
+                let upsetWins=0,mmrWeightedScore=0;
                 matchesData.forEach(match=>{
                     if(normalizePlayerName(match.winner)===normalizePlayerName(player.name)){
                         const opponent=normalizePlayerName(match.player1)===normalizePlayerName(player.name)?match.player2:match.player1;
-                        if(top25PercentMMR.includes(normalizePlayerName(opponent)))upsetWins++;
+                        const opponentData=allPlayersData.find(p=>normalizePlayerName(p.name)===opponent);
+                        if(opponentData&&top25PercentMMR.includes(opponent)){
+                            upsetWins++;
+                            mmrWeightedScore+=Math.max(0,(opponentData.mmr||1500)-(player.mmr||1500))/100;
+                        }
                     }
                 });
                 const upsetWinRate=totalGamesPlayed>0?upsetWins/totalGamesPlayed:0;
-                let impactScore=upsetWinRate*100*(avgGameDiff+1)*(totalGamesPlayed>=20?20/totalGamesPlayed:1);
-                if(totalGamesPlayed<=5||totalGamesPlayed>=20)impactScore*=0.9;
-                if(totalGamesPlayed>=20)console.log(`플레이어 ${player.name} 임팩트 플레이어 페널티: 경기 ${totalGamesPlayed}, 보정 ${20/totalGamesPlayed}`);
-                debugLog(player,'임팩트 플레이어 점수',impactScore.toFixed(2),{'강팀 승리 비율':(upsetWinRate*100).toFixed(2)+'%','강팀 승리':upsetWins,'총 경기':totalGamesPlayed});
+                let impactScore=upsetWins*50+mmrWeightedScore+Math.min(avgGameDiff,3);
+                if(totalGamesPlayed<3)impactScore=0;
+                console.log(`임팩트 계산: ${player.name}, 점수: ${impactScore.toFixed(2)}, 강팀 승리: ${upsetWins}, MMR 가중치: ${mmrWeightedScore.toFixed(2)}`);
                 if(upsetWins>=1&&totalGamesPlayed>=3){
                     if(impactScore>maxImpactScore||(impactScore===maxImpactScore&&upsetWins>(impactPlayer?.upsetWins||0))){
                         secondImpactScore=maxImpactScore;impactRunnerUp=impactPlayer;
@@ -646,22 +647,6 @@ const loadDashboard=async()=>{
                 }
             });
 
-            const rivalDiffs=[];
-            for(const key in rivalries){
-                const rivalry=rivalries[key];
-                if(rivalry.games>=2){
-                    const diff=Math.abs(rivalry.wins1-rivalry.wins2)/Math.max(rivalry.games,1);
-                    rivalDiffs.push({key,diff,player1:rivalry.player1,player2:rivalry.player2,games:rivalry.games});
-                }
-            }
-            rivalDiffs.sort((a,b)=>a.diff-b.diff||a.games-b.games);
-            if(rivalDiffs.length){
-                rivalPair={name:`${rivalDiffs[0].player1} vs ${rivalDiffs[0].player2}`,value:rivalDiffs[0].diff.toFixed(3)};
-                rivalRunnerUp=rivalDiffs.length>1?{name:`${rivalDiffs[1].player1} vs ${rivalDiffs[1].player2}`,value:rivalDiffs[1].diff.toFixed(3)}:{name:'-',value:'-'};
-            }else{
-                rivalPair={name:'-',value:'-'};rivalRunnerUp={name:'-',value:'-'};
-            }
-
             await setDoc(doc(db,'league','data','awards','v1'),{
                 mvpMale:{winner:mvpMalePlayer||{name:'-',value:'-'},runnerUp:mvpMaleRunnerUp||{name:'-',value:'-'}},
                 mvpFemale:{winner:mvpFemalePlayer||{name:'-',value:'-'},runnerUp:mvpFemaleRunnerUp||{name:'-',value:'-'}},
@@ -670,7 +655,7 @@ const loadDashboard=async()=>{
                 stormer:{winner:stormerPlayer||{name:'-',value:'-'},runnerUp:stormerRunnerUp||{name:'-',value:'-'}},
                 impactPlayer:{winner:impactPlayer||{name:'-',value:'-'},runnerUp:impactRunnerUp||{name:'-',value:'-'}},
                 diamondHand:{winner:diamondHandPlayer||{name:'-',value:'-'},runnerUp:diamondHandRunnerUp||{name:'-',value:'-'}},
-                rivalPair:{winner:rivalPair||{name:'-',value:'-'},runnerUp:rivalRunnerUp||{name:'-',value:'-'}},
+                rivalPair:{winner:rivalPair,runnerUp:rivalRunnerUp},
                 formKing:{winner:formKing||{name:'-',value:'-'},runnerUp:formRunnerUp||{name:'-',value:'-'}}
             },{merge:true}).catch(e=>console.error("어워드 저장 실패:",e.message));
 
@@ -692,6 +677,7 @@ const loadDashboard=async()=>{
             for(const key in awardDetails){
                 const awardInfo=awardDetails[key];
                 const data=awardsData[key]||{winner:{name:'-',value:'-'},runnerUp:{name:'-',value:'-'}};
+                console.log(`어워드 렌더링: ${key}, 데이터:`,data);
                 const winner=data.winner?.name||data.name||'-';
                 const winnerValue=data.winner?.value||data.value||'-';
                 const runnerUp=data.runnerUp?.name||'-';
@@ -702,8 +688,8 @@ const loadDashboard=async()=>{
                     <div class="award-icon">${awardInfo.icon}</div>
                     <div class="award-title">${awardInfo.title}</div>
                     <div class="award-winner">${winner}</div>
-                    <div class="award-value">${key==='impactPlayer'?'임팩트 점수':key==='courtKiller'?'압도 점수':key==='diamondHand'?'안정성 점수':key==='rivalPair'?'정규화 점수차이':key==='formKing'?'임팩트 지수':'점수'}: ${winnerValue}</div>
-                    <div class="award-runner-up">2위: ${runnerUp} (${key==='impactPlayer'?'임팩트 점수':key==='courtKiller'?'압도 점수':key==='diamondHand'?'안정성 점수':key==='rivalPair'?'정규화 점수차이':key==='formKing'?'임팩트 지수':'점수'}: ${runnerUpValue})</div>
+                    <div class="award-value">${key==='impactPlayer'?'임팩트 점수':key==='courtKiller'?'압도 점수':key==='diamondHand'?'안정성 점수':key==='rivalPair'?'MMR 차이':key==='formKing'?'임팩트 지수':'점수'}: ${winnerValue}</div>
+                    <div class="award-runner-up">2위: ${runnerUp} (${key==='impactPlayer'?'임팩트 점수':key==='courtKiller'?'압도 점수':key==='diamondHand'?'안정성 점수':key==='rivalPair'?'MMR 차이':key==='formKing'?'임팩트 지수':'점수'}: ${runnerUpValue})</div>
                 `;
                 grid.appendChild(card);
             }
@@ -717,8 +703,8 @@ const loadDashboard=async()=>{
             renderPlayerRadarChart(allPlayersData[0].name);
         }
         console.log("loadDashboard 완료");
-    }catch(error){
-        console.error("loadDashboard 전체 실패:",error.message);
+    }catch(e){
+        console.error("loadDashboard 전체 실패:",e.message);
         showToast("데이터 로드 실패! 관리자에게 문의하세요.");
     }
 };
