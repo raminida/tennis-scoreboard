@@ -1,36 +1,43 @@
 <script type="text/javascript">
-    var gk_isXlsx = false;
-    var gk_xlsxFileLookup = {};
-    var gk_fileData = {};
-    function filledCell(cell) {
-        return cell !== '' && cell != null;
-    }
-    function loadFileData(filename) {
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
         if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
             try {
                 var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
                 var firstSheetName = workbook.SheetNames[0];
                 var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
                 var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
                 var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
                 var headerRowIndex = filteredData.findIndex((row, index) =>
-                    row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
                 );
+                // Fallback
                 if (headerRowIndex === -1 || headerRowIndex > 25) {
-                    headerRowIndex = 0;
+                  headerRowIndex = 0;
                 }
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
                 csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
                 return csv;
             } catch (e) {
-                console.error("XLSX 파싱 오류:", e);
+                console.error(e);
                 return "";
             }
         }
         return gk_fileData[filename] || "";
-    }
-</script>
-<!DOCTYPE html>
+        }
+        </script><!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -78,6 +85,7 @@
         .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: var(--spacing-lg); }
         .btn { display: inline-block; padding: var(--spacing-md) var(--spacing-lg); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; }
         html[data-theme="dark"] .btn { color: var(--bg-color); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .update-btn { width: 100%; margin-top: var(--spacing-lg); padding: 15px; background: linear-gradient(135deg, var(--accent-gold), #F5B02E); color: var(--bg-color); border: none; border-radius: var(--radius); font-size: 1.2rem; font-weight: 900; cursor: pointer; }
         .toast { position: fixed; bottom: var(--spacing-lg); left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #333, #111); color: #fff; padding: var(--spacing-md) 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 1000; }
         .toast.show { opacity: 1; }
@@ -99,7 +107,6 @@
         <div class="section">
             <h2>경기 일정</h2>
             <div id="schedule-container"></div>
-            <!-- 수정: 개별 저장 버튼 제거, 통합 저장 버튼 추가 -->
             <button id="save-all" class="btn">모든 데이터 저장</button>
             <button id="update-ranking" class="btn update-btn">순위 업데이트</button>
         </div>
@@ -126,6 +133,38 @@
     </div>
     <div id="toast" class="toast"></div>
 
+<script type="text/javascript">
+    var gk_isXlsx = false;
+    var gk_xlsxFileLookup = {};
+    var gk_fileData = {};
+    function filledCell(cell) {
+        return cell !== '' && cell != null;
+    }
+    function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                    row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                    headerRowIndex = 0;
+                }
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error("XLSX 파싱 오류:", e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+    }
+</script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
@@ -212,12 +251,13 @@
         console.log("순위표 렌더링 완료!");
     }
 
-    // 수정: 통합 저장 함수 추가
     async function saveAllData() {
         if (!db) {
             showToast('DB 연결 실패!');
             return;
         }
+        const saveAllBtn = document.getElementById('save-all');
+        saveAllBtn.disabled = true;
         try {
             const batch = writeBatch(db);
 
@@ -298,13 +338,30 @@
             const rankingDocRef = doc(db, 'league', 'data', 'rankings', 'v1');
             batch.set(rankingDocRef, { players: rankingData, timestamp: serverTimestamp() }, { merge: true });
 
+            // 4. 랭킹 히스토리 저장
+            const rankingHistoryDocRef = doc(db, 'league', 'data', 'rankingHistory', 'v1');
+            const rankingHistorySnap = await getDoc(rankingHistoryDocRef);
+            const existingHistory = rankingHistorySnap.exists() ? rankingHistorySnap.data().snapshots || [] : [];
+            const newSnapshot = {
+                snapshotId: existingHistory.length + 1,
+                createdAt: new Date().toISOString(),
+                rankings: rankingData.map((player, index) => ({
+                    name: player.name,
+                    rank: index + 1
+                }))
+            };
+            existingHistory.push(newSnapshot);
+            batch.set(rankingHistoryDocRef, { snapshots: existingHistory }, { merge: true });
+
             // Batch 커밋
             await batch.commit();
-            console.log("통합 데이터 저장 성공!");
+            console.log("통합 데이터 및 랭킹 히스토리 저장 성공!");
             showToast("모든 데이터 저장 완료!");
         } catch (e) {
             console.error("통합 데이터 저장 실패:", e.message);
             showToast(`데이터 저장 실패: ${e.message}`);
+        } finally {
+            saveAllBtn.disabled = false;
         }
     }
 
@@ -314,6 +371,7 @@
             return;
         }
         try {
+            // 일정 데이터 로드
             const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
             if (scheduleDoc.exists()) {
                 const scheduleData = scheduleDoc.data().matches || [];
@@ -329,6 +387,8 @@
                 });
                 console.log("스케줄 데이터 로드 완료:", scheduleData);
             }
+
+            // 랭킹 데이터 로드
             const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
             if (rankingDoc.exists()) {
                 const rankingData = rankingDoc.data().players || [];
@@ -348,11 +408,14 @@
                         row.querySelector('.dominant-wins').value = player.dominantWins || '0';
                         row.querySelector('.best-partner').value = player.bestPartner || '-';
                         row.querySelector('.worst-partner').value = player.worstPartner || '-';
+                        row.cells[0].innerHTML = `${index + 1}<span class="rank-change rank-nochange">–</span>`;
                     }
                 });
                 console.log("랭킹 데이터 로드 완료:", rankingData);
             }
-            await updateRanking();
+
+            // 수정: updateRanking 자동 호출 제거
+            console.log("데이터 로드 완료, 순위 업데이트 대기 중");
         } catch (e) {
             console.error("로드 실패:", e.message);
             showToast(`데이터 로드 실패: ${e.message}`);
@@ -360,6 +423,9 @@
     }
 
     async function updateRanking() {
+        const updateRankingBtn = document.getElementById('update-ranking');
+        updateRankingBtn.disabled = true;
+
         const BASE_MMR = 1500;
         const BASE_K = 28;
         const BASE_GAMES = 30;
@@ -374,18 +440,21 @@
         const players = {};
         const partnerStats = {};
 
+        // 이전 순위 로드 (랭킹 히스토리에서 최신 스냅샷 사용)
         let previousRankings = {};
         try {
-            const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-            if (rankingDoc.exists()) {
-                const rankingData = rankingDoc.data().players || [];
-                rankingData.forEach((player, index) => {
-                    const name = player.name;
-                    previousRankings[name] = index + 1;
-                });
+            const rankingHistoryDoc = await getDoc(doc(db, 'league', 'data', 'rankingHistory', 'v1'));
+            if (rankingHistoryDoc.exists()) {
+                const snapshots = rankingHistoryDoc.data().snapshots || [];
+                const latestSnapshot = snapshots[snapshots.length - 1];
+                if (latestSnapshot && latestSnapshot.rankings) {
+                    latestSnapshot.rankings.forEach(player => {
+                        previousRankings[player.name] = player.rank;
+                    });
+                }
             }
         } catch (e) {
-            console.error("이전 랭킹 로드 실패:", e.message);
+            console.error("랭킹 히스토리 로드 실패:", e.message);
         }
 
         document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
@@ -612,6 +681,7 @@
         if (currentFilter === 'male') sortedPlayers = sortedPlayers.filter(p => !p.isFemale);
         else if (currentFilter === 'female') sortedPlayers = sortedPlayers.filter(p => p.isFemale);
 
+        // MMR 히스토리 저장
         try {
             const historyDocRef = doc(db, 'league', 'data', 'mmrHistory', 'v1');
             const historyDocSnap = await getDoc(historyDocRef);
@@ -640,6 +710,7 @@
             showToast(`MMR 히스토리 저장 실패: ${e.message}`);
         }
 
+        // 랭킹 테이블 업데이트
         const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
         rankingRows.forEach((row, index) => {
             const player = sortedPlayers[index];
@@ -673,7 +744,6 @@
                 row.querySelector('.close-rate').value = player.totalSets >= 2 ? (player.closeSets === 0 ? '0' : Math.round(player.closeSets / player.totalSets * 100)) : '0';
                 row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominantWins / player.totalSets * 100) : '0';
                 
-                // 수정: 최고/최하 파트너 계산 로직 개선
                 let bestPartner = { name: '-', score: -Infinity };
                 let worstPartner = { name: '-', score: Infinity };
                 if (partnerStats[player.name]) {
@@ -682,7 +752,7 @@
                         const stats = partnerStats[player.name][partnerName];
                         const winRate = stats.matches > 0 ? stats.wins / stats.matches : 0;
                         const avgGameDiff = stats.matches > 0 ? stats.gameDiffSum / stats.matches : 0;
-                        const chemistryScore = (winRate * 50) + (avgGameDiff * 2) + (stats.matches * 5); // 경기 수 가중치 추가
+                        const chemistryScore = (winRate * 50) + (avgGameDiff * 2) + (stats.matches * 5);
                         if (chemistryScore > bestPartner.score) {
                             bestPartner = { name: partnerName, score: chemistryScore };
                         }
@@ -700,8 +770,9 @@
             }
         });
 
-        await saveAllData(); // 수정: 순위 업데이트 후 통합 저장 호출
+        await saveAllData();
         showToast('순위 업데이트 완료!');
+        updateRankingBtn.disabled = false;
     }
 
     function applyTheme(theme) {
@@ -750,7 +821,6 @@
     }
 
     function setupInputListeners() {
-        // 수정: 통합 저장 버튼 리스너 추가, 개별 저장 버튼 제거
         const saveAllBtn = document.getElementById('save-all');
         const updateRankingBtn = document.getElementById('update-ranking');
         const toggleRankingsBtn = document.getElementById('toggle-rankings');
@@ -773,7 +843,8 @@
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentFilter = btn.dataset.filter;
-                updateRanking();
+                // 필터 변경 시 순위표만 재렌더링 (updateRanking 호출하지 않음)
+                loadData();
             });
         });
     }
