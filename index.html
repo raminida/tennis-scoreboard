@@ -1,140 +1,4 @@
 <script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
-<html lang="ko" data-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 래랑가로스</title>
-    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" integrity="sha384-y3tIif2B4242xI/mS8d43/p/a1uBoL3w7sL2rS4z0nBjwA/2/g8L/DTrb1JScC4k" crossorigin="anonymous"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #121212; --surface-color: #1E1E1E; --primary-color: #4CAF50; --primary-variant-color: #81C784; --secondary-color: #FFFFFF; --text-color: #E0E0E0; --text-secondary-color: #A0A0A0; --accent-gold: #FFD700; --border-color: #333333; --shadow-color: rgba(0, 0, 0, 0.5);
-            --spacing-sm: 8px; --spacing-md: 12px; --spacing-lg: 20px; --radius: 8px;
-        }
-        html[data-theme="light"] {
-            --bg-color: #F0F4F8; --surface-color: #FFFFFF; --primary-color: #1A3C34; --primary-variant-color: #2A6B5B; --text-color: #1F2937; --text-secondary-color: #6B7280; --border-color: #E5E7EB; --shadow-color: rgba(0, 0, 0, 0.1);
-        }
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
-        .container { max-width: 1100px; margin: 0 auto; }
-        h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; color: var(--secondary-color); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: var(--spacing-lg); margin-bottom: 2rem; letter-spacing: -2px; text-shadow: 2px 2px 10px var(--shadow-color); }
-        .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
-        h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--border-color); }
-        details { margin-bottom: 1rem; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-color); }
-        details summary { padding: var(--spacing-md) 15px; cursor: pointer; font-size: 1.1rem; font-weight: 700; outline: none; transition: background 0.3s ease, color 0.3s ease; background: linear-gradient(135deg, #2a2a2a, #222222); color: var(--secondary-color); }
-        html[data-theme="light"] details summary { background: linear-gradient(135deg, #f9f9f9, #f1f1f1); color: var(--text-color); }
-        details[open] > summary { background: var(--primary-color); color: var(--bg-color); }
-        html[data-theme="light"] details[open] > summary { color: var(--secondary-color); }
-        .round-group-content { padding: 15px 10px 5px 10px; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border-color); }
-        html[data-theme="light"] .round-group-content { background: rgba(0,0,0,0.02); }
-        .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; -webkit-overflow-scrolling: touch; } /* 상하 스크롤 지원 */
-        table { width: 100%; min-width: 600px; border-collapse: collapse; }
-        th, td { padding: var(--spacing-md) 10px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
-        #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; } /* 상단 고정, z-index 증가 */
-        th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
-        html[data-theme="light"] th { background-color: #F9FAFB; }
-        .rank-cell { font-weight: 900; color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); position: relative; padding-right: 40px; line-height: 1.2; } /* 순위 숫자 여백 */
-        .rank-change { font-size: 0.7rem; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); white-space: nowrap; } /* 변동 옆 배치, 겹침 방지 */
-        .rank-up { color: #4CAF50; }
-        .rank-down { color: #F44336; }
-        .rank-nochange { color: var(--text-secondary-color); }
-        #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; } /* 선수 이름 고정 */
-        input[type="text"] { width: 100%; min-width: 80px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
-        input.readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
-        html[data-theme="light"] input.readonly { background-color: #f0f0f0; }
-        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: var(--spacing-lg); }
-        .btn { display: inline-block; padding: var(--spacing-md) var(--spacing-lg); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; }
-        html[data-theme="dark"] .btn { color: var(--bg-color); }
-        .update-btn { width: 100%; margin-top: var(--spacing-lg); padding: 15px; background: linear-gradient(135deg, var(--accent-gold), #F5B02E); color: var(--bg-color); border: none; border-radius: var(--radius); font-size: 1.2rem; font-weight: 900; cursor: pointer; }
-        .toast { position: fixed; bottom: var(--spacing-lg); left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #333, #111); color: #fff; padding: var(--spacing-md) 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 1000; }
-        .toast.show { opacity: 1; }
-        .championship-star { color: var(--accent-gold); text-shadow: 0 0 5px var(--accent-gold); font-size: 1.1rem; font-weight: 900; }
-        .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .ranking-player[value$="*"] { color: var(--primary-variant-color); }
-        .ranking-filter { display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-md); }
-        .filter-btn { padding: var(--spacing-sm) var(--spacing-md); background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer; color: var(--text-color); font-weight: 700; }
-        .filter-btn.active { background: var(--primary-color); color: var(--bg-color); }
-        .toggle-btn { padding: var(--spacing-sm) var(--spacing-md); margin: var(--spacing-sm) auto; display: block; }
-        tr.lower-rank { display: none; }
-        tr.lower-rank.show { display: table-row; }
-    </style>
-</head>
-<body>
-    <button class="theme-toggle" id="theme-toggle">☀️</button>
-    <div class="container">
-        <h1>2025 래랑가로스</h1>
-        <div class="section">
-            <h2>경기 일정</h2>
-            <div id="schedule-container"></div>
-            <button id="save-schedule" class="btn">일정 저장</button>
-            <button id="save-matches" class="btn">매치 데이터 저장</button>
-            <button id="save-rankings" class="btn">랭킹 저장</button>
-            <button id="update-ranking" class="btn update-btn">순위 업데이트</button>
-        </div>
-        <div class="section">
-            <h2>시즌 순위표</h2>
-            <div class="ranking-filter">
-                <button class="filter-btn active" data-filter="all">통합 순위</button>
-                <button class="filter-btn" data-filter="male">남자 순위</button>
-                <button class="filter-btn" data-filter="female">여자 순위</button>
-            </div>
-            <div class="table-wrapper">
-                <table id="ranking-table">
-                    <thead><tr><th>순위</th><th>선수</th><th>MMR</th><th>우승</th><th>승</th><th>패</th><th>경기당 평균 게임 득실</th><th>접전률(%)</th><th>압도승률(%)</th><th>최고 파트너</th><th>최하 파트너</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <button id="toggle-rankings" class="btn toggle-btn">더보기</button>
-            <div class="btn-group">
-                <a href="dash.html" class="btn" id="dashboard-link">통계 대시보드</a>
-                <button id="kakao-share-btn" class="btn">카카오톡 공유</button>
-                <button id="download-csv" class="btn">CSV 다운로드</button>
-            </div>
-        </div>
-    </div>
-    <div id="toast" class="toast"></div>
-
-<script type="text/javascript">
     var gk_isXlsx = false;
     var gk_xlsxFileLookup = {};
     var gk_fileData = {};
@@ -166,6 +30,102 @@
         return gk_fileData[filename] || "";
     }
 </script>
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025 래랑가로스</title>
+    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" integrity="sha384-y3tIif2B4242xI/mS8d43/p/a1uBoL3w7sL2rS4z0nBjwA/2/g8L/DTrb1JScC4k" crossorigin="anonymous"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #121212; --surface-color: #1E1E1E; --primary-color: #4CAF50; --primary-variant-color: #81C784; --secondary-color: #FFFFFF; --text-color: #E0E0E0; --text-secondary-color: #A0A0A0; --accent-gold: #FFD700; --border-color: #333333; --shadow-color: rgba(0, 0, 0, 0.5);
+            --spacing-sm: 8px; --spacing-md: 12px; --spacing-lg: 20px; --radius: 8px;
+        }
+        html[data-theme="light"] {
+            --bg-color: #F0F4F8; --surface-color: #FFFFFF; --primary-color: #1A3C34; --primary-variant-color: #2A6B5B; --text-color: #1F2937; --text-secondary-color: #6B7280; --border-color: #E5E7EB; --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; color: var(--secondary-color); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: var(--spacing-lg); margin-bottom: 2rem; letter-spacing: -2px; text-shadow: 2px 2px 10px var(--shadow-color); }
+        .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
+        h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--border-color); }
+        details { margin-bottom: 1rem; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-color); }
+        details summary { padding: var(--spacing-md) 15px; cursor: pointer; font-size: 1.1rem; font-weight: 700; outline: none; transition: background 0.3s ease, color 0.3s ease; background: linear-gradient(135deg, #2a2a2a, #222222); color: var(--secondary-color); }
+        html[data-theme="light"] details summary { background: linear-gradient(135deg, #f9f9f9, #f1f1f1); color: var(--text-color); }
+        details[open] > summary { background: var(--primary-color); color: var(--bg-color); }
+        html[data-theme="light"] details[open] > summary { color: var(--secondary-color); }
+        .round-group-content { padding: 15px 10px 5px 10px; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border-color); }
+        html[data-theme="light"] .round-group-content { background: rgba(0,0,0,0.02); }
+        .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; min-width: 600px; border-collapse: collapse; }
+        th, td { padding: var(--spacing-md) 10px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
+        #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; }
+        th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
+        html[data-theme="light"] th { background-color: #F9FAFB; }
+        .rank-cell { font-weight: 900; color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); position: relative; padding-right: 40px; line-height: 1.2; }
+        .rank-change { font-size: 0.7rem; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); white-space: nowrap; }
+        .rank-up { color: #4CAF50; }
+        .rank-down { color: #F44336; }
+        .rank-nochange { color: var(--text-secondary-color); }
+        #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; }
+        input[type="text"] { width: 100%; min-width: 80px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
+        input.readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
+        html[data-theme="light"] input.readonly { background-color: #f0f0f0; }
+        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: var(--spacing-lg); }
+        .btn { display: inline-block; padding: var(--spacing-md) var(--spacing-lg); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; }
+        html[data-theme="dark"] .btn { color: var(--bg-color); }
+        .update-btn { width: 100%; margin-top: var(--spacing-lg); padding: 15px; background: linear-gradient(135deg, var(--accent-gold), #F5B02E); color: var(--bg-color); border: none; border-radius: var(--radius); font-size: 1.2rem; font-weight: 900; cursor: pointer; }
+        .toast { position: fixed; bottom: var(--spacing-lg); left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #333, #111); color: #fff; padding: var(--spacing-md) 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 1000; }
+        .toast.show { opacity: 1; }
+        .championship-star { color: var(--accent-gold); text-shadow: 0 0 5px var(--accent-gold); font-size: 1.1rem; font-weight: 900; }
+        .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .ranking-player[value$="*"] { color: var(--primary-variant-color); }
+        .ranking-filter { display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-md); }
+        .filter-btn { padding: var(--spacing-sm) var(--spacing-md); background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer; color: var(--text-color); font-weight: 700; }
+        .filter-btn.active { background: var(--primary-color); color: var(--bg-color); }
+        .toggle-btn { padding: var(--spacing-sm) var(--spacing-md); margin: var(--spacing-sm) auto; display: block; }
+        tr.lower-rank { display: none; }
+        tr.lower-rank.show { display: table-row; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="theme-toggle">☀️</button>
+    <div class="container">
+        <h1>2025 래랑가로스</h1>
+        <div class="section">
+            <h2>경기 일정</h2>
+            <div id="schedule-container"></div>
+            <!-- 수정: 개별 저장 버튼 제거, 통합 저장 버튼 추가 -->
+            <button id="save-all" class="btn">모든 데이터 저장</button>
+            <button id="update-ranking" class="btn update-btn">순위 업데이트</button>
+        </div>
+        <div class="section">
+            <h2>시즌 순위표</h2>
+            <div class="ranking-filter">
+                <button class="filter-btn active" data-filter="all">통합 순위</button>
+                <button class="filter-btn" data-filter="male">남자 순위</button>
+                <button class="filter-btn" data-filter="female">여자 순위</button>
+            </div>
+            <div class="table-wrapper">
+                <table id="ranking-table">
+                    <thead><tr><th>순위</th><th>선수</th><th>MMR</th><th>우승</th><th>승</th><th>패</th><th>경기당 평균 게임 득실</th><th>접전률(%)</th><th>압도승률(%)</th><th>최고 파트너</th><th>최하 파트너</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button id="toggle-rankings" class="btn toggle-btn">더보기</button>
+            <div class="btn-group">
+                <a href="dash.html" class="btn" id="dashboard-link">통계 대시보드</a>
+                <button id="kakao-share-btn" class="btn">카카오톡 공유</button>
+                <button id="download-csv" class="btn">CSV 다운로드</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="toast"></div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
@@ -252,15 +212,18 @@
         console.log("순위표 렌더링 완료!");
     }
 
-    async function saveSchedule() {
+    // 수정: 통합 저장 함수 추가
+    async function saveAllData() {
         if (!db) {
-            showToast('DB 연결 실패');
+            showToast('DB 연결 실패!');
             return;
         }
         try {
+            const batch = writeBatch(db);
+
+            // 1. 일정 데이터 저장
             const scheduleTables = document.querySelectorAll('.schedule-table');
             const scheduleData = [];
-
             scheduleTables.forEach(table => {
                 const roundId = table.getAttribute('data-round-id');
                 const rows = table.querySelectorAll('tbody tr');
@@ -270,7 +233,6 @@
                     const player3 = row.querySelector('.player3').value.trim();
                     const player4 = row.querySelector('.player4').value.trim();
                     const scoreInput = row.querySelector('.score').value.trim();
-
                     if (player1 && player2 && player3 && player4) {
                         scheduleData.push({
                             round: parseInt(roundId),
@@ -280,26 +242,11 @@
                     }
                 });
             });
+            const scheduleDocRef = doc(db, 'league', 'data', 'schedule', 'v1');
+            batch.set(scheduleDocRef, { matches: scheduleData, timestamp: serverTimestamp() }, { merge: true });
 
-            await setDoc(doc(db, 'league', 'data', 'schedule', 'v1'), { matches: scheduleData, timestamp: serverTimestamp() }, { merge: true });
-            console.log("일정 데이터 저장 성공:", scheduleData);
-            showToast("일정 저장 완료!");
-        } catch (e) {
-            console.error("일정 저장 실패:", e.message);
-            showToast(`일정 저장 실패: ${e.message}`);
-        }
-    }
-
-    async function saveMatches() {
-        if (!db) {
-            console.error("DB 객체 없음!");
-            showToast('DB 연결 실패');
-            return;
-        }
-        console.log("DB 객체:", db);
-        try {
+            // 2. 매치 데이터 저장
             const matchDataList = [];
-            const scheduleTables = document.querySelectorAll('.schedule-table');
             scheduleTables.forEach(table => {
                 const rows = table.querySelectorAll('tbody tr');
                 rows.forEach(row => {
@@ -308,12 +255,10 @@
                     const player3 = row.querySelector('.player3').value.trim();
                     const player4 = row.querySelector('.player4').value.trim();
                     const scoreInput = row.querySelector('.score').value.trim();
-
                     if (player1 && player2 && player3 && player4 && scoreInput && /^\d+-\d+$/.test(scoreInput)) {
                         const [score1, score2] = scoreInput.split('-').map(Number);
                         const winner = score1 > score2 ? (player1 || player2) : (player3 || player4);
                         const gameDiff = Math.abs(score1 - score2);
-
                         const matchEntry = {
                             player1: player1 || player2,
                             player2: player3 || player4,
@@ -325,33 +270,12 @@
                     }
                 });
             });
-
-            console.log("저장할 매치 데이터:", matchDataList);
-            if (matchDataList.length === 0) {
-                showToast("저장할 매치 데이터 없음!");
-                return;
-            }
-
-            const batch = writeBatch(db);
             matchDataList.forEach((match, index) => {
-                const docRef = doc(collection(db, 'league/matches/data'), `match_${Date.now()}_${index}`);
-                batch.set(docRef, match);
+                const matchDocRef = doc(collection(db, 'league/matches/data'), `match_${Date.now()}_${index}`);
+                batch.set(matchDocRef, match);
             });
-            await batch.commit();
-            console.log("매치 데이터 저장 성공:", matchDataList);
-            showToast("매치 데이터 저장 완료!");
-        } catch (e) {
-            console.error("매치 데이터 저장 실패:", e);
-            showToast(`매치 데이터 저장 실패: ${e.message}`);
-        }
-    }
 
-    async function saveRankings() {
-        if (!db) {
-            showToast('DB 연결 실패');
-            return;
-        }
-        try {
+            // 3. 랭킹 데이터 저장
             const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
             const rankingData = Array.from(rankingRows).map(row => {
                 const rawName = row.querySelector('.ranking-player').value.trim();
@@ -371,13 +295,16 @@
                     seasonMMRIncrease: parseFloat(row.querySelector('.mmr').dataset.seasonMMRIncrease) || 0
                 };
             }).filter(player => player.name);
+            const rankingDocRef = doc(db, 'league', 'data', 'rankings', 'v1');
+            batch.set(rankingDocRef, { players: rankingData, timestamp: serverTimestamp() }, { merge: true });
 
-            await setDoc(doc(db, 'league', 'data', 'rankings', 'v1'), { players: rankingData, timestamp: serverTimestamp() }, { merge: true });
-            console.log("랭킹 데이터 저장 성공:", rankingData);
-            showToast("랭킹 저장 완료!");
+            // Batch 커밋
+            await batch.commit();
+            console.log("통합 데이터 저장 성공!");
+            showToast("모든 데이터 저장 완료!");
         } catch (e) {
-            console.error("랭킹 저장 실패:", e.message);
-            showToast(`랭킹 저장 실패: ${e.message}`);
+            console.error("통합 데이터 저장 실패:", e.message);
+            showToast(`데이터 저장 실패: ${e.message}`);
         }
     }
 
@@ -447,7 +374,6 @@
         const players = {};
         const partnerStats = {};
 
-        // 이전 순위 저장을 위한 변수
         let previousRankings = {};
         try {
             const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
@@ -573,24 +499,19 @@
                 const updatePlayerMMR = (player, opponentTeamMMR, isWinner) => {
                     const totalGames = player.wins + player.losses;
                     let K = BASE_K / (1 + Math.log10(totalGames / BASE_GAMES + 1));
-                    
                     if (player.mmr > 1800) {
                         K *= Math.max(0.3, 1 - (player.mmr - 1800) / 1000);
                     }
-                    
                     const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - player.mmr) / 400));
                     let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate);
-                    
                     let opponentWeight = Math.min(1, opponentTeamMMR / player.mmr);
                     if (player.mmr > 1800) {
                         opponentWeight *= Math.max(0.5, 1 - (player.mmr - 1800) / 2000);
                     }
                     mmrChange *= opponentWeight * scoreWeight;
-                    
                     if (player.name === MANDATORY_PLAYER) {
                         mmrChange *= MANDATORY_PLAYER_MMR_WEIGHT;
                     }
-                    
                     return mmrChange;
                 };
 
@@ -691,7 +612,6 @@
         if (currentFilter === 'male') sortedPlayers = sortedPlayers.filter(p => !p.isFemale);
         else if (currentFilter === 'female') sortedPlayers = sortedPlayers.filter(p => p.isFemale);
 
-        // MMR 히스토리 저장
         try {
             const historyDocRef = doc(db, 'league', 'data', 'mmrHistory', 'v1');
             const historyDocSnap = await getDoc(historyDocRef);
@@ -720,7 +640,6 @@
             showToast(`MMR 히스토리 저장 실패: ${e.message}`);
         }
 
-        // 랭킹 테이블 업데이트
         const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
         rankingRows.forEach((row, index) => {
             const player = sortedPlayers[index];
@@ -754,22 +673,26 @@
                 row.querySelector('.close-rate').value = player.totalSets >= 2 ? (player.closeSets === 0 ? '0' : Math.round(player.closeSets / player.totalSets * 100)) : '0';
                 row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominantWins / player.totalSets * 100) : '0';
                 
+                // 수정: 최고/최하 파트너 계산 로직 개선
                 let bestPartner = { name: '-', score: -Infinity };
                 let worstPartner = { name: '-', score: Infinity };
                 if (partnerStats[player.name]) {
                     for (const partnerName in partnerStats[player.name]) {
                         if (partnerName === MANDATORY_PLAYER) continue;
                         const stats = partnerStats[player.name][partnerName];
-                        if (stats.matches < 2) continue;
                         const winRate = stats.matches > 0 ? stats.wins / stats.matches : 0;
                         const avgGameDiff = stats.matches > 0 ? stats.gameDiffSum / stats.matches : 0;
-                        const chemistryScore = (winRate * 70) + (avgGameDiff * 3);
-                        if (chemistryScore > bestPartner.score) { bestPartner = { name: partnerName, score: chemistryScore }; }
-                        if (chemistryScore < worstPartner.score) { worstPartner = { name: partnerName, score: chemistryScore }; }
+                        const chemistryScore = (winRate * 50) + (avgGameDiff * 2) + (stats.matches * 5); // 경기 수 가중치 추가
+                        if (chemistryScore > bestPartner.score) {
+                            bestPartner = { name: partnerName, score: chemistryScore };
+                        }
+                        if (chemistryScore < worstPartner.score && partnerName !== bestPartner.name) {
+                            worstPartner = { name: partnerName, score: chemistryScore };
+                        }
                     }
                 }
-                row.querySelector('.best-partner').value = bestPartner.name.replace(/\*/g, '');
-                row.querySelector('.worst-partner').value = worstPartner.name.replace(/\*/g, '');
+                row.querySelector('.best-partner').value = bestPartner.name === '-' ? '데이터 부족' : bestPartner.name.replace(/\*/g, '');
+                row.querySelector('.worst-partner').value = worstPartner.name === '-' ? '데이터 부족' : worstPartner.name.replace(/\*/g, '');
             } else {
                 row.cells[0].innerHTML = `${index + 1}<span class="rank-change rank-nochange">–</span>`;
                 row.querySelectorAll('input:not([type=button])').forEach(input => input.value = '');
@@ -777,7 +700,7 @@
             }
         });
 
-        await saveRankings();
+        await saveAllData(); // 수정: 순위 업데이트 후 통합 저장 호출
         showToast('순위 업데이트 완료!');
     }
 
@@ -798,7 +721,7 @@
     }
 
     function downloadCSV() {
-        let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,경기당 평균 게임 득실,접전률(%),압도승률(%),최고 파트ner,최하 파트ner\n';
+        let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,경기당 평균 게임 득실,접전률(%),압도승률(%),최고 파트너,최하 파트너\n';
         document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
             const rawName = row.querySelector('.ranking-player').value.trim();
             const player = rawName.replace(/\*/g, '');
@@ -827,19 +750,16 @@
     }
 
     function setupInputListeners() {
-        const saveScheduleBtn = document.getElementById('save-schedule');
-        const saveMatchesBtn = document.getElementById('save-matches');
-        const saveRankingsBtn = document.getElementById('save-rankings');
+        // 수정: 통합 저장 버튼 리스너 추가, 개별 저장 버튼 제거
+        const saveAllBtn = document.getElementById('save-all');
         const updateRankingBtn = document.getElementById('update-ranking');
         const toggleRankingsBtn = document.getElementById('toggle-rankings');
-        if (!saveScheduleBtn || !saveMatchesBtn || !saveRankingsBtn || !updateRankingBtn || !toggleRankingsBtn) {
-            console.warn("저장 버튼 요소 없음!");
+        if (!saveAllBtn || !updateRankingBtn || !toggleRankingsBtn) {
+            console.warn("버튼 요소 없음!");
             showToast("버튼 로드 실패!");
             return;
         }
-        saveScheduleBtn.addEventListener('click', saveSchedule);
-        saveMatchesBtn.addEventListener('click', saveMatches);
-        saveRankingsBtn.addEventListener('click', saveRankings);
+        saveAllBtn.addEventListener('click', saveAllData);
         updateRankingBtn.addEventListener('click', updateRanking);
         toggleRankingsBtn.addEventListener('click', () => {
             const lowerRanks = document.querySelectorAll('.lower-rank');
