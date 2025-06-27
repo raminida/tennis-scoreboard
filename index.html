@@ -50,7 +50,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=stylesheet" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #121212; --surface-color: #1E1E1E; --primary-color: #4CAF50; --primary-variant-color: #81C784; --secondary-color: #FFFFFF; --text-color: #E0E0E0; --text-secondary-color: #A0A0A0; --accent-gold: #FFD700; --border-color: #333333; --shadow-color: rgba(0, 0, 0, 0.5);
+            --bg-color: #121212; --surface-color: #1E1E1E; --primary-color: #4CAF50; --primary-variant-color: #81C784; --secondary-color: #FFFFFF; --text-color: #E0E0E0; --text-secondary-color: #A0A0A0; --accent-gold: #FFC107; --border-color: #333333; --shadow-color: rgba(0, 0, 0, 0.5);
             --spacing-sm: 8px; --spacing-md: 12px; --spacing-lg: 20px; --radius: 8px;
         }
         html[data-theme="light"] {
@@ -74,13 +74,14 @@
         #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; }
         th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
         html[data-theme="light"] th { background-color: #F9FAFB; }
-        .rank-cell { font-weight: 900; color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); position: relative; padding-right: 40px; line-height: 1.2; }
+        .rank-cell { font-weight: 900; color: var(--accent-gold); text-shadow: 0 0 5px var(--shadow-color); position: relative; padding-right: 40px; line-height: 1.2; }
         .rank-change { font-size: 0.7rem; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); white-space: nowrap; }
         .rank-up { color: #4CAF50; }
         .rank-down { color: #F44336; }
         .rank-nochange { color: var(--text-secondary-color); }
         #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; }
         input[type="text"] { width: 100%; min-width: 50px; max-width: 100px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
+        input.ranking-player, input.mmr { min-width: 80px; max-width: 120px; }
         input.readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
         html[data-theme="light"] input.readonly { background-color: #f0f0f0; }
         .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: var(--spacing-lg); }
@@ -90,7 +91,7 @@
         .update-btn { width: 100%; margin-top: var(--spacing-lg); padding: 15px; background: linear-gradient(135deg, var(--accent-gold), #F5B02E); color: var(--bg-color); border: none; border-radius: var(--radius); font-size: 1.2rem; font-weight: 900; cursor: pointer; }
         .toast { position: fixed; bottom: var(--spacing-lg); left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #333, #111); color: #fff; padding: var(--spacing-md) 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 1000; }
         .toast.show { opacity: 1; }
-        .championship-star { color: var(--accent-gold); text-shadow: 0 0 5px var(--accent-gold); font-size: 1.1rem; font-weight: 900; }
+        .championship-star { color: var(--accent-gold); text-shadow: 0 0 5px var(--shadow-color); font-size: 1.1rem; font-weight: 900; }
         .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .ranking-player[value$="*"] { color: var(--primary-variant-color); }
         .ranking-filter { display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-md); }
@@ -102,6 +103,7 @@
         @media screen and (max-width: 600px) {
             th, td { padding: 6px 4px; font-size: 0.8rem; }
             input[type="text"] { min-width: 40px; max-width: 80px; font-size: 0.8rem; }
+            input.ranking-player, input.mmr { min-width: 60px; max-width: 100px; }
             .btn { padding: 8px 12px; font-size: 0.9rem; }
             h1 { font-size: 2rem; }
             h2 { font-size: 1.5rem; }
@@ -482,6 +484,7 @@
         const scheduleTables = document.querySelectorAll('.schedule-table');
         scheduleTables.forEach((table) => {
             let roundHasMixedMatch = false;
+            const roundId = table.getAttribute('data-round-id');
             const rows = table.querySelectorAll('tbody tr');
             let roundWins = {};
 
@@ -666,10 +669,10 @@
             Object.keys(roundWins).forEach(pName => {
                 if (roundWins[pName] === 3 && players[pName]) {
                     const isMalePlayer = !players[pName].isFemale;
-                    const isMixedTeamPlayer = roundHasMixedMatch && !isMalePlayer;
-                    if ((isMalePlayer && roundHasMixedMatch) || isMixedTeamPlayer) {
-                        // 우승 제외
+                    if (isMalePlayer && roundHasMixedMatch) {
+                        // 남성 플레이어는 혼성팀 포함 회차에서 우승 제외
                     } else {
+                        // 여성 플레이어는 혼성팀 여부 상관없이 3승 시 우승 인정
                         players[pName].championships++;
                     }
                 }
