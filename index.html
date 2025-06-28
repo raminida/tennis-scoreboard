@@ -107,7 +107,7 @@
         html[data-theme="light"] details[open] > summary { color: var(--secondary-color); }
         .round-group-content { padding: 15px 10px 5px 10px; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border-color); }
         html[data-theme="light"] .round-group-content { background: rgba(0,0,0,0.02); }
-        .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; max-width: 100%; -webkit-overflow-scrolling: touch; }
+        .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; max-width: 100%; -webkit-overflow-scrolling: touch; } /* 좌우 스크롤 강화 */
         table { width: 100%; min-width: 100%; border-collapse: collapse; }
         th, td { padding: var(--spacing-md) 4px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
         #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; }
@@ -143,6 +143,7 @@
             th, td { padding: 4px 2px; font-size: 0.7rem; }
             input[type="text"] { min-width: 40px; max-width: 70px; font-size: 0.7rem; }
             input.ranking-player, input.mmr { min-width: 60px; max-width: 90px; }
+            input.best-partner { min-width: 400px; max-width: 450px; } /* 모바일도 폭 조정 */
             .schedule-table td input.player1, .schedule-table td input.player2,
             .schedule-table td input.player3, .schedule-table td input.player4 { min-width: 50px; max-width: 60px; }
             .schedule-table td input.score { min-width: 50px; max-width: 60px; }
@@ -173,7 +174,7 @@
             </div>
             <div class="table-wrapper">
                 <table id="ranking-table">
-                    <thead><tr><th>순위</th><th>선수</th><th>MMR</th><th>우승</th><th>승</th><th>패</th><th>승률(%)</th><th>경기당 평균 게임 득실</th><th>접전률(%)</th><th>압도승률(%)</th><th>압도패률(%)</th><th>최고 파트너</th></tr></thead>
+                    <thead><tr><th>순위</th><th>선수</th><th>MMR</th><th>우승</th><th>승</th><th>패</th><th>승률(%)</th><th>평균 게임 득실 항목</th><th>접전률(%)</th><th>압도승률(%)</th><th>압도패률(%)</th><th>최고 파트너</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -665,10 +666,10 @@
                 }
 
                 const isClose = score1 - score2 === 1 || score2 - score1 === 1 || score1 - score2 === 2 || score2 - score1 === 2;
-                const isDominant1 = (score1 === 6 && score2 <= 1);
-                const isDominant2 = (score2 === 6 && score1 <= 1);
+                const isDominantWin = actual1 === 1 && (score1 === 6 && (score2 === 0 || score2 === 1));
+                const isDominantLoss = actual1 === 0 && (score1 === 0 && score2 === 6 || score1 === 1 && score2 === 6);
 
-                const updatePlayer = (name, isWinner, gameDiff, mmrChangeVal, isCloseGame, isDominantGame) => {
+                const updatePlayer = (name, isWinner, gameDiff, mmrChangeVal, isCloseGame, isDominantWin, isDominantLoss) => {
                     if (!players[name]) return;
                     players[name].totalSets++;
                     players[name].gameDiff += gameDiff;
@@ -696,14 +697,14 @@
                         }
                     }
                     if (isCloseGame) players[name].closeSets++;
-                    if (isDominantGame && isWinner) players[name].dominantWins++;
-                    else if (isDominantGame && !isWinner) players[name].dominantLosses++;
+                    if (isDominantWin) players[name].dominantWins++;
+                    if (isDominantLoss) players[name].dominantLosses++;
                 };
 
-                updatePlayer(p1, actual1, score1 - score2, mmrChange1, isClose, isDominant1);
-                updatePlayer(p2, actual1, score1 - score2, mmrChange2, isClose, isDominant1);
-                updatePlayer(p3, 1 - actual1, score2 - score1, mmrChange3, isClose, isDominant2);
-                updatePlayer(p4, 1 - actual1, score2 - score1, mmrChange4, isClose, isDominant2);
+                updatePlayer(p1, actual1, score1 - score2, mmrChange1, isClose, isDominantWin, isDominantLoss);
+                updatePlayer(p2, actual1, score1 - score2, mmrChange2, isClose, isDominantWin, isDominantLoss);
+                updatePlayer(p3, 1 - actual1, score2 - score1, mmrChange3, isClose, isDominantWin, isDominantLoss);
+                updatePlayer(p4, 1 - actual1, score2 - score1, mmrChange4, isClose, isDominantWin, isDominantLoss);
 
                 const updatePartnerStats = (player, partner, isWin, gameDiff) => {
                     if (!players[player] || !players[partner]) return;
@@ -792,10 +793,10 @@
                 row.querySelector('.win-rate').value = player.winRate;
                 row.querySelector('.avg-game-diff').value = player.avgGameDiff;
                 row.querySelector('.close-rate').value = player.totalSets >= 2 ? (player.closeSets === 0 ? '0' : Math.round(player.closeSets / player.totalSets * 100)) : '0';
-                row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominantWins / player.totalSets * 100) : '0';
-                row.querySelector('.dominant-losses').value = player.totalSets > 0 ? Math.round(player.dominantLosses / player.totalSets * 100) : '0';
+                row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round((player.dominantWins / player.totalSets) * 100) : '0';
+                row.querySelector('.dominant-losses').value = player.totalSets > 0 ? Math.round((player.dominantLosses / player.totalSets) * 100) : '0';
 
-                let bestPartner = { name: '-', wins: 0, score: -Infinity };
+                let bestPartner = { name: '-', wins: 0, losses: 0, score: -Infinity };
                 if (partnerStats[player.name]) {
                     for (const partnerName in partnerStats[player.name]) {
                         const stats = partnerStats[player.name][partnerName];
@@ -804,12 +805,12 @@
                             const diffPriority = stats.matches > 0 ? stats.gameDiffSum / stats.matches : 0;
                             const partnerScore = (winPriority * 100) + (diffPriority * 10);
                             if (partnerScore > bestPartner.score) {
-                                bestPartner = { name: partnerName, wins: stats.wins, score: partnerScore };
+                                bestPartner = { name: partnerName, wins: stats.wins, losses: stats.losses, score: partnerScore };
                             }
                         }
                     }
                 }
-                row.querySelector('.best-partner').value = bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name.replace(/\*/g, '')} (${bestPartner.wins}승)`;
+                row.querySelector('.best-partner').value = bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name.replace(/\*/g, '')} (${bestPartner.wins}승${bestPartner.losses}패)`;
             } else {
                 row.cells[0].innerHTML = `${index + 1}<span class="streak-cell streak-none">–</span>`;
                 row.querySelectorAll('input:not([type=button])').forEach(input => input.value = '');
@@ -839,7 +840,7 @@
     }
 
     function downloadCSV() {
-        let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,승률(%),경기당 평균 게임 득실,접전률(%),압도승률(%),압도패률(%),최고 파트너\n';
+        let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,승률(%),평균 게임 득실 항목,접전률(%),압도승률(%),압도패률(%),최고 파트너\n';
         document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
             const rawName = row.querySelector('.ranking-player').value.trim();
             const player = rawName.replace(/\*/g, '');
