@@ -37,6 +37,45 @@
         }
         return gk_fileData[filename] || "";
         }
+        </script><script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
         </script><!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
@@ -75,7 +114,7 @@
         th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
         html[data-theme="light"] th { background-color: #F9FAFB; }
         .rank-cell { font-weight: 900; color: var(--accent-gold); text-shadow: 0 0 5px var(--shadow-color); position: relative; line-height: 1.2; }
-        .streak-cell { font-size: 0.7rem; white-space: nowrap; margin-left: var(--spacing-sm); } /* 간격 추가 */
+        .streak-cell { font-size: 0.7rem; white-space: nowrap; margin-left: var(--spacing-sm); }
         .streak-win { color: #4CAF50; font-weight: bold; }
         .streak-loss { color: #F44336; font-weight: bold; }
         .streak-none { color: var(--text-secondary-color); }
@@ -134,7 +173,7 @@
             </div>
             <div class="table-wrapper">
                 <table id="ranking-table">
-                    <thead><tr><th>순위</th><th>선수</th><th>MMR</th><th>우승</th><th>승</th><th>패</th><th>승률(%)</th><th>경기당 평균 게임 득실</th><th>접전률(%)</th><th>압도승률(%)</th><th>최고 파트너</th></tr></thead>
+                    <thead><tr><th>순위</th><th>선수</th><th>MMR</th><th>우승</th><th>승</th><th>패</th><th>승률(%)</th><th>경기당 평균 게임 득실</th><th>접전률(%)</th><th>압도승률(%)</th><th>압도패률(%)</th><th>최고 파트너</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -270,11 +309,12 @@
                 <td><input type="text" class="avg-game-diff readonly" readonly></td>
                 <td><input type="text" class="close-rate readonly" readonly></td>
                 <td><input type="text" class="dominant-wins readonly" readonly></td>
+                <td><input type="text" class="dominant-losses readonly" readonly></td>
                 <td><input type="text" class="best-partner readonly" readonly></td>
             </tr>`;
         }
         rankingBody.innerHTML = rowsHtml;
-        console.log("순위표 렌더링 완료!");
+        console.log("순위표 렌der링 완료!");
     }
 
     async function saveAllData() {
@@ -351,6 +391,7 @@
                     avgGameDiff: row.querySelector('.avg-game-diff').value || '0.00',
                     closeRate: row.querySelector('.close-rate').value || '0',
                     dominantWins: row.querySelector('.dominant-wins').value || '0',
+                    dominantLosses: row.querySelector('.dominant-losses').value || '0',
                     bestPartner: row.querySelector('.best-partner').value || '-',
                     isFemale: rawName.includes('*'),
                     seasonMMRIncrease: parseFloat(row.querySelector('.mmr').dataset.seasonMMRIncrease) || 0
@@ -436,6 +477,7 @@
                         row.querySelector('.avg-game-diff').value = player.avgGameDiff || '0.00';
                         row.querySelector('.close-rate').value = player.closeRate || '0';
                         row.querySelector('.dominant-wins').value = player.dominantWins || '0';
+                        row.querySelector('.dominant-losses').value = player.dominantLosses || '0';
                         row.querySelector('.best-partner').value = player.bestPartner || '-';
                         row.cells[0].innerHTML = `${index + 1}`;
                     }
@@ -463,8 +505,6 @@
         const HANDICAP_BASE_POINT = 1500;
         const HANDICAP_ZERO_POINT = 1650;
         const HANDICAP_MAX = 150;
-        const MANDATORY_PLAYER = "정래민";
-        const MANDATORY_PLAYER_MMR_WEIGHT = 0.7;
 
         const players = {};
         const partnerStats = {};
@@ -487,6 +527,7 @@
                     closeSets: 0,
                     closeLosses: 0,
                     dominantWins: 0,
+                    dominantLosses: 0,
                     totalSets: 0,
                     isFemale: rawName.includes('*'),
                     seasonMMRIncrease: 0
@@ -532,6 +573,7 @@
                             closeSets: 0,
                             closeLosses: 0,
                             dominantWins: 0,
+                            dominantLosses: 0,
                             totalSets: 0,
                             isFemale: [p1Raw, p2Raw, p3Raw, p4Raw][idx].includes('*'),
                             seasonMMRIncrease: 0
@@ -546,9 +588,7 @@
                 const team1IsMale = !team1IsMixed;
                 const team2IsMale = !team2IsMixed;
 
-                if (team1IsMixed || team2IsMixed) {
-                    roundHasMixedMatch = true;
-                }
+                if (team1IsMixed || team2IsMixed) roundHasMixedMatch = true;
 
                 const getDynamicHandicap = (mmr) => {
                     if (mmr >= HANDICAP_ZERO_POINT) return 0;
@@ -596,9 +636,6 @@
                         opponentWeight *= Math.max(0.5, 1 - (player.mmr - 1800) / 2000);
                     }
                     mmrChange *= opponentWeight * scoreWeight;
-                    if (player.name === MANDATORY_PLAYER) {
-                        mmrChange *= MANDATORY_PLAYER_MMR_WEIGHT;
-                    }
                     return mmrChange;
                 };
 
@@ -658,10 +695,9 @@
                             streaks[name].isWin = false;
                         }
                     }
-                    if (isCloseGame) {
-                        players[name].closeSets++;
-                    }
+                    if (isCloseGame) players[name].closeSets++;
                     if (isDominantGame && isWinner) players[name].dominantWins++;
+                    else if (isDominantGame && !isWinner) players[name].dominantLosses++;
                 };
 
                 updatePlayer(p1, actual1, score1 - score2, mmrChange1, isClose, isDominant1);
@@ -757,21 +793,23 @@
                 row.querySelector('.avg-game-diff').value = player.avgGameDiff;
                 row.querySelector('.close-rate').value = player.totalSets >= 2 ? (player.closeSets === 0 ? '0' : Math.round(player.closeSets / player.totalSets * 100)) : '0';
                 row.querySelector('.dominant-wins').value = player.totalSets > 0 ? Math.round(player.dominantWins / player.totalSets * 100) : '0';
+                row.querySelector('.dominant-losses').value = player.totalSets > 0 ? Math.round(player.dominantLosses / player.totalSets * 100) : '0';
 
-                let bestPartner = { name: '-', score: -Infinity };
+                let bestPartner = { name: '-', wins: 0, score: -Infinity };
                 if (partnerStats[player.name]) {
                     for (const partnerName in partnerStats[player.name]) {
-                        if (partnerName === MANDATORY_PLAYER) continue;
                         const stats = partnerStats[player.name][partnerName];
-                        const winRate = stats.matches > 0 ? stats.wins / stats.matches : 0;
-                        const avgGameDiff = stats.matches > 0 ? stats.gameDiffSum / stats.matches : 0;
-                        const chemistryScore = (winRate * 50) + (avgGameDiff * 2) + (stats.matches * 5);
-                        if (chemistryScore > bestPartner.score) {
-                            bestPartner = { name: partnerName, score: chemistryScore };
+                        if (stats.matches > 0) {
+                            const winPriority = stats.wins;
+                            const diffPriority = stats.matches > 0 ? stats.gameDiffSum / stats.matches : 0;
+                            const partnerScore = (winPriority * 100) + (diffPriority * 10);
+                            if (partnerScore > bestPartner.score) {
+                                bestPartner = { name: partnerName, wins: stats.wins, score: partnerScore };
+                            }
                         }
                     }
                 }
-                row.querySelector('.best-partner').value = bestPartner.name === '-' ? '데이터 부족' : bestPartner.name.replace(/\*/g, '');
+                row.querySelector('.best-partner').value = bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name.replace(/\*/g, '')} (${bestPartner.wins}승)`;
             } else {
                 row.cells[0].innerHTML = `${index + 1}<span class="streak-cell streak-none">–</span>`;
                 row.querySelectorAll('input:not([type=button])').forEach(input => input.value = '');
@@ -801,7 +839,7 @@
     }
 
     function downloadCSV() {
-        let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,승률(%),경기당 평균 게임 득실,접전률(%),압도승률(%),최고 파트너\n';
+        let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,승률(%),경기당 평균 게임 득실,접전률(%),압도승률(%),압도패률(%),최고 파트너\n';
         document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
             const rawName = row.querySelector('.ranking-player').value.trim();
             const player = rawName.replace(/\*/g, '');
@@ -815,8 +853,9 @@
                 const avgGameDiff = row.querySelector('.avg-game-diff').value;
                 const closeRate = row.querySelector('.close-rate').value;
                 const dominantWins = row.querySelector('.dominant-wins').value;
+                const dominantLosses = row.querySelector('.dominant-losses').value;
                 const bestPartner = row.querySelector('.best-partner').value;
-                rankingCSV += `${rank},"${player}",${mmr},${championships},${wins},${losses},${winRate},${avgGameDiff},${closeRate},${dominantWins},"${bestPartner}"\n`;
+                rankingCSV += `${rank},"${player}",${mmr},${championships},${wins},${losses},${winRate},${avgGameDiff},${closeRate},${dominantWins},${dominantLosses},"${bestPartner}"\n`;
             }
         });
 
