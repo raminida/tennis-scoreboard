@@ -70,15 +70,15 @@
         html[data-theme="light"] .round-group-content { background: rgba(0,0,0,0.02); }
         .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; max-width: 100%; -webkit-overflow-scrolling: touch; }
         table { width: 100%; min-width: 100%; border-collapse: collapse; }
-        th, td { padding: var(--spacing-md) 8px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
+        th, td { padding: var(--spacing-md) 4px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
         #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; }
         th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
         html[data-theme="light"] th { background-color: #F9FAFB; }
-        .rank-cell { font-weight: 900; color: var(--accent-gold); text-shadow: 0 0 5px var(--shadow-color); position: relative; padding-right: 40px; line-height: 1.2; }
-        .rank-change { font-size: 0.7rem; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); white-space: nowrap; }
-        .rank-up { color: #4CAF50; }
-        .rank-down { color: #F44336; }
-        .rank-nochange { color: var(--text-secondary-color); }
+        .rank-cell { font-weight: 900; color: var(--accent-gold); text-shadow: 0 0 5px var(--shadow-color); position: relative; line-height: 1.2; }
+        .streak-cell { font-size: 0.7rem; white-space: nowrap; margin-left: var(--spacing-sm); } /* 간격 추가 */
+        .streak-win { color: #4CAF50; font-weight: bold; }
+        .streak-loss { color: #F44336; font-weight: bold; }
+        .streak-none { color: var(--text-secondary-color); }
         #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; }
         input[type="text"] { width: 100%; min-width: 50px; max-width: 100px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
         input.ranking-player, input.mmr { min-width: 80px; max-width: 120px; }
@@ -101,9 +101,14 @@
         tr.lower-rank { display: none; }
         tr.lower-rank.show { display: table-row; }
         @media screen and (max-width: 600px) {
-            th, td { padding: 6px 4px; font-size: 0.8rem; }
-            input[type="text"] { min-width: 40px; max-width: 80px; font-size: 0.8rem; }
-            input.ranking-player, input.mmr { min-width: 60px; max-width: 100px; }
+            th, td { padding: 4px 2px; font-size: 0.7rem; }
+            input[type="text"] { min-width: 40px; max-width: 70px; font-size: 0.7rem; }
+            input.ranking-player, input.mmr { min-width: 60px; max-width: 90px; }
+            .schedule-table td input.player1, .schedule-table td input.player2,
+            .schedule-table td input.player3, .schedule-table td input.player4 { min-width: 50px; max-width: 60px; }
+            .schedule-table td input.score { min-width: 50px; max-width: 60px; }
+            .schedule-table th, .schedule-table td { padding: 4px 1px; }
+            .schedule-table td { border: 0.5px solid var(--border-color); }
             .btn { padding: 8px 12px; font-size: 0.9rem; }
             h1 { font-size: 2rem; }
             h2 { font-size: 1.5rem; }
@@ -144,6 +149,38 @@
     <div id="toast" class="toast"></div>
 
 <script type="module">
+    let gk_isXlsx = false;
+    let gk_xlsxFileLookup = {};
+    let gk_fileData = {};
+    function filledCell(cell) {
+        return cell !== '' && cell != null;
+    }
+    function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                const workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                const filteredData = jsonData.filter(row => row.some(filledCell));
+                let headerRowIndex = filteredData.findIndex((row, index) =>
+                    row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                    headerRowIndex = 0;
+                }
+                const csv = XLSX.utils.sheet_to_csv(XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)), { header: 1 });
+                console.log(`XLSX 파일 ${filename} 파싱 성공`);
+                return csv;
+            } catch (e) {
+                console.error("XLSX 파싱 오류:", e.name, e.message, e.stack);
+                showToast(`XLSX 파싱 실패: ${e.message || '알 수 없는 오류'}`);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+    }
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
@@ -223,7 +260,7 @@
         for (let i = 1; i <= 50; i++) {
             rowsHtml += `
             <tr${i > 20 ? ' class="lower-rank"' : ''}>
-                <td class="rank-cell">${i}<span class="rank-change"></span></td>
+                <td class="rank-cell">${i}</td>
                 <td><input type="text" placeholder="선수 ${i}" class="ranking-player"></td>
                 <td><input type="text" class="mmr readonly" readonly></td>
                 <td><span class="championship-star"></span></td>
@@ -250,10 +287,8 @@
         try {
             const batch = writeBatch(db);
 
-            // 1. 일정 데이터 저장
-            const scheduleTables = document.querySelectorAll('.schedule-table');
             const scheduleData = [];
-            scheduleTables.forEach(table => {
+            document.querySelectorAll('.schedule-table').forEach(table => {
                 const roundId = table.getAttribute('data-round-id');
                 const rows = table.querySelectorAll('tbody tr');
                 rows.forEach(row => {
@@ -274,9 +309,8 @@
             const scheduleDocRef = doc(db, 'league', 'data', 'schedule', 'v1');
             batch.set(scheduleDocRef, { matches: scheduleData, timestamp: serverTimestamp() }, { merge: true });
 
-            // 2. 매치 데이터 저장
             const matchDataList = [];
-            scheduleTables.forEach(table => {
+            document.querySelectorAll('.schedule-table').forEach(table => {
                 const rows = table.querySelectorAll('tbody tr');
                 rows.forEach(row => {
                     const player1 = row.querySelector('.player1').value.trim();
@@ -303,7 +337,6 @@
                 batch.set(matchDocRef, match);
             });
 
-            // 3. 랭킹 데이터 저장
             const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
             const rankingData = Array.from(rankingRows).map(row => {
                 const rawName = row.querySelector('.ranking-player').value.trim();
@@ -326,7 +359,6 @@
             const rankingDocRef = doc(db, 'league', 'data', 'rankings', 'v1');
             batch.set(rankingDocRef, { players: rankingData, timestamp: serverTimestamp() }, { merge: true });
 
-            // 4. 랭킹 히스토리 저장
             const rankingHistoryDocRef = doc(db, 'league', 'data', 'rankingHistory', 'v1');
             const rankingHistorySnap = await getDoc(rankingHistoryDocRef);
             const existingHistory = rankingHistorySnap.exists() ? rankingHistorySnap.data().snapshots || [] : [];
@@ -341,7 +373,6 @@
             existingHistory.push(newSnapshot);
             batch.set(rankingHistoryDocRef, { snapshots: existingHistory }, { merge: true });
 
-            // Batch 커밋
             await batch.commit();
             console.log("통합 데이터 및 랭킹 히스토리 저장 성공!");
             showToast("모든 데이터 저장 완료!");
@@ -363,7 +394,6 @@
             return;
         }
         try {
-            // 일정 데이터 로드
             const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
             if (scheduleDoc.exists()) {
                 const scheduleData = scheduleDoc.data().matches || [];
@@ -388,7 +418,6 @@
                 showToast("스케줄 데이터가 없습니다!");
             }
 
-            // 랭킹 데이터 로드
             const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
             if (rankingDoc.exists()) {
                 const rankingData = rankingDoc.data().players || [];
@@ -408,7 +437,7 @@
                         row.querySelector('.close-rate').value = player.closeRate || '0';
                         row.querySelector('.dominant-wins').value = player.dominantWins || '0';
                         row.querySelector('.best-partner').value = player.bestPartner || '-';
-                        row.cells[0].innerHTML = `${index + 1}<span class="rank-change rank-nochange">–</span>`;
+                        row.cells[0].innerHTML = `${index + 1}`;
                     }
                 });
                 console.log("랭킹 데이터 로드 완료!");
@@ -439,22 +468,7 @@
 
         const players = {};
         const partnerStats = {};
-
-        let previousRankings = {};
-        try {
-            const rankingHistoryDoc = await getDoc(doc(db, 'league', 'data', 'rankingHistory', 'v1'));
-            if (rankingHistoryDoc.exists()) {
-                const snapshots = rankingHistoryDoc.data().snapshots || [];
-                const latestSnapshot = snapshots[snapshots.length - 1];
-                if (latestSnapshot && latestSnapshot.rankings) {
-                    latestSnapshot.rankings.forEach(player => {
-                        previousRankings[player.name] = player.rank;
-                    });
-                }
-            }
-        } catch (e) {
-            console.error("랭킹 히스토리 로드 실패:", e.name, e.code, e.message, e.stack);
-        }
+        const streaks = {};
 
         document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
             const rawName = row.querySelector('.ranking-player').value.trim();
@@ -478,6 +492,7 @@
                     seasonMMRIncrease: 0
                 };
                 partnerStats[name] = {};
+                streaks[name] = { count: 0, isWin: false };
             }
         });
 
@@ -522,6 +537,7 @@
                             seasonMMRIncrease: 0
                         };
                         partnerStats[name] = {};
+                        streaks[name] = { count: 0, isWin: false };
                     }
                 });
 
@@ -626,9 +642,21 @@
                         if (!roundWins[name]) roundWins[name] = 0;
                         roundWins[name]++;
                         if (isCloseGame) players[name].closeWins++;
+                        if (streaks[name].isWin) {
+                            streaks[name].count++;
+                        } else {
+                            streaks[name].count = 1;
+                            streaks[name].isWin = true;
+                        }
                     } else {
                         players[name].losses++;
                         if (isCloseGame) players[name].closeLosses++;
+                        if (!streaks[name].isWin && streaks[name].count > 0) {
+                            streaks[name].count++;
+                        } else {
+                            streaks[name].count = 1;
+                            streaks[name].isWin = false;
+                        }
                     }
                     if (isCloseGame) {
                         players[name].closeSets++;
@@ -670,9 +698,7 @@
                 if (roundWins[pName] === 3 && players[pName]) {
                     const isMalePlayer = !players[pName].isFemale;
                     if (isMalePlayer && roundHasMixedMatch) {
-                        // 남성 플레이어는 혼성팀 포함 회차에서 우승 제외
                     } else {
-                        // 여성 플레이어는 혼성팀 여부 상관없이 3승 시 우승 인정
                         players[pName].championships++;
                     }
                 }
@@ -717,13 +743,8 @@
                 const totalGames = player.wins + player.losses;
                 player.avgGameDiff = player.totalSets > 0 ? (player.gameDiff / player.totalSets).toFixed(2) : '0.00';
                 player.winRate = totalGames > 0 ? Math.round((player.wins / totalGames) * 100) : 0;
-                const currentRank = index + 1;
-                const previousRank = previousRankings[player.name] || currentRank;
-                const rankChange = previousRank - currentRank;
-                let rankChangeText = rankChange > 0 ? `↑${rankChange}` : rankChange < 0 ? `↓${Math.abs(rankChange)}` : '–';
-                let rankChangeClass = rankChange > 0 ? 'rank-up' : rankChange < 0 ? 'rank-down' : 'rank-nochange';
 
-                row.cells[0].innerHTML = `${currentRank}<span class="rank-change ${rankChangeClass}">${rankChangeText}</span>`;
+                row.cells[0].innerHTML = `${index + 1}<span class="streak-cell ${streaks[player.name]?.count > 0 ? (streaks[player.name].isWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${streaks[player.name]?.count > 0 ? (streaks[player.name].isWin ? `W${streaks[player.name].count}` : `L${streaks[player.name].count}`) : '–'}</span>`;
                 row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
                 row.querySelector('.mmr').value = Math.round(player.mmr);
                 row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease.toFixed(2);
@@ -752,7 +773,7 @@
                 }
                 row.querySelector('.best-partner').value = bestPartner.name === '-' ? '데이터 부족' : bestPartner.name.replace(/\*/g, '');
             } else {
-                row.cells[0].innerHTML = `${index + 1}<span class="rank-change rank-nochange">–</span>`;
+                row.cells[0].innerHTML = `${index + 1}<span class="streak-cell streak-none">–</span>`;
                 row.querySelectorAll('input:not([type=button])').forEach(input => input.value = '');
                 row.querySelector('.championship-star').textContent = '';
             }
@@ -827,6 +848,34 @@
         check();
     }
 
+    function setupInputListeners() {
+        const saveAllBtn = document.getElementById('save-all');
+        const updateRankingBtn = document.getElementById('update-ranking');
+        const toggleRankingsBtn = document.getElementById('toggle-rankings');
+        if (!saveAllBtn || !updateRankingBtn || !toggleRankingsBtn) {
+            console.warn("버튼 요소 없음!");
+            showToast("버튼 로드 실패!");
+            return;
+        }
+        saveAllBtn.addEventListener('click', saveAllData);
+        updateRankingBtn.addEventListener('click', updateRanking);
+        toggleRankingsBtn.addEventListener('click', () => {
+            const lowerRanks = document.querySelectorAll('.lower-rank');
+            const isVisible = lowerRanks[0]?.classList.contains('show');
+            lowerRanks.forEach(row => row.classList.toggle('show'));
+            toggleRankingsBtn.textContent = isVisible ? '더보기' : '접기';
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                loadData();
+            });
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         console.log("DOMContentLoaded 이벤트 실행");
         waitForElements('#schedule-container, #ranking-table tbody', () => {
@@ -855,34 +904,6 @@
             console.log("이벤트 리스너 설정 완료!");
         });
     });
-
-    function setupInputListeners() {
-        const saveAllBtn = document.getElementById('save-all');
-        const updateRankingBtn = document.getElementById('update-ranking');
-        const toggleRankingsBtn = document.getElementById('toggle-rankings');
-        if (!saveAllBtn || !updateRankingBtn || !toggleRankingsBtn) {
-            console.warn("버튼 요소 없음!");
-            showToast("버튼 로드 실패!");
-            return;
-        }
-        saveAllBtn.addEventListener('click', saveAllData);
-        updateRankingBtn.addEventListener('click', updateRanking);
-        toggleRankingsBtn.addEventListener('click', () => {
-            const lowerRanks = document.querySelectorAll('.lower-rank');
-            const isVisible = lowerRanks[0]?.classList.contains('show');
-            lowerRanks.forEach(row => row.classList.toggle('show'));
-            toggleRankingsBtn.textContent = isVisible ? '더보기' : '접기';
-        });
-
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentFilter = btn.dataset.filter;
-                loadData();
-            });
-        });
-    }
 </script>
 </body>
 </html>
