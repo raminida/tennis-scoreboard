@@ -502,19 +502,6 @@
             const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
             if (rankingDoc.exists()) {
                 const rankingData = rankingDoc.data().players || [];
-                const streaks = {}; // 연승 데이터를 계산하기 위한 객체
-                rankingData.forEach(player => {
-                    streaks[player.name] = { count: 0, isWin: false };
-                    // 연승 계산: wins와 losses를 기반으로 간접 추정 (정확한 연승은 매치 데이터 필요)
-                    const totalGames = parseInt(player.wins) + parseInt(player.losses);
-                    if (totalGames > 0 && parseInt(player.wins) > 0) {
-                        // 단순히 승률 기반으로 연승 추정 (실제 연승은 매치 로그로 개선 가능)
-                        const winStreakEstimate = Math.min(parseInt(player.wins), Math.floor(totalGames * (parseInt(player.winRate) / 100)));
-                        streaks[player.name].count = winStreakEstimate > 0 ? winStreakEstimate : 0;
-                        streaks[player.name].isWin = parseInt(player.wins) > parseInt(player.losses);
-                    }
-                });
-
                 document.querySelectorAll('#ranking-table tbody tr').forEach((row, index) => {
                     const player = rankingData[index];
                     if (player) {
@@ -532,9 +519,7 @@
                         row.querySelector('.dominant-wins').value = player.dominantWins || '0';
                         row.querySelector('.dominant-losses').value = player.dominantLosses || '0';
                         row.querySelector('.best-partner').value = player.bestPartner || '-';
-                        // 연승 표시
-                        const streak = streaks[player.name] || { count: 0, isWin: false };
-                        row.cells[0].innerHTML = `${index + 1}<span class="streak-cell ${streak.count > 0 ? (streak.isWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${streak.count > 0 ? (streak.isWin ? `W${streak.count}` : `L${streak.count}`) : '–'}</span>`;
+                        row.cells[0].innerHTML = `${index + 1}`; // 연승 표시 제거, 순위 업데이트로만 표시
                     }
                 });
                 console.log("랭킹 데이터 로드 완료!");
