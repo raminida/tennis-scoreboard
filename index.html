@@ -76,6 +76,45 @@
         }
         return gk_fileData[filename] || "";
         }
+        </script><script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
         </script><!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
@@ -500,7 +539,7 @@
 
         const BASE_MMR = 1500;
         const BASE_K = 28;
-        const BASE_GAMES = 30;
+        const BASE_GAMES = 20; // 기준 경기를 20으로 조정
         const MALE_TEAM_WIN_HANDICAP = 0.5;
         const MIXED_TEAM_LOSS_HANDICAP = 0.5;
         const HANDICAP_BASE_POINT = 1500;
@@ -627,7 +666,7 @@
 
                 const updatePlayerMMR = (player, opponentTeamMMR, isWinner) => {
                     const totalGames = player.wins + player.losses;
-                    let K = BASE_K / (1 + Math.log10(totalGames / BASE_GAMES + 1));
+                    let K = BASE_K / (1 + Math.log10(totalGames / BASE_GAMES + 1)) * (1 + Math.min(1, totalGames / 20)); // 총 경기 수 보너스 적용
                     if (player.mmr > 1800) {
                         K *= Math.max(0.3, 1 - (player.mmr - 1800) / 1000);
                     }
