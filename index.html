@@ -103,6 +103,7 @@
         .saved-indicator { color: var(--accent-gold); margin-left: 5px; font-size: 0.9rem; }
         .saved-info { color: var(--text-secondary-color); margin-left: 5px; font-size: 0.8rem; }
         .champion-name { color: var(--accent-gold); font-weight: bold; }
+        input[type="checkbox"] { margin: 0 auto; display: block; }
         @media screen and (max-width: 600px) {
             th, td { padding: 4px 2px; font-size: 0.7rem; }
             input[type="text"] { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
@@ -260,11 +261,11 @@
                     <summary>${i}회${isSaved ? `<span class="saved-indicator">💾</span><span class="saved-info">[${savedDate}, 우승: ${champions}]</span>` : ''}</summary>
                     <div class="table-wrapper">
                         <table class="schedule-table" data-round-id="${i}">
-                            <thead><tr><th>Player 1</th><th>Player 2</th><th>vs</th><th>Player 3</th><th>Player 4</th><th>Score</th></tr></thead>
+                            <thead><tr><th>Player 1</th><th>Player 2</th><th>vs</th><th>Player 3</th><th>Player 4</th><th>Score</th><th>4점 선취</th></tr></thead>
                             <tbody>
-                                <tr><td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td></tr>
-                                <tr><td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td></tr>
-                                <tr><td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td></tr>
+                                <tr><td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td><td><input type="checkbox" class="is-four-point"></td></tr>
+                                <tr><td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td><td><input type="checkbox" class="is-four-point"></td></tr>
+                                <tr><td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td><td><input type="checkbox" class="is-four-point"></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -325,11 +326,13 @@
                     const player3 = row.querySelector('.player3').value.trim();
                     const player4 = row.querySelector('.player4').value.trim();
                     const scoreInput = row.querySelector('.score').value.trim();
+                    const isFourPoint = row.querySelector('.is-four-point').checked;
                     if (player1 && player2 && player3 && player4) {
                         scheduleData.push({
                             round: parseInt(roundId),
                             players: [player1, player2, player3, player4],
-                            score: scoreInput || ''
+                            score: scoreInput || '',
+                            isFourPoint: isFourPoint
                         });
                     }
                 });
@@ -346,6 +349,7 @@
                     const player3 = row.querySelector('.player3').value.trim();
                     const player4 = row.querySelector('.player4').value.trim();
                     const scoreInput = row.querySelector('.score').value.trim();
+                    const isFourPoint = row.querySelector('.is-four-point').checked;
                     if (player1 && player2 && player3 && player4 && scoreInput && /^\d+-\d+$/.test(scoreInput)) {
                         const [score1, score2] = scoreInput.split('-').map(Number);
                         const winner = score1 > score2 ? (player1 || player2) : (player3 || player4);
@@ -355,6 +359,7 @@
                             player2: player3 || player4,
                             winner,
                             gameDiff,
+                            isFourPoint,
                             timestamp: serverTimestamp()
                         });
                     }
@@ -438,7 +443,7 @@
                     if (match.players.some(p => p.trim()) || match.score.trim()) {
                         const timestamp = scheduleDoc.data().timestamp?.toDate().toISOString() || new Date().toISOString();
                         const champions = [];
-                        if (match.score && /^\d+-\d+$/.test(match.score)) {
+                        if (match.score && /^\d+-\d+$/.test(match.score) && !match.isFourPoint) {
                             const [score1, score2] = match.score.split('-').map(Number);
                             const winners = score1 > score2 ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
                             winners.forEach(player => {
@@ -466,6 +471,7 @@
                             row.querySelector('.player3').value = match.players[2] || '';
                             row.querySelector('.player4').value = match.players[3] || '';
                             row.querySelector('.score').value = match.score || '';
+                            row.querySelector('.is-four-point').checked = match.isFourPoint || false;
                         }
                     });
                 });
@@ -564,10 +570,11 @@
         const BASE_MMR = 1500;
         const BASE_K = 28;
         const BASE_GAMES = 20;
-        const MIXED_WIN_MULTIPLIER = 3.0; // 혼성팀이 남복 이기면 MMR 3배
-        const MIXED_LOSS_REDUCTION = 0.3; // 혼성팀이 남복에게 지면 MMR 감소 30%
-        const MALE_LOSS_MULTIPLIER = 3.0; // 남복이 혼성에게 지면 MMR 하락 3배
-        const MALE_WIN_REDUCTION = 0.3; // 남복이 혼성 이기면 MMR 상승 30%
+        const MIXED_WIN_MULTIPLIER = 3.0;
+        const MIXED_LOSS_REDUCTION = 0.3;
+        const MALE_LOSS_MULTIPLIER = 3.0;
+        const MALE_WIN_REDUCTION = 0.3;
+        const FOUR_POINT_MMR_MULTIPLIER = 0.6; // 4점 선취 게임 MMR 60%
         const HANDICAP_BASE_POINT = 1500;
         const HANDICAP_ZERO_POINT = 1650;
         const HANDICAP_MAX = 150;
@@ -618,6 +625,7 @@
                 const p3Raw = row.querySelector('.player3').value.trim();
                 const p4Raw = row.querySelector('.player4').value.trim();
                 const score = row.querySelector('.score').value.trim();
+                const isFourPoint = row.querySelector('.is-four-point').checked;
 
                 const p1 = p1Raw.replace(/\*/g, '');
                 const p2 = p2Raw.replace(/\*/g, '');
@@ -707,6 +715,9 @@
                         opponentWeight *= Math.max(0.5, 1 - (player.mmr - 1800) / 2000);
                     }
                     mmrChange *= opponentWeight * scoreWeight;
+                    if (isFourPoint) {
+                        mmrChange *= FOUR_POINT_MMR_MULTIPLIER;
+                    }
                     return mmrChange;
                 };
 
@@ -715,26 +726,25 @@
                 let mmrChange3 = updatePlayerMMR(players[p3], team1MMR, actual2);
                 let mmrChange4 = updatePlayerMMR(players[p4], team1MMR, actual2);
 
-                // 혼성 vs 남복 MMR 조정
                 if (team1IsMixed && team2IsMale) {
-                    if (actual1 === 1) { // 혼성 승리
+                    if (actual1 === 1) {
                         mmrChange1 *= MIXED_WIN_MULTIPLIER;
                         mmrChange2 *= MIXED_WIN_MULTIPLIER;
                         mmrChange3 *= MALE_LOSS_MULTIPLIER;
                         mmrChange4 *= MALE_LOSS_MULTIPLIER;
-                    } else { // 혼성 패배
+                    } else {
                         mmrChange1 *= MIXED_LOSS_REDUCTION;
                         mmrChange2 *= MIXED_LOSS_REDUCTION;
                         mmrChange3 *= MALE_WIN_REDUCTION;
                         mmrChange4 *= MALE_WIN_REDUCTION;
                     }
                 } else if (team2IsMixed && team1IsMale) {
-                    if (actual2 === 1) { // 혼성 승리
+                    if (actual2 === 1) {
                         mmrChange3 *= MIXED_WIN_MULTIPLIER;
                         mmrChange4 *= MIXED_WIN_MULTIPLIER;
                         mmrChange1 *= MALE_LOSS_MULTIPLIER;
                         mmrChange2 *= MALE_LOSS_MULTIPLIER;
-                    } else { // 혼성 패배
+                    } else {
                         mmrChange3 *= MIXED_LOSS_REDUCTION;
                         mmrChange4 *= MIXED_LOSS_REDUCTION;
                         mmrChange1 *= MALE_WIN_REDUCTION;
@@ -752,8 +762,10 @@
                     players[name].seasonMMRIncrease += mmrChangeVal;
                     if (isWinner) {
                         players[name].wins++;
-                        if (!roundWins[name]) roundWins[name] = 0;
-                        roundWins[name]++;
+                        if (!isFourPoint) {
+                            if (!roundWins[name]) roundWins[name] = 0;
+                            roundWins[name]++;
+                        }
                         if (isCloseGame) players[name].closeWins++;
                         if (streaks[name].isWin) {
                             streaks[name].count++;
