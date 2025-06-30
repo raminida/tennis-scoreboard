@@ -42,8 +42,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 호수 오픈 여름시즌</title>
-    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" integrity="sha384-y3tIif2B4242xI/mS8d43/p/a1uBoL3w7sL2rS4z0nBjwA/2/g8L/DTrb1JScC4k" crossorigin="anonymous"></script>
+    <title>2025 호수 오픈</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -71,7 +70,8 @@
         .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; max-width: 100%; -webkit-overflow-scrolling: touch; }
         table { width: 100%; min-width: 100%; border-collapse: collapse; }
         th, td { padding: var(--spacing-md) 4px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
-        #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; }
+        #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; cursor: pointer; }
+        #ranking-table thead th:hover { background: var(--primary-color); color: var(--bg-color); }
         th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
         html[data-theme="light"] th { background-color: #F9FAFB; }
         .rank-cell { font-weight: 900; color: var(--accent-gold); text-shadow: 0 0 5px var(--shadow-color); position: relative; line-height: 1.2; }
@@ -101,6 +101,8 @@
         tr.lower-rank { display: none; }
         tr.lower-rank.show { display: table-row; }
         .saved-indicator { color: var(--accent-gold); margin-left: 5px; font-size: 0.9rem; }
+        .saved-info { color: var(--text-secondary-color); margin-left: 5px; font-size: 0.8rem; }
+        .champion-name { color: var(--accent-gold); font-weight: bold; }
         @media screen and (max-width: 600px) {
             th, td { padding: 4px 2px; font-size: 0.7rem; }
             input[type="text"] { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
@@ -114,13 +116,14 @@
             .btn { padding: 8px 12px; font-size: 0.9rem; }
             h1 { font-size: 2rem; }
             h2 { font-size: 1.5rem; }
+            .saved-info { font-size: 0.7rem; }
         }
     </style>
 </head>
 <body>
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
-        <h1>2025 호수 오픈 여름시즌</h1>
+        <h1>2025 호수 오픈</h1>
         <div class="section">
             <h2>경기 일정</h2>
             <div id="schedule-container"></div>
@@ -136,14 +139,28 @@
             </div>
             <div class="table-wrapper">
                 <table id="ranking-table">
-                    <thead><tr><th>순위</th><th>선수</th><th>MMR</th><th>우승</th><th>승</th><th>패</th><th>승률(%)</th><th>평균 게임 득실 항목</th><th>접전률(%)</th><th>압도승률(%)</th><th>압도패률(%)</th><th>최고 파트너</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th data-sort="rank">순위</th>
+                            <th data-sort="player">선수</th>
+                            <th data-sort="mmr">MMR</th>
+                            <th data-sort="championships">우승</th>
+                            <th data-sort="wins">승</th>
+                            <th data-sort="losses">패</th>
+                            <th data-sort="winRate">승률(%)</th>
+                            <th data-sort="avgGameDiff">평균 게임 득실</th>
+                            <th data-sort="closeRate">접전률(%)</th>
+                            <th data-sort="dominantWins">압도승률(%)</th>
+                            <th data-sort="dominantLosses">압도패률(%)</th>
+                            <th data-sort="bestPartner">최고 파트너</th>
+                        </tr>
+                    </thead>
                     <tbody></tbody>
                 </table>
             </div>
             <button id="toggle-rankings" class="btn toggle-btn">더보기</button>
             <div class="btn-group">
                 <a href="dash.html" class="btn" id="dashboard-link">통계 대시보드</a>
-                <button id="kakao-share-btn" class="btn">카카오톡 공유</button>
                 <button id="download-csv" class="btn">CSV 다운로드</button>
             </div>
         </div>
@@ -205,6 +222,8 @@
     }
 
     let currentFilter = 'all';
+    let sortKey = 'mmr';
+    let sortOrder = 'desc';
 
     function showToast(message) {
         const toast = document.getElementById('toast');
@@ -217,7 +236,7 @@
         }
     }
 
-    function createScheduleRounds(savedRounds = new Set()) {
+    function createScheduleRounds(savedRounds = new Map()) {
         const container = document.getElementById('schedule-container');
         if (!container) {
             console.error("schedule-container 요소 없음!");
@@ -232,10 +251,13 @@
             const endRound = Math.min((category + 1) * roundsPerCategory, totalRounds);
             roundsHtml += `<details class="round-group"><summary>회차 ${startRound} ~ ${endRound}</summary><div class="round-group-content">`;
             for (let i = startRound; i <= endRound; i++) {
-                const isSaved = savedRounds.has(i);
+                const roundData = savedRounds.get(i);
+                const isSaved = !!roundData;
+                const savedDate = roundData?.timestamp ? new Date(roundData.timestamp).toLocaleDateString('ko-KR') : '';
+                const champions = roundData?.champions?.map(name => `<span class="champion-name">${name}</span>`).join(', ') || '없음';
                 roundsHtml += `
                 <details>
-                    <summary>${i}회차${isSaved ? '<span class="saved-indicator">💾</span>' : ''}</summary>
+                    <summary>${i}회차${isSaved ? `<span class="saved-indicator">💾</span><span class="saved-info">[${savedDate}, 우승: ${champions}]</span>` : ''}</summary>
                     <div class="table-wrapper">
                         <table class="schedule-table" data-round-id="${i}">
                             <thead><tr><th>Player 1</th><th>Player 2</th><th>vs</th><th>Player 3</th><th>Player 4</th><th>Score</th></tr></thead>
@@ -360,7 +382,9 @@
                     dominantLosses: row.querySelector('.dominant-losses').value || '0',
                     bestPartner: row.querySelector('.best-partner').value || '-',
                     isFemale: rawName.includes('*'),
-                    seasonMMRIncrease: parseFloat(row.querySelector('.mmr').dataset.seasonMMRIncrease) || 0
+                    seasonMMRIncrease: parseFloat(row.querySelector('.mmr').dataset.seasonMMRIncrease) || 0,
+                    streakCount: parseInt(row.querySelector('.streak-cell')?.textContent.replace(/[WL]/, '') || '0'),
+                    streakIsWin: row.querySelector('.streak-cell')?.classList.contains('streak-win')
                 };
             }).filter(player => player.name);
             const rankingDocRef = doc(db, 'league', 'data', 'rankings', 'v1');
@@ -402,12 +426,31 @@
         }
         try {
             const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
-            const savedRounds = new Set();
+            const savedRounds = new Map();
             if (scheduleDoc.exists()) {
                 const scheduleData = scheduleDoc.data().matches || [];
+                const roundWins = {};
+                const roundMatches = {};
                 scheduleData.forEach(match => {
+                    const roundId = match.round;
+                    if (!roundMatches[roundId]) roundMatches[roundId] = [];
+                    roundMatches[roundId].push(match);
                     if (match.players.some(p => p.trim()) || match.score.trim()) {
-                        savedRounds.add(match.round);
+                        const timestamp = scheduleDoc.data().timestamp?.toDate().toISOString() || new Date().toISOString();
+                        const champions = [];
+                        if (match.score && /^\d+-\d+$/.test(match.score)) {
+                            const [score1, score2] = match.score.split('-').map(Number);
+                            const winners = score1 > score2 ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
+                            winners.forEach(player => {
+                                if (!roundWins[roundId]) roundWins[roundId] = {};
+                                if (!roundWins[roundId][player]) roundWins[roundId][player] = 0;
+                                roundWins[roundId][player]++;
+                                if (roundWins[roundId][player] === 3 && !champions.includes(player)) {
+                                    champions.push(player.replace(/\*/g, ''));
+                                }
+                            });
+                        }
+                        savedRounds.set(roundId, { timestamp, champions });
                     }
                 });
                 createScheduleRounds(savedRounds);
@@ -434,28 +477,10 @@
             }
 
             const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
+            let rankingData = [];
             if (rankingDoc.exists()) {
-                const rankingData = rankingDoc.data().players || [];
-                document.querySelectorAll('#ranking-table tbody tr').forEach((row, index) => {
-                    const player = rankingData[index];
-                    if (player) {
-                        row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
-                        row.querySelector('.mmr').value = player.mmr || '0';
-                        row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease.toFixed(2);
-                        const champStar = row.querySelector('.championship-star');
-                        champStar.dataset.count = player.championships;
-                        champStar.textContent = player.championships == 1 ? '⭐' : player.championships > 1 ? `⭐(${player.championships})` : '';
-                        row.querySelector('.wins').value = player.wins || '0';
-                        row.querySelector('.losses').value = player.losses || '0';
-                        row.querySelector('.win-rate').value = player.winRate || '0';
-                        row.querySelector('.avg-game-diff').value = player.avgGameDiff || '0.00';
-                        row.querySelector('.close-rate').value = player.closeRate || '0';
-                        row.querySelector('.dominant-wins').value = player.dominantWins || '0';
-                        row.querySelector('.dominant-losses').value = player.dominantLosses || '0';
-                        row.querySelector('.best-partner').value = player.bestPartner || '-';
-                        row.cells[0].innerHTML = `${index + 1}`;
-                    }
-                });
+                rankingData = rankingDoc.data().players || [];
+                updateRankingTable(rankingData);
                 console.log("랭킹 데이터 로드 완료!");
             } else {
                 console.warn("랭킹 데이터 없음!");
@@ -465,6 +490,71 @@
             console.error("로드 실패:", e.name, e.code, e.message, e.stack);
             showToast(`데이터 로드 실패: ${e.message || '알 수 없는 오류'}`);
         }
+    }
+
+    function updateRankingTable(rankingData) {
+        let filteredData = rankingData;
+        if (currentFilter === 'male') filteredData = rankingData.filter(p => !p.isFemale);
+        else if (currentFilter === 'female') filteredData = rankingData.filter(p => p.isFemale);
+
+        filteredData.sort((a, b) => {
+            if (sortKey === 'rank') {
+                return sortOrder === 'asc' ? a.rank - b.rank : b.rank - a.rank;
+            } else if (sortKey === 'player') {
+                const nameA = a.name.toLowerCase();
+                const nameB = b.name.toLowerCase();
+                return sortOrder === 'asc' ? nameA.localeCompare(nameB, 'ko') : nameB.localeCompare(nameA, 'ko');
+            } else if (sortKey === 'mmr') {
+                return sortOrder === 'asc' ? a.mmr - b.mmr : b.mmr - a.mmr;
+            } else if (sortKey === 'championships') {
+                return sortOrder === 'asc' ? parseInt(a.championships) - parseInt(b.championships) : parseInt(b.championships) - parseInt(a.championships);
+            } else if (sortKey === 'wins') {
+                return sortOrder === 'asc' ? parseInt(a.wins) - parseInt(b.wins) : parseInt(b.wins) - parseInt(a.wins);
+            } else if (sortKey === 'losses') {
+                return sortOrder === 'asc' ? parseInt(a.losses) - parseInt(b.losses) : parseInt(b.losses) - parseInt(a.losses);
+            } else if (sortKey === 'winRate') {
+                return sortOrder === 'asc' ? parseFloat(a.winRate) - parseFloat(b.winRate) : parseFloat(b.winRate) - parseFloat(a.winRate);
+            } else if (sortKey === 'avgGameDiff') {
+                return sortOrder === 'asc' ? parseFloat(a.avgGameDiff) - parseFloat(b.avgGameDiff) : parseFloat(b.avgGameDiff) - parseFloat(a.avgGameDiff);
+            } else if (sortKey === 'closeRate') {
+                return sortOrder === 'asc' ? parseFloat(a.closeRate) - parseFloat(b.closeRate) : parseFloat(b.closeRate) - parseFloat(a.closeRate);
+            } else if (sortKey === 'dominantWins') {
+                return sortOrder === 'asc' ? parseInt(a.dominantWins) - parseInt(b.dominantWins) : parseInt(b.dominantWins) - parseInt(a.dominantWins);
+            } else if (sortKey === 'dominantLosses') {
+                return sortOrder === 'asc' ? parseInt(a.dominantLosses) - parseInt(b.dominantLosses) : parseInt(b.dominantLosses) - parseInt(a.dominantLosses);
+            } else if (sortKey === 'bestPartner') {
+                const winsA = parseInt(a.bestPartner.match(/(\d+)승/)?.[1] || 0);
+                const winsB = parseInt(b.bestPartner.match(/(\d+)승/)?.[1] || 0);
+                return sortOrder === 'asc' ? winsA - winsB : winsB - winsA;
+            }
+            return 0;
+        });
+
+        const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
+        rankingRows.forEach((row, index) => {
+            const player = filteredData[index];
+            if (player) {
+                row.cells[0].innerHTML = `${index + 1}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span>`;
+                row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
+                row.querySelector('.mmr').value = player.mmr || '0';
+                row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease.toFixed(2);
+                const champStar = row.querySelector('.championship-star');
+                champStar.dataset.count = player.championships;
+                champStar.textContent = player.championships == 1 ? '⭐' : player.championships > 1 ? `⭐(${player.championships})` : '';
+                row.querySelector('.wins').value = player.wins || '0';
+                row.querySelector('.losses').value = player.losses || '0';
+                row.querySelector('.win-rate').value = player.winRate || '0';
+                row.querySelector('.avg-game-diff').value = player.avgGameDiff || '0.00';
+                row.querySelector('.close-rate').value = player.closeRate || '0';
+                row.querySelector('.dominant-wins').value = player.dominantWins || '0';
+                row.querySelector('.dominant-losses').value = player.dominantLosses || '0';
+                row.querySelector('.best-partner').value = player.bestPartner || '-';
+            } else {
+                row.cells[0].innerHTML = `${index + 1}<span class="streak-cell streak-none">–</span>`;
+                row.querySelectorAll('input:not([type=button])').forEach(input => input.value = '');
+                row.querySelector('.championship-star').textContent = '';
+            }
+        });
     }
 
     async function updateRanking() {
@@ -504,7 +594,9 @@
                     dominantLosses: 0,
                     totalSets: 0,
                     isFemale: rawName.includes('*'),
-                    seasonMMRIncrease: 0
+                    seasonMMRIncrease: 0,
+                    streakCount: 0,
+                    streakIsWin: false
                 };
                 partnerStats[name] = {};
                 streaks[name] = { count: 0, isWin: false };
@@ -550,7 +642,9 @@
                             dominantLosses: 0,
                             totalSets: 0,
                             isFemale: [p1Raw, p2Raw, p3Raw, p4Raw][idx].includes('*'),
-                            seasonMMRIncrease: 0
+                            seasonMMRIncrease: 0,
+                            streakCount: 0,
+                            streakIsWin: false
                         };
                         partnerStats[name] = {};
                         streaks[name] = { count: 0, isWin: false };
@@ -658,6 +752,8 @@
                             streaks[name].count = 1;
                             streaks[name].isWin = true;
                         }
+                        players[name].streakCount = streaks[name].count;
+                        players[name].streakIsWin = streaks[name].isWin;
                     } else {
                         players[name].losses++;
                         if (isCloseGame) players[name].closeLosses++;
@@ -667,6 +763,8 @@
                             streaks[name].count = 1;
                             streaks[name].isWin = false;
                         }
+                        players[name].streakCount = streaks[name].count;
+                        players[name].streakIsWin = streaks[name].isWin;
                     }
                     if (isCloseGame) players[name].closeSets++;
                     if (isDominantWin) players[name].dominantWins++;
@@ -714,7 +812,7 @@
             });
         });
 
-        let sortedPlayers = Object.values(players).sort((a, b) => b.mmr - a.mmr);
+        let sortedPlayers = Object.values(players);
         if (currentFilter === 'male') sortedPlayers = sortedPlayers.filter(p => !p.isFemale);
         else if (currentFilter === 'female') sortedPlayers = sortedPlayers.filter(p => p.isFemale);
 
@@ -753,7 +851,7 @@
                 player.avgGameDiff = player.totalSets > 0 ? (player.gameDiff / player.totalSets).toFixed(2) : '0.00';
                 player.winRate = totalGames > 0 ? Math.round((player.wins / totalGames) * 100) : 0;
 
-                row.cells[0].innerHTML = `${index + 1}<span class="streak-cell ${streaks[player.name]?.count > 0 ? (streaks[player.name].isWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${streaks[player.name]?.count > 0 ? (streaks[player.name].isWin ? `W${streaks[player.name].count}` : `L${streaks[player.name].count}`) : '–'}</span>`;
+                row.cells[0].innerHTML = `${index + 1}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span>`;
                 row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
                 row.querySelector('.mmr').value = Math.round(player.mmr);
                 row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease.toFixed(2);
@@ -806,43 +904,8 @@
         }
     }
 
-    function shareOnKakao() {
-        console.log("카카오톡 공유 기능 호출");
-        if (!Kakao.isInitialized()) {
-            Kakao.init('YOUR_KAKAO_JAVASCRIPT_KEY'); // 형의 카카오 JS 키 입력해
-        }
-        try {
-            const topPlayer = document.querySelector('#ranking-table tbody tr .ranking-player')?.value || '알 수 없음';
-            Kakao.Link.sendDefault({
-                objectType: 'feed',
-                content: {
-                    title: '2025 호수 오픈 여름시즌 순위',
-                    description: `현재 1위: ${topPlayer.replace(/\*/g, '')}! 최신 테니스 리그 순위를 확인하세요!`,
-                    imageUrl: 'https://your-image-url.com/raelangaros.jpg', // 형이 원하는 이미지 URL로 변경
-                    link: {
-                        mobileWebUrl: window.location.href,
-                        webUrl: window.location.href
-                    }
-                },
-                buttons: [
-                    {
-                        title: '순위 확인',
-                        link: {
-                            mobileWebUrl: window.location.href,
-                            webUrl: window.location.href
-                        }
-                    }
-                ]
-            });
-            showToast('카카오톡 공유 완료!');
-        } catch (e) {
-            console.error("카카오 공유 실패:", e);
-            showToast('카카오톡 공유 실패!');
-        }
-    }
-
     function downloadCSV() {
-        let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,승률(%),평균 게임 득실 항목,접전률(%),압도승률(%),압도패률(%),최고 파트너\n';
+        let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,승률(%),평균 게임 득실,접전률(%),압도승률(%),압도패률(%),최고 파트너\n';
         document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
             const rawName = row.querySelector('.ranking-player').value.trim();
             const player = rawName.replace(/\*/g, '');
@@ -865,7 +928,7 @@
         const blob = new Blob([rankingCSV], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = 'raelangaros_rankings.csv';
+        link.download = 'hosu_open_rankings.csv';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -909,11 +972,30 @@
         });
 
         document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentFilter = btn.dataset.filter;
-                loadData();
+                const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
+                if (rankingDoc.exists()) {
+                    updateRankingTable(rankingDoc.data().players || []);
+                }
+            });
+        });
+
+        document.querySelectorAll('#ranking-table thead th[data-sort]').forEach(th => {
+            th.addEventListener('click', async () => {
+                const newSortKey = th.dataset.sort;
+                if (newSortKey === sortKey) {
+                    sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortKey = newSortKey;
+                    sortOrder = 'desc';
+                }
+                const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
+                if (rankingDoc.exists()) {
+                    updateRankingTable(rankingDoc.data().players || []);
+                }
             });
         });
     }
@@ -934,10 +1016,6 @@
             const themeToggle = document.getElementById('theme-toggle');
             if (themeToggle) {
                 themeToggle.addEventListener('click', () => applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
-            }
-            const kakaoShareBtn = document.getElementById('kakao-share-btn');
-            if (kakaoShareBtn) {
-                kakaoShareBtn.addEventListener('click', shareOnKakao);
             }
             const downloadCsvBtn = document.getElementById('download-csv');
             if (downloadCsvBtn) {
