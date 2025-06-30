@@ -116,7 +116,7 @@
             .btn { padding: 8px 12px; font-size: 0.9rem; }
             h1 { font-size: 2rem; }
             h2 { font-size: 1.5rem; }
-            .saved-info { font-size: 0.7rem; }
+            .saved-info { font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; display: inline-block; vertical-align: middle; }
         }
     </style>
 </head>
@@ -564,8 +564,10 @@
         const BASE_MMR = 1500;
         const BASE_K = 28;
         const BASE_GAMES = 20;
-        const MALE_TEAM_WIN_HANDICAP = 0.5;
-        const MIXED_TEAM_LOSS_HANDICAP = 0.5;
+        const MIXED_WIN_MULTIPLIER = 3.0; // 혼성팀이 남복 이기면 MMR 3배
+        const MIXED_LOSS_REDUCTION = 0.3; // 혼성팀이 남복에게 지면 MMR 감소 30%
+        const MALE_LOSS_MULTIPLIER = 3.0; // 남복이 혼성에게 지면 MMR 하락 3배
+        const MALE_WIN_REDUCTION = 0.3; // 남복이 혼성 이기면 MMR 상승 30%
         const HANDICAP_BASE_POINT = 1500;
         const HANDICAP_ZERO_POINT = 1650;
         const HANDICAP_MAX = 150;
@@ -713,24 +715,31 @@
                 let mmrChange3 = updatePlayerMMR(players[p3], team1MMR, actual2);
                 let mmrChange4 = updatePlayerMMR(players[p4], team1MMR, actual2);
 
-                if (team1IsMale && team2IsMixed && actual1 === 1) {
-                    mmrChange1 *= MALE_TEAM_WIN_HANDICAP;
-                    mmrChange2 *= MALE_TEAM_WIN_HANDICAP;
-                    mmrChange3 *= MALE_TEAM_WIN_HANDICAP;
-                    mmrChange4 *= MALE_TEAM_WIN_HANDICAP;
-                } else if (team2IsMale && team1IsMixed && actual2 === 1) {
-                    mmrChange1 *= MALE_TEAM_WIN_HANDICAP;
-                    mmrChange2 *= MALE_TEAM_WIN_HANDICAP;
-                    mmrChange3 *= MALE_TEAM_WIN_HANDICAP;
-                    mmrChange4 *= MALE_TEAM_WIN_HANDICAP;
-                }
-
-                if (team1IsMixed && actual1 === 0) {
-                    mmrChange1 *= MIXED_TEAM_LOSS_HANDICAP;
-                    mmrChange2 *= MIXED_TEAM_LOSS_HANDICAP;
-                } else if (team2IsMixed && actual2 === 0) {
-                    mmrChange3 *= MIXED_TEAM_LOSS_HANDICAP;
-                    mmrChange4 *= MIXED_TEAM_LOSS_HANDICAP;
+                // 혼성 vs 남복 MMR 조정
+                if (team1IsMixed && team2IsMale) {
+                    if (actual1 === 1) { // 혼성 승리
+                        mmrChange1 *= MIXED_WIN_MULTIPLIER;
+                        mmrChange2 *= MIXED_WIN_MULTIPLIER;
+                        mmrChange3 *= MALE_LOSS_MULTIPLIER;
+                        mmrChange4 *= MALE_LOSS_MULTIPLIER;
+                    } else { // 혼성 패배
+                        mmrChange1 *= MIXED_LOSS_REDUCTION;
+                        mmrChange2 *= MIXED_LOSS_REDUCTION;
+                        mmrChange3 *= MALE_WIN_REDUCTION;
+                        mmrChange4 *= MALE_WIN_REDUCTION;
+                    }
+                } else if (team2IsMixed && team1IsMale) {
+                    if (actual2 === 1) { // 혼성 승리
+                        mmrChange3 *= MIXED_WIN_MULTIPLIER;
+                        mmrChange4 *= MIXED_WIN_MULTIPLIER;
+                        mmrChange1 *= MALE_LOSS_MULTIPLIER;
+                        mmrChange2 *= MALE_LOSS_MULTIPLIER;
+                    } else { // 혼성 패배
+                        mmrChange3 *= MIXED_LOSS_REDUCTION;
+                        mmrChange4 *= MIXED_LOSS_REDUCTION;
+                        mmrChange1 *= MALE_WIN_REDUCTION;
+                        mmrChange2 *= MALE_WIN_REDUCTION;
+                    }
                 }
 
                 const isClose = score1 - score2 === 1 || score2 - score1 === 1 || score1 - score2 === 2 || score2 - score1 === 2;
