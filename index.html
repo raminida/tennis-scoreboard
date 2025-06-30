@@ -571,10 +571,12 @@
         const BASE_K = 28;
         const BASE_GAMES = 20;
         const MIXED_WIN_MULTIPLIER = 3.0;
+        const MIXED_MMR_MIN = 1400;
+        const MIXED_MMR_MAX = 1700;
         const MIXED_LOSS_REDUCTION = 0.3;
         const MALE_LOSS_MULTIPLIER = 3.0;
         const MALE_WIN_REDUCTION = 0.3;
-        const FOUR_POINT_MMR_MULTIPLIER = 0.6; // 4점 선취 게임 MMR 60%
+        const FOUR_POINT_MMR_MULTIPLIER = 0.6;
         const HANDICAP_BASE_POINT = 1500;
         const HANDICAP_ZERO_POINT = 1650;
         const HANDICAP_MAX = 150;
@@ -675,6 +677,11 @@
                     return Math.max(0, HANDICAP_MAX * (1 - progress));
                 };
 
+                const getMixedWinMultiplier = (teamMMR) => {
+                    if (teamMMR >= MIXED_MMR_MIN && teamMMR <= MIXED_MMR_MAX) return MIXED_WIN_MULTIPLIER;
+                    return 1.0;
+                };
+
                 let team1MMR = (players[p1].mmr + players[p2].mmr) / 2;
                 let team2MMR = (players[p3].mmr + players[p4].mmr) / 2;
                 let effectiveTeam1MMR = team1MMR;
@@ -727,9 +734,10 @@
                 let mmrChange4 = updatePlayerMMR(players[p4], team1MMR, actual2);
 
                 if (team1IsMixed && team2IsMale) {
+                    const mixedWinMultiplier = getMixedWinMultiplier(team1MMR);
                     if (actual1 === 1) {
-                        mmrChange1 *= MIXED_WIN_MULTIPLIER;
-                        mmrChange2 *= MIXED_WIN_MULTIPLIER;
+                        mmrChange1 *= mixedWinMultiplier;
+                        mmrChange2 *= mixedWinMultiplier;
                         mmrChange3 *= MALE_LOSS_MULTIPLIER;
                         mmrChange4 *= MALE_LOSS_MULTIPLIER;
                     } else {
@@ -739,9 +747,10 @@
                         mmrChange4 *= MALE_WIN_REDUCTION;
                     }
                 } else if (team2IsMixed && team1IsMale) {
+                    const mixedWinMultiplier = getMixedWinMultiplier(team2MMR);
                     if (actual2 === 1) {
-                        mmrChange3 *= MIXED_WIN_MULTIPLIER;
-                        mmrChange4 *= MIXED_WIN_MULTIPLIER;
+                        mmrChange3 *= mixedWinMultiplier;
+                        mmrChange4 *= mixedWinMultiplier;
                         mmrChange1 *= MALE_LOSS_MULTIPLIER;
                         mmrChange2 *= MALE_LOSS_MULTIPLIER;
                     } else {
