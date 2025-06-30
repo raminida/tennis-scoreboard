@@ -42,7 +42,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>2025 래랑가로스 대시보드</title>
+    <title>2025 호수오픈 대시보드</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <style>
@@ -92,7 +92,7 @@
 <body>
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
-        <h1>2025 래랑가로스 대시보드</h1>
+        <h1>2025 호수오픈 대시보드</h1>
         <div class="section">
             <h2>통계 차트</h2>
             <div class="charts-container">
@@ -221,12 +221,12 @@ const renderMmrChart=(history,selectedPlayers)=>{
         return showToast("플레이어 선택 필요!");
     }
 
-    // 최근 10주(70일) 내 스냅샷, 일주일 간격으로 최대 10개 선택
-    const TEN_WEEKS_MS=10*7*24*60*60*1000; // 10 weeks
-    const WEEK_MS=7*24*60*60*1000; // 1 week
-    const now=Date.now();
+    // 6월 16일(첫 경기)부터 현재까지 진짜 일주일(7일) 간격으로 최대 10개 스냅샷 선택
+    const WEEK_MS=7*24*60*60*1000; // 7 days
+    const now=new Date('2025-06-29T14:49:00Z').getTime(); // 현재 시간 KST 14:49
+    const startDate=new Date('2025-06-16T00:00:00Z').getTime(); // 첫 경기
     const filteredHistory=history.length?history
-        .filter(h=>now-new Date(h.createdAt).getTime()<=TEN_WEEKS_MS)
+        .filter(h=>new Date(h.createdAt).getTime()>=startDate&&now-new Date(h.createdAt).getTime()>=0)
         .sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt))
         .reduce((acc,snapshot,idx,arr)=>{
             if(!acc.length){
@@ -336,7 +336,8 @@ const cleanInvalidMatches=async()=>{
     let invalidCount=0;
     matchesSnap.forEach(doc=>{
         const data=doc.data();
-        if(!data.player1||!data.player2||!data.winner||!data.loserPlayer1||!data.loserPlayer2){
+        const createdAt=new Date(data.createdAt||'1970-01-01');
+        if((!data.player1||!data.player2||!data.winner||!data.loserPlayer1||!data.loserPlayer2)||createdAt<new Date('2025-06-16T00:00:00Z')){
             batch.delete(doc.ref);
             invalidCount++;
             console.log(`불완전한 매치 삭제 예정: ${doc.id}`,data);
@@ -414,25 +415,6 @@ const loadDashboard=async()=>{
         console.log("matchesData 샘플:",matchesData.slice(0,5));
         localStorage.setItem('matchesDataCache',JSON.stringify({data:matchesData,timestamp:Date.now()}));
 
-        if(matchesData.length===0){
-            console.warn("유효한 매치 데이터 없음, 샘플 데이터 생성 시도");
-            const batch=writeBatch(db);
-            const sampleMatches=[
-                {id:'sample_match_1',player1:'정래민',player2:'이은지',winner:'정래민',loserPlayer1:'김유하',loserPlayer2:'성예진',gameDiff:2,round:1},
-                {id:'sample_match_2',player1:'김유하',player2:'성예진',winner:'김유하',loserPlayer1:'정래민',loserPlayer2:'이은지',gameDiff:1,round:2},
-                {id:'sample_match_3',player1:'정래민',player2:'이은지',winner:'정래민',loserPlayer1:'김유하',loserPlayer2:'성예진',gameDiff:3,round:3}
-            ];
-            sampleMatches.forEach(match=>{
-                batch.set(doc(db,'league','matches','data',match.id),match);
-            });
-            await batch.commit().catch(e=>{
-                console.error("샘플 매치 데이터 저장 실패:",e);
-                showToast("샘플 매치 데이터 저장 실패!");
-            });
-            matchesData=sampleMatches;
-            console.log("샘플 매치 데이터 추가:",matchesData);
-        }
-
         awardsData=awardsSnap&&awardsSnap.exists()&&typeof awardsSnap.data()==='object'?awardsSnap.data():{};
         console.log("어워드 데이터:",Object.keys(awardsData).length,"개");
 
@@ -458,7 +440,7 @@ const loadDashboard=async()=>{
             let peakMmrPlayer=null,maxPeakMmr=-Infinity,peakMmrRunnerUp=null,secondPeakMmr=-Infinity;
 
             const FOUR_WEEKS_MS=4*7*24*60*60*1000; // 4 weeks
-            const now=Date.now();
+            const now=new Date('2025-06-29T14:49:00Z').getTime(); // 현재 시간 KST 14:49
 
             playedPlayers.forEach(player=>{
                 const totalGamesPlayed=totalGames(player);
@@ -520,16 +502,9 @@ const loadDashboard=async()=>{
                 const winRateImproveRank=getRank(player,'winRateImprovement');
                 const winRateImproveScore=getPercentileScore(winRateImproveRank)/10;
 
-                let earlyPartnerScore=0,latePartnerScore=0;
-                const earlyMatches=matchesData.filter(match=>(normalizePlayerName(match.player1)===normalizePlayerName(player.name)||normalizePlayerName(match.player2)===normalizePlayerName(player.name))&&parseInt(match.round||0)<=3);
-                const lateMatches=matchesData.filter(match=>(normalizePlayerName(match.player1)===normalizePlayerName(player.name)||normalizePlayerName(match.player2)===normalizePlayerName(player.name))&&parseInt(match.round||0)>3);
-                player.partnerImprovement=latePartnerScore-earlyPartnerScore;
-                const partnerImproveRank=getRank(player,'partnerImprovement');
-                const partnerImproveScore=getPercentileScore(partnerImproveRank)/10;
-
-                let improvedScore=(mmrGrowthScore*0.3)+(winRateImproveScore*0.3)+(partnerImproveScore*0.4)*gameCountBonus;
+                let improvedScore=(mmrGrowthScore*0.3)+(winRateImproveScore*0.3)+(winRateImproveScore*0.4)*gameCountBonus;
                 improvedScore=improvedScore.toFixed(1);
-                debugLog(player,'발전상 점수',improvedScore,{mmrGrowthScore,winRateImproveScore,partnerImproveScore});
+                debugLog(player,'발전상 점수',improvedScore,{mmrGrowthScore,winRateImproveScore});
                 if(parseFloat(improvedScore)>maxImprovedScore){
                     secondImprovedScore=maxImprovedScore;improvedRunnerUp=mostImprovedPlayer;
                     maxImprovedScore=parseFloat(improvedScore);mostImprovedPlayer={name:player.name,value:improvedScore};
@@ -562,11 +537,11 @@ const loadDashboard=async()=>{
                 }
 
                 // 이달의 선수상: 최근 4주간 승률, MMR 상승률, 게임 득실
-                const recentMatches=matchesData.filter(match=>(normalizePlayerName(match.player1)===normalizePlayerName(player.name)||normalizePlayerName(match.player2)===normalizePlayerName(player.name))&&(now-new Date(match.createdAt).getTime()<=FOUR_WEEKS_MS));
+                const recentMatches=matchesData.filter(match=>(normalizePlayerName(match.player1)===normalizePlayerName(player.name)||normalizePlayerName(match.player2)===normalizePlayerName(player.name))&&(now-new Date(match.createdAt||now).getTime()<=FOUR_WEEKS_MS));
                 const recentWins=recentMatches.filter(match=>normalizePlayerName(match.winnerPlayer1)===normalizePlayerName(player.name)||normalizePlayerName(match.winnerPlayer2)===normalizePlayerName(player.name)).length;
                 const recentWinRate=recentMatches.length>0?recentWins/recentMatches.length:0;
                 const recentGameDiff=recentMatches.reduce((sum,match)=>(normalizePlayerName(match.winnerPlayer1)===normalizePlayerName(player.name)||normalizePlayerName(match.winnerPlayer2)===normalizePlayerName(player.name))?sum+parseFloat(match.gameDiff||0):sum-parseFloat(match.gameDiff||0),0);
-                const recentPlayerHistory=fullMmrHistory.filter(h=>now-new Date(h.createdAt).getTime()<=FOUR_WEEKS_MS).map(h=>h[normalizePlayerName(player.name).replace(/\./g,'_')]).filter(mmr=>mmr!==undefined);
+                const recentPlayerHistory=fullMmrHistory.filter(h=>now-new Date(h.createdAt||now).getTime()<=FOUR_WEEKS_MS).map(h=>h[normalizePlayerName(player.name).replace(/\./g,'_')]).filter(mmr=>mmr!==undefined);
                 const mmrIncrease=recentPlayerHistory.length>1?(recentPlayerHistory[recentPlayerHistory.length-1]-recentPlayerHistory[0]):0;
                 let playerOfMonthScore=(recentWinRate*50+mmrIncrease*0.5+recentGameDiff*2)*gameCountBonus;
                 debugLog(player,'이달의 선수 점수',playerOfMonthScore.toFixed(2),{'최근 승률':recentWinRate.toFixed(2),'MMR 상승':mmrIncrease,'게임 득실':recentGameDiff,'경기 수':recentMatches.length});
@@ -675,7 +650,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         const {data,timestamp}=JSON.parse(cachedMatches);
         const cacheAge=(Date.now()-timestamp)/(1000*60*60);
         if(cacheAge<24){
-            matchesData=data.filter(match=>match&&match.player1&&match.player2&&match.winner&&match.loserPlayer1&&match.loserPlayer2);
+            matchesData=data.filter(match=>match&&match.player1&&match.player2&&match.winner&&match.loserPlayer1&&match.loserPlayer2&&new Date(match.createdAt||'1970-01-01')>=new Date('2025-06-16T00:00:00Z'));
             console.log("로컬 캐시에서 매치 데이터 로드:",matchesData.length,"경기, 캐시 나이:",cacheAge.toFixed(2),"시간");
         }else{
             console.log("매치 데이터 캐시 오래됨, Firestore에서 로드 시도");

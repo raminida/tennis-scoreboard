@@ -37,90 +37,12 @@
         }
         return gk_fileData[filename] || "";
         }
-        </script><script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
         </script><!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 래랑가로스</title>
+    <title>2025 호수 오픈 여름시즌</title>
     <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" integrity="sha384-y3tIif2B4242xI/mS8d43/p/a1uBoL3w7sL2rS4z0nBjwA/2/g8L/DTrb1JScC4k" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -135,7 +57,7 @@
             --bg-color: #F0F4F8; --surface-color: #FFFFFF; --primary-color: #1A3C34; --primary-variant-color: #2A6B5B; --text-color: #1F2937; --text-secondary-color: #6B7280; --border-color: #E5E7EB; --shadow-color: rgba(0, 0, 0, 0.1);
         }
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
-        .container { max-width: 1700px; margin: 0 auto; } /* PC 버전 좌우폭 유지 */
+        .container { max-width: 1700px; margin: 0 auto; }
         h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; color: var(--secondary-color); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: var(--spacing-lg); margin-bottom: 2rem; letter-spacing: -2px; text-shadow: 2px 2px 10px var(--shadow-color); }
         .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
         h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--border-color); }
@@ -146,7 +68,7 @@
         html[data-theme="light"] details[open] > summary { color: var(--secondary-color); }
         .round-group-content { padding: 15px 10px 5px 10px; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border-color); }
         html[data-theme="light"] .round-group-content { background: rgba(0,0,0,0.02); }
-        .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; max-width: 100%; -webkit-overflow-scrolling: touch; } /* 좌우 스크롤 강화 */
+        .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; max-width: 100%; -webkit-overflow-scrolling: touch; }
         table { width: 100%; min-width: 100%; border-collapse: collapse; }
         th, td { padding: var(--spacing-md) 4px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
         #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; }
@@ -178,11 +100,12 @@
         .toggle-btn { padding: var(--spacing-sm) var(--spacing-md); margin: var(--spacing-sm) auto; display: block; }
         tr.lower-rank { display: none; }
         tr.lower-rank.show { display: table-row; }
+        .saved-indicator { color: var(--accent-gold); margin-left: 5px; font-size: 0.9rem; }
         @media screen and (max-width: 600px) {
             th, td { padding: 4px 2px; font-size: 0.7rem; }
             input[type="text"] { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
             input.ranking-player, input.mmr { min-width: 60px; max-width: 90px; }
-            input.best-partner { min-width: 200px; max-width: 225px; } /* 모바일 폭 유지 */
+            input.best-partner { min-width: 200px; max-width: 225px; }
             .schedule-table td input.player1, .schedule-table td input.player2,
             .schedule-table td input.player3, .schedule-table td input.player4 { min-width: 50px; max-width: 60px; }
             .schedule-table td input.score { min-width: 50px; max-width: 60px; }
@@ -197,7 +120,7 @@
 <body>
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
-        <h1>2025 래랑가로스</h1>
+        <h1>2025 호수 오픈 여름시즌</h1>
         <div class="section">
             <h2>경기 일정</h2>
             <div id="schedule-container"></div>
@@ -294,7 +217,7 @@
         }
     }
 
-    function createScheduleRounds() {
+    function createScheduleRounds(savedRounds = new Set()) {
         const container = document.getElementById('schedule-container');
         if (!container) {
             console.error("schedule-container 요소 없음!");
@@ -302,14 +225,17 @@
             return;
         }
         let roundsHtml = '';
-        for (let group = 0; group < 6; group++) {
-            const startRound = group * 10 + 1;
-            const endRound = (group + 1) * 10;
-            roundsHtml += `<details class="round-group"><summary>${startRound} ~ ${endRound}회차</summary><div class="round-group-content">`;
+        const roundsPerCategory = 30;
+        const totalRounds = 150;
+        for (let category = 0; category < Math.ceil(totalRounds / roundsPerCategory); category++) {
+            const startRound = category * roundsPerCategory + 1;
+            const endRound = Math.min((category + 1) * roundsPerCategory, totalRounds);
+            roundsHtml += `<details class="round-group"><summary>회차 ${startRound} ~ ${endRound}</summary><div class="round-group-content">`;
             for (let i = startRound; i <= endRound; i++) {
+                const isSaved = savedRounds.has(i);
                 roundsHtml += `
                 <details>
-                    <summary>${i}회차</summary>
+                    <summary>${i}회차${isSaved ? '<span class="saved-indicator">💾</span>' : ''}</summary>
                     <div class="table-wrapper">
                         <table class="schedule-table" data-round-id="${i}">
                             <thead><tr><th>Player 1</th><th>Player 2</th><th>vs</th><th>Player 3</th><th>Player 4</th><th>Score</th></tr></thead>
@@ -325,7 +251,7 @@
             roundsHtml += `</div></details>`;
         }
         container.innerHTML = roundsHtml;
-        console.log("회차 일정표 렌der링 완료!");
+        console.log("회차 일정표 렌더링 완료!");
     }
 
     function createRankingRows() {
@@ -336,7 +262,7 @@
             return;
         }
         let rowsHtml = '';
-        for (let i = 1; i <= 50; i++) {
+        for (let i = 1; i <= 100; i++) {
             rowsHtml += `
             <tr${i > 20 ? ' class="lower-rank"' : ''}>
                 <td class="rank-cell">${i}</td>
@@ -354,7 +280,7 @@
             </tr>`;
         }
         rankingBody.innerHTML = rowsHtml;
-        console.log("순위표 렌der링 완료!");
+        console.log("순위표 렌더링 완료!");
     }
 
     async function saveAllData() {
@@ -476,8 +402,15 @@
         }
         try {
             const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
+            const savedRounds = new Set();
             if (scheduleDoc.exists()) {
                 const scheduleData = scheduleDoc.data().matches || [];
+                scheduleData.forEach(match => {
+                    if (match.players.some(p => p.trim()) || match.score.trim()) {
+                        savedRounds.add(match.round);
+                    }
+                });
+                createScheduleRounds(savedRounds);
                 document.querySelectorAll('.schedule-table').forEach(table => {
                     const roundId = table.getAttribute('data-round-id');
                     const matches = scheduleData.filter(m => m.round == roundId);
@@ -496,6 +429,7 @@
                 console.log("스케줄 데이터 로드 완료!");
             } else {
                 console.warn("스케줄 데이터 없음!");
+                createScheduleRounds();
                 showToast("스케줄 데이터가 없습니다!");
             }
 
@@ -519,7 +453,7 @@
                         row.querySelector('.dominant-wins').value = player.dominantWins || '0';
                         row.querySelector('.dominant-losses').value = player.dominantLosses || '0';
                         row.querySelector('.best-partner').value = player.bestPartner || '-';
-                        row.cells[0].innerHTML = `${index + 1}`; // 연승 표시 제거, 순위 업데이트로만 표시
+                        row.cells[0].innerHTML = `${index + 1}`;
                     }
                 });
                 console.log("랭킹 데이터 로드 완료!");
@@ -659,14 +593,14 @@
 
                 const expected1 = 1 / (1 + Math.pow(10, (effectiveTeam2MMR - effectiveTeam1MMR) / 400));
                 const [score1, score2] = score.split('-').map(Number);
-                const actual1 = score1 > score2 ? 1 : 0; // 팀 1 승패
-                const actual2 = score1 < score2 ? 1 : 0; // 팀 2 승패
+                const actual1 = score1 > score2 ? 1 : 0;
+                const actual2 = score1 < score2 ? 1 : 0;
                 const gameDiff = Math.abs(score1 - score2);
                 const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
 
                 const updatePlayerMMR = (player, opponentTeamMMR, isWinner) => {
                     const totalGames = player.wins + player.losses;
-                    let K = BASE_K / (1 + Math.log10(totalGames / BASE_GAMES + 1)) * (1 + Math.min(1, totalGames / 20)); // 총 경기 수 보너스 적용
+                    let K = BASE_K / (1 + Math.log10(totalGames / BASE_GAMES + 1)) * (1 + Math.min(1, totalGames / 20));
                     if (player.mmr > 1800) {
                         K *= Math.max(0.3, 1 - (player.mmr - 1800) / 1000);
                     }
@@ -739,10 +673,8 @@
                     if (isDominantLoss) players[name].dominantLosses++;
                 };
 
-                // 팀 1 플레이어
                 updatePlayer(p1, actual1, score1 - score2, mmrChange1, isClose, actual1 === 1 && gameDiff >= 5, actual1 === 0 && gameDiff >= 5);
                 updatePlayer(p2, actual1, score1 - score2, mmrChange2, isClose, actual1 === 1 && gameDiff >= 5, actual1 === 0 && gameDiff >= 5);
-                // 팀 2 플레이어
                 updatePlayer(p3, actual2, score2 - score1, mmrChange3, isClose, actual2 === 1 && gameDiff >= 5, actual2 === 0 && gameDiff >= 5);
                 updatePlayer(p4, actual2, score2 - score1, mmrChange4, isClose, actual2 === 1 && gameDiff >= 5, actual2 === 0 && gameDiff >= 5);
 
@@ -876,7 +808,37 @@
 
     function shareOnKakao() {
         console.log("카카오톡 공유 기능 호출");
-        // 형의 원본 카카오 공유 로직 삽입 필요
+        if (!Kakao.isInitialized()) {
+            Kakao.init('YOUR_KAKAO_JAVASCRIPT_KEY'); // 형의 카카오 JS 키 입력해
+        }
+        try {
+            const topPlayer = document.querySelector('#ranking-table tbody tr .ranking-player')?.value || '알 수 없음';
+            Kakao.Link.sendDefault({
+                objectType: 'feed',
+                content: {
+                    title: '2025 호수 오픈 여름시즌 순위',
+                    description: `현재 1위: ${topPlayer.replace(/\*/g, '')}! 최신 테니스 리그 순위를 확인하세요!`,
+                    imageUrl: 'https://your-image-url.com/raelangaros.jpg', // 형이 원하는 이미지 URL로 변경
+                    link: {
+                        mobileWebUrl: window.location.href,
+                        webUrl: window.location.href
+                    }
+                },
+                buttons: [
+                    {
+                        title: '순위 확인',
+                        link: {
+                            mobileWebUrl: window.location.href,
+                            webUrl: window.location.href
+                        }
+                    }
+                ]
+            });
+            showToast('카카오톡 공유 완료!');
+        } catch (e) {
+            console.error("카카오 공유 실패:", e);
+            showToast('카카오톡 공유 실패!');
+        }
     }
 
     function downloadCSV() {
@@ -960,12 +922,12 @@
         console.log("DOMContentLoaded 이벤트 실행");
         waitForElements('#schedule-container, #ranking-table tbody', () => {
             applyTheme(localStorage.getItem('theme') || 'dark');
-            createScheduleRounds();
             createRankingRows();
             if (db) {
                 loadData();
             } else {
                 console.warn("DB 연결 없음!");
+                createScheduleRounds();
                 showToast("DB 연결 실패!");
             }
             setupInputListeners();
