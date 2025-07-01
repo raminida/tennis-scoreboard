@@ -316,9 +316,19 @@
         try {
             const batch = writeBatch(db);
 
+            const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
+            const existingScheduleData = scheduleDoc.exists() ? scheduleDoc.data().matches || [] : [];
+            const existingRounds = new Map();
+            existingScheduleData.forEach(match => {
+                if (!existingRounds.has(match.round)) {
+                    existingRounds.set(match.round, { timestamp: match.timestamp, matches: [] });
+                }
+                existingRounds.get(match.round).matches.push(match);
+            });
+
             const scheduleData = [];
             document.querySelectorAll('.schedule-table').forEach(table => {
-                const roundId = table.getAttribute('data-round-id');
+                const roundId = parseInt(table.getAttribute('data-round-id'));
                 const rows = table.querySelectorAll('tbody tr');
                 rows.forEach(row => {
                     const player1 = row.querySelector('.player1').value.trim();
@@ -328,20 +338,24 @@
                     const scoreInput = row.querySelector('.score').value.trim();
                     const isFourPoint = row.querySelector('.is-four-point').checked;
                     if (player1 && player2 && player3 && player4) {
+                        const existingRound = existingRounds.get(roundId);
+                        const timestamp = existingRound && existingRound.timestamp ? existingRound.timestamp : new Date().toISOString();
                         scheduleData.push({
-                            round: parseInt(roundId),
+                            round: roundId,
                             players: [player1, player2, player3, player4],
                             score: scoreInput || '',
-                            isFourPoint: isFourPoint
+                            isFourPoint: isFourPoint,
+                            timestamp: timestamp
                         });
                     }
                 });
             });
             const scheduleDocRef = doc(db, 'league', 'data', 'schedule', 'v1');
-            batch.set(scheduleDocRef, { matches: scheduleData, timestamp: serverTimestamp() }, { merge: true });
+            batch.set(scheduleDocRef, { matches: scheduleData, lastUpdated: serverTimestamp() }, { merge: true });
 
             const matchDataList = [];
             document.querySelectorAll('.schedule-table').forEach(table => {
+                const roundId = parseInt(table.getAttribute('data-round-id'));
                 const rows = table.querySelectorAll('tbody tr');
                 rows.forEach(row => {
                     const player1 = row.querySelector('.player1').value.trim();
@@ -354,13 +368,15 @@
                         const [score1, score2] = scoreInput.split('-').map(Number);
                         const winner = score1 > score2 ? (player1 || player2) : (player3 || player4);
                         const gameDiff = Math.abs(score1 - score2);
+                        const existingRound = existingRounds.get(roundId);
+                        const timestamp = existingRound && existingRound.timestamp ? existingRound.timestamp : new Date().toISOString();
                         matchDataList.push({
                             player1: player1 || player2,
                             player2: player3 || player4,
                             winner,
                             gameDiff,
                             isFourPoint,
-                            timestamp: serverTimestamp()
+                            timestamp: timestamp
                         });
                     }
                 });
@@ -393,7 +409,7 @@
                 };
             }).filter(player => player.name);
             const rankingDocRef = doc(db, 'league', 'data', 'rankings', 'v1');
-            batch.set(rankingDocRef, { players: rankingData, timestamp: serverTimestamp() }, { merge: true });
+            batch.set(rankingDocRef, { players: rankingData, lastUpdated: serverTimestamp() }, { merge: true });
 
             const rankingHistoryDocRef = doc(db, 'league', 'data', 'rankingHistory', 'v1');
             const rankingHistorySnap = await getDoc(rankingHistoryDocRef);
@@ -441,7 +457,7 @@
                     if (!roundMatches[roundId]) roundMatches[roundId] = [];
                     roundMatches[roundId].push(match);
                     if (match.players.some(p => p.trim()) || match.score.trim()) {
-                        const timestamp = scheduleDoc.data().timestamp?.toDate().toISOString() || new Date().toISOString();
+                        const timestamp = match.timestamp || new Date().toISOString();
                         const champions = [];
                         if (match.score && /^\d+-\d+$/.test(match.score) && !match.isFourPoint) {
                             const [score1, score2] = match.score.split('-').map(Number);
