@@ -163,33 +163,34 @@
             <div class="btn-group">
                 <a href="dash.html" class="btn" id="dashboard-link">통계 대시보드</a>
                 <button id="download-csv" class="btn">CSV 다운로드</button>
+                <button id="h2h-page-btn" class="btn">상대 전적 보기</button>
             </div>
         </div>
     </div>
     <div id="toast" class="toast"></div>
 
-<script type="module">
-    let gk_isXlsx = false;
-    let gk_xlsxFileLookup = {};
-    let gk_fileData = {};
+<script type="text/javascript">
+    var gk_isXlsx = false;
+    var gk_xlsxFileLookup = {};
+    var gk_fileData = {};
     function filledCell(cell) {
         return cell !== '' && cell != null;
     }
     function loadFileData(filename) {
         if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
             try {
-                const workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                const filteredData = jsonData.filter(row => row.some(filledCell));
-                let headerRowIndex = filteredData.findIndex((row, index) =>
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+                var headerRowIndex = filteredData.findIndex((row, index) =>
                     row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
                 );
                 if (headerRowIndex === -1 || headerRowIndex > 25) {
                     headerRowIndex = 0;
                 }
-                const csv = XLSX.utils.sheet_to_csv(XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)), { header: 1 });
+                var csv = XLSX.utils.sheet_to_csv(XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)), { header: 1 });
                 console.log(`XLSX 파일 ${filename} 파싱 성공`);
                 return csv;
             } catch (e) {
@@ -200,7 +201,9 @@
         }
         return gk_fileData[filename] || "";
     }
+</script>
 
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
@@ -1003,7 +1006,8 @@
         const saveAllBtn = document.getElementById('save-all');
         const updateRankingBtn = document.getElementById('update-ranking');
         const toggleRankingsBtn = document.getElementById('toggle-rankings');
-        if (!saveAllBtn || !updateRankingBtn || !toggleRankingsBtn) {
+        const h2hPageBtn = document.getElementById('h2h-page-btn');
+        if (!saveAllBtn || !updateRankingBtn || !toggleRankingsBtn || !h2hPageBtn) {
             console.warn("버튼 요소 없음!");
             showToast("버튼 로드 실패!");
             return;
@@ -1015,6 +1019,9 @@
             const isVisible = lowerRanks[0]?.classList.contains('show');
             lowerRanks.forEach(row => row.classList.toggle('show'));
             toggleRankingsBtn.textContent = isVisible ? '더보기' : '접기';
+        });
+        h2hPageBtn.addEventListener('click', () => {
+            window.location.href = 'h2h.html';
         });
 
         document.querySelectorAll('.filter-btn').forEach(btn => {
