@@ -46,6 +46,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=stylesheet" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-color: #121212; --surface-color: #1E1E1E; --primary-color: #4CAF50; --primary-variant-color: #81C784; --secondary-color: #FFFFFF; --text-color: #E0E0E0; --text-secondary-color: #A0A0A0; --accent-gold: #FFC107; --border-color: #333333; --shadow-color: rgba(0, 0, 0, 0.5);
@@ -59,7 +60,7 @@
         h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; color: var(--secondary-color); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: var(--spacing-lg); margin-bottom: 2rem; letter-spacing: -2px; text-shadow: 2px 2px 10px var(--shadow-color); }
         .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
         h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--border-color); }
-        .input-group { display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg); flex-wrap: wrap; }
+        .input-group { display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg); flex-wrap: wrap; align-items: center; }
         input[type="text"] { width: 100%; min-width: 200px; max-width: 300px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: left; }
         input[list] { position: relative; }
         datalist { display: none; }
@@ -105,8 +106,8 @@
         <div class="section">
             <h2>선수 선택</h2>
             <div class="input-group">
-                <input type="text" id="player1" list="player-list" placeholder="선수 1">
-                <input type="text" id="player2" list="player-list" placeholder="선수 2">
+                <input type="text" id="player1" list="player-list" placeholder="선수 1 (필수)">
+                <input type="text" id="player2" list="player-list" placeholder="선수 2 (선택)">
                 <datalist id="player-list"></datalist>
                 <button id="search-btn" class="btn">전적 검색</button>
             </div>
@@ -129,212 +130,257 @@
     </div>
     <div id="toast" class="toast"></div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
-        authDomain: "tennis-plan-jibung.firebaseapp.com",
-        projectId: "tennis-plan-jibung",
-        storageBucket: "tennis-plan-jibung.appspot.com",
-        messagingSenderId: "491083537160",
-        appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd"
-    };
-
-    let db;
-    try {
-        db = getFirestore(initializeApp(firebaseConfig));
-        console.log("Firebase 초기화 성공!");
-    } catch (e) {
-        console.error("Firebase 초기화 실패:", e);
-        showToast(`Firebase 초기화 실패: ${e.message || '알 수 없는 오류'}`);
-    }
-
-    function showToast(message) {
-        const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3000);
-    }
-
-    async function loadPlayerNames() {
-        if (!db) {
-            showToast("DB 연결 실패!");
-            return;
+    <script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+            return cell !== '' && cell != null;
         }
-        try {
-            const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-            const playerList = document.getElementById('player-list');
-            if (rankingDoc.exists()) {
-                const players = rankingDoc.data().players || [];
-                playerList.innerHTML = players.map(player => 
-                    `<option value="${player.isFemale ? `${player.name}*` : player.name}"></option>`
-                ).join('');
-                console.log("선수 목록 로드 완료:", players.length);
-            } else {
-                console.warn("랭킹 데이터 없음!");
-                showToast("선수 목록이 없습니다!");
+        function loadFileData(filename) {
+            if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+                try {
+                    var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                    var firstSheetName = workbook.SheetNames[0];
+                    var worksheet = workbook.Sheets[firstSheetName];
+                    var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                    var filteredData = jsonData.filter(row => row.some(filledCell));
+                    var headerRowIndex = filteredData.findIndex((row, index) =>
+                        row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                    );
+                    if (headerRowIndex === -1 || headerRowIndex > 25) {
+                        headerRowIndex = 0;
+                    }
+                    var csv = XLSX.utils.sheet_to_csv(XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)), { header: 1 });
+                    console.log(`XLSX 파일 ${filename} 파싱 성공`);
+                    return csv;
+                } catch (e) {
+                    console.error("XLSX 파싱 오류:", e.name, e.message, e.stack);
+                    showToast(`XLSX 파싱 실패: ${e.message || '알 수 없는 오류'}`);
+                    return "";
+                }
             }
-        } catch (e) {
-            console.error("선수 목록 로드 실패:", e);
-            showToast(`선수 목록 로드 실패: ${e.message || '알 수 없는 오류'}`);
+            return gk_fileData[filename] || "";
         }
-    }
+    </script>
 
-    async function loadMatches() {
-        if (!db) {
-            showToast("DB 연결 실패!");
-            return;
-        }
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
+            authDomain: "tennis-plan-jibung.firebaseapp.com",
+            projectId: "tennis-plan-jibung",
+            storageBucket: "tennis-plan-jibung.appspot.com",
+            messagingSenderId: "491083537160",
+            appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd"
+        };
+
+        let db;
         try {
-            const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
-            if (scheduleDoc.exists()) {
-                return scheduleDoc.data().matches || [];
-            } else {
-                console.warn("스케줄 데이터 없음!");
-                showToast("스케줄 데이터가 없습니다!");
+            db = getFirestore(initializeApp(firebaseConfig));
+            console.log("Firebase 초기화 성공!");
+        } catch (e) {
+            console.error("Firebase 초기화 실패:", e);
+            showToast(`Firebase 초기화 실패: ${e.message || '알 수 없는 오류'}`);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        async function loadPlayerNames() {
+            if (!db) {
+                showToast("DB 연결 실패!");
+                return;
+            }
+            try {
+                const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
+                const playerList = document.getElementById('player-list');
+                if (rankingDoc.exists()) {
+                    const players = rankingDoc.data().players || [];
+                    playerList.innerHTML = players.map(player => 
+                        `<option value="${player.isFemale ? `${player.name}*` : player.name}"></option>`
+                    ).join('');
+                    console.log("선수 목록 로드 완료:", players.length);
+                } else {
+                    console.warn("랭킹 데이터 없음!");
+                    showToast("선수 목록이 없습니다!");
+                }
+            } catch (e) {
+                console.error("선수 목록 로드 실패:", e);
+                showToast(`선수 목록 로드 실패: ${e.message || '알 수 없는 오류'}`);
+            }
+        }
+
+        async function loadMatches() {
+            if (!db) {
+                showToast("DB 연결 실패!");
+                return;
+            }
+            try {
+                const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
+                if (scheduleDoc.exists()) {
+                    return scheduleDoc.data().matches || [];
+                } else {
+                    console.warn("스케줄 데이터 없음!");
+                    showToast("스케줄 데이터가 없습니다!");
+                    return [];
+                }
+            } catch (e) {
+                console.error("스케줄 로드 실패:", e);
+                showToast(`스케줄 로드 실패: ${e.message || '알 수 없는 오류'}`);
                 return [];
             }
-        } catch (e) {
-            console.error("스케줄 로드 실패:", e);
-            showToast(`스케줄 로드 실패: ${e.message || '알 수 없는 오류'}`);
-            return [];
-        }
-    }
-
-    function normalizeName(name) {
-        return name ? name.replace(/[@.*\s]+/g, '').toLowerCase() : '';
-    }
-
-    async function filterMatches() {
-        const player1Input = document.getElementById('player1').value.trim();
-        const player2Input = document.getElementById('player2').value.trim();
-        if (!player1Input || !player2Input) {
-            showToast("두 선수를 모두 선택하세요!");
-            return;
         }
 
-        const player1 = normalizeName(player1Input);
-        const player2 = normalizeName(player2Input);
-        if (player1 === player2) {
-            showToast("동일한 선수를 선택할 수 없습니다!");
-            return;
+        function normalizeName(name) {
+            return name ? name.replace(/[@.*\s]+/g, '').toLowerCase() : '';
         }
 
-        const matches = await loadMatches();
-        const filteredMatches = matches.filter(match => {
-            const normalizedPlayers = match.players.map(normalizeName);
-            return normalizedPlayers.includes(player1) && normalizedPlayers.includes(player2);
-        });
-
-        console.log("필터링된 매치:", filteredMatches);
-
-        const statsGrid = document.getElementById('stats-grid');
-        const tableBody = document.querySelector('#h2h-table tbody');
-        tableBody.innerHTML = '';
-        statsGrid.innerHTML = '';
-
-        if (filteredMatches.length === 0) {
-            showToast("선택한 선수 간의 전적이 없습니다!");
-            return;
-        }
-
-        let wins = 0, losses = 0, totalGameDiff = 0;
-        filteredMatches.forEach(match => {
-            const player1Index = match.players.findIndex(p => normalizeName(p) === player1);
-            const player2Index = match.players.findIndex(p => normalizeName(p) === player2);
-            const isPlayer1Team1 = player1Index < 2;
-            const isPlayer2Team1 = player2Index < 2;
-            const isOpposing = isPlayer1Team1 !== isPlayer2Team1;
-
-            if (!isOpposing) return;
-
-            let matchup = `${match.players[0].replace(/\*/g, '')}+${match.players[1].replace(/\*/g, '')} vs ${match.players[2].replace(/\*/g, '')}+${match.players[3].replace(/\*/g, '')}`;
-            let result = '-';
-            let gameDiff = 0;
-            let scoreDiffDisplay = '-';
-
-            if (match.score && /^\d+-\d+$/.test(match.score)) {
-                const [score1, score2] = match.score.split('-').map(Number);
-                if (isPlayer1Team1) {
-                    gameDiff = score1 - score2;
-                    scoreDiffDisplay = gameDiff > 0 ? `+${gameDiff}` : `${gameDiff}`;
-                    if (score1 > score2) {
-                        wins++;
-                        result = '✅';
-                    } else {
-                        losses++;
-                        result = '❌';
-                    }
-                } else {
-                    gameDiff = score2 - score1;
-                    scoreDiffDisplay = gameDiff > 0 ? `+${gameDiff}` : `${gameDiff}`;
-                    if (score2 > score1) {
-                        wins++;
-                        result = '✅';
-                    } else {
-                        losses++;
-                        result = '❌';
-                    }
-                }
-                totalGameDiff += gameDiff;
+        async function filterMatches() {
+            const player1Input = document.getElementById('player1').value.trim();
+            const player2Input = document.getElementById('player2').value.trim();
+            if (!player1Input) {
+                showToast("선수 1을 선택하세요!");
+                return;
             }
 
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${match.round}</td>
-                <td>${result}</td>
-                <td class="matchup">${matchup}</td>
-                <td>${match.score || '-'}</td>
-                <td class="score-diff ${gameDiff > 0 ? 'positive' : gameDiff < 0 ? 'negative' : ''}">${scoreDiffDisplay}</td>
-            `;
-            tableBody.appendChild(row);
-        });
+            const player1 = normalizeName(player1Input);
+            const player2 = player2Input ? normalizeName(player2Input) : null;
 
-        const totalMatches = wins + losses;
-        const winRate = totalMatches > 0 ? ((wins / totalMatches) * 100).toFixed(1) : '0.0';
-        const avgGameDiff = totalMatches > 0 ? (totalGameDiff / totalMatches).toFixed(2) : '0.00';
-        statsGrid.innerHTML = `
-            <div class="stat-box"><h3>총 경기</h3><p>${totalMatches}</p></div>
-            <div class="stat-box"><h3>승</h3><p>${wins}</p></div>
-            <div class="stat-box"><h3>패</h3><p>${losses}</p></div>
-            <div class="stat-box"><h3>승률(%)</h3><p>${winRate}</p></div>
-            <div class="stat-box"><h3>평균 점수차</h3><p>${avgGameDiff > 0 ? '+' : ''}${avgGameDiff}</p></div>
-        `;
-        showToast("전적 검색 완료!");
-    }
+            if (player2 && player1 === player2) {
+                showToast("동일한 선수를 선택할 수 없습니다!");
+                return;
+            }
 
-    function applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        const themeToggle = document.getElementById('theme-toggle');
-        themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
-        localStorage.setItem('theme', theme);
-    }
+            const matches = await loadMatches();
+            let filteredMatches = [];
+            if (player2) {
+                filteredMatches = matches.filter(match => {
+                    const normalizedPlayers = match.players.map(normalizeName);
+                    return normalizedPlayers.includes(player1) && normalizedPlayers.includes(player2);
+                });
+            } else {
+                filteredMatches = matches.filter(match => {
+                    const normalizedPlayers = match.players.map(normalizeName);
+                    return normalizedPlayers.includes(player1);
+                });
+            }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log("DOMContentLoaded 이벤트 실행");
-        applyTheme(localStorage.getItem('theme') || 'dark');
-        loadPlayerNames();
-        const searchBtn = document.getElementById('search-btn');
-        searchBtn.addEventListener('click', filterMatches);
-        document.getElementById('theme-toggle').addEventListener('click', () => 
-            applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark')
-        );
-        document.querySelectorAll('#player1, #player2').forEach(input => {
-            input.addEventListener('change', () => {
-                const datalist = document.getElementById('player-list');
-                const options = Array.from(datalist.options).map(opt => opt.value);
-                if (input.value && !options.includes(input.value)) {
-                    input.value = '';
-                    showToast("유효한 선수 이름을 선택하세요!");
+            console.log("필터링된 매치:", filteredMatches);
+
+            const statsGrid = document.getElementById('stats-grid');
+            const tableBody = document.querySelector('#h2h-table tbody');
+            tableBody.innerHTML = '';
+            statsGrid.innerHTML = '';
+
+            if (filteredMatches.length === 0) {
+                showToast(player2 ? "선택한 선수 간의 전적이 없습니다!" : `${player1Input}의 경기 기록이 없습니다!`);
+                return;
+            }
+
+            let wins = 0, losses = 0, totalGameDiff = 0;
+            filteredMatches.sort((a, b) => a.round - b.round); // 과거 경기부터 정렬
+            filteredMatches.forEach(match => {
+                const player1Index = match.players.findIndex(p => normalizeName(p) === player1);
+                const isPlayer1Team1 = player1Index < 2;
+                let result = '-';
+                let gameDiff = 0;
+                let scoreDiffDisplay = '-';
+                let matchup = `${match.players[0].replace(/\*/g, '')}+${match.players[1].replace(/\*/g, '')} vs ${match.players[2].replace(/\*/g, '')}+${match.players[3].replace(/\*/g, '')}`;
+
+                if (player2) {
+                    const player2Index = match.players.findIndex(p => normalizeName(p) === player2);
+                    const isPlayer2Team1 = player2Index < 2;
+                    const isOpposing = isPlayer1Team1 !== isPlayer2Team1;
+                    if (!isOpposing) return;
                 }
+
+                if (match.score && /^\d+-\d+$/.test(match.score)) {
+                    const [score1, score2] = match.score.split('-').map(Number);
+                    if (isPlayer1Team1) {
+                        gameDiff = score1 - score2;
+                        scoreDiffDisplay = gameDiff > 0 ? `+${gameDiff}` : `${gameDiff}`;
+                        if (score1 > score2) {
+                            wins++;
+                            result = '✅';
+                        } else {
+                            losses++;
+                            result = '❌';
+                        }
+                    } else {
+                        gameDiff = score2 - score1;
+                        scoreDiffDisplay = gameDiff > 0 ? `+${gameDiff}` : `${gameDiff}`;
+                        if (score2 > score1) {
+                            wins++;
+                            result = '✅';
+                        } else {
+                            losses++;
+                            result = '❌';
+                        }
+                    }
+                    totalGameDiff += gameDiff;
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${match.round}</td>
+                    <td>${result}</td>
+                    <td class="matchup">${matchup}</td>
+                    <td>${match.score || '-'}</td>
+                    <td class="score-diff ${gameDiff > 0 ? 'positive' : gameDiff < 0 ? 'negative' : ''}">${scoreDiffDisplay}</td>
+                `;
+                tableBody.appendChild(row);
             });
-            input.addEventListener('keypress', e => {
-                if (e.key === 'Enter') filterMatches();
+
+            const totalMatches = wins + losses;
+            const winRate = totalMatches > 0 ? ((wins / totalMatches) * 100).toFixed(1) : '0.0';
+            const avgGameDiff = totalMatches > 0 ? (totalGameDiff / totalMatches).toFixed(2) : '0.00';
+            statsGrid.innerHTML = `
+                <div class="stat-box"><h3>총 경기</h3><p>${totalMatches}</p></div>
+                <div class="stat-box"><h3>승</h3><p>${wins}</p></div>
+                <div class="stat-box"><h3>패</h3><p>${losses}</p></div>
+                <div class="stat-box"><h3>승률(%)</h3><p>${winRate}</p></div>
+                <div class="stat-box"><h3>평균 점수차</h3><p>${avgGameDiff > 0 ? '+' : ''}${avgGameDiff}</p></div>
+            `;
+            showToast(player2 ? "상대 전적 검색 완료!" : `${player1Input}의 전체 경기 기록 검색 완료!`);
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            const themeToggle = document.getElementById('theme-toggle');
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', theme);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOMContentLoaded 이벤트 실행");
+            applyTheme(localStorage.getItem('theme') || 'dark');
+            loadPlayerNames();
+            const searchBtn = document.getElementById('search-btn');
+            searchBtn.addEventListener('click', filterMatches);
+            document.getElementById('theme-toggle').addEventListener('click', () => 
+                applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark')
+            );
+            document.querySelectorAll('#player1, #player2').forEach(input => {
+                input.addEventListener('change', () => {
+                    const datalist = document.getElementById('player-list');
+                    const options = Array.from(datalist.options).map(opt => opt.value);
+                    if (input.value && !options.includes(input.value)) {
+                        input.value = '';
+                        showToast("유효한 선수 이름을 선택하세요!");
+                    }
+                });
+                input.addEventListener('keypress', e => {
+                    if (e.key === 'Enter') filterMatches();
+                });
             });
         });
-    });
-</script>
+    </script>
 </body>
 </html>
