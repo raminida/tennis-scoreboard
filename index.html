@@ -1,4 +1,43 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -125,7 +164,7 @@
                 <a href="dash.html" class="btn" id="dashboard-link">통계 대시보드</a>
                 <button id="download-csv" class="btn">CSV 다운로드</button>
                 <button id="h2h-page-btn" class="btn">상대 전적 보기</button>
-                <button id="partner-page-btn" class="btn">파트너 전적 보기</button> <!-- 추가 -->
+                <button id="partner-page-btn" class="btn">파트너 전적 보기</button>
             </div>
         </div>
     </div>
@@ -551,11 +590,11 @@
             const BASE_MMR = 1500;
             const BASE_K = 28;
             const BASE_GAMES = 20;
-            const MIXED_WIN_MULTIPLIER = 3.0;
+            const MIXED_WIN_MULTIPLIER = 1.5; // 수정: 3.0 -> 1.5
             const MIXED_MMR_MIN = 1400;
-            const MIXED_MMR_MAX = 1700;
+            const MIXED_MMR_MAX = 1600; // 수정: 1700 -> 1600
             const MIXED_LOSS_REDUCTION = 0.3;
-            const MALE_LOSS_MULTIPLIER = 3.0;
+            const MALE_LOSS_MULTIPLIER = 1.5; // 수정: 3.0 -> 1.5
             const MALE_WIN_REDUCTION = 0.3;
             const FOUR_POINT_MMR_MULTIPLIER = 0.6;
             const HANDICAP_BASE_POINT = 1500;
@@ -945,7 +984,7 @@
             document.body.removeChild(link);
         }
 
-        function waitForElements(selector, callback, retries = 20, delay = 200) { // 재시도 횟수와 딜레이 늘림
+        function waitForElements(selector, callback, retries = 20, delay = 200) {
             let attempts = 0;
             function check() {
                 const elements = document.querySelectorAll(selector);
@@ -972,9 +1011,8 @@
             const updateRankingBtn = document.getElementById('update-ranking');
             const toggleRankingsBtn = document.getElementById('toggle-rankings');
             const h2hPageBtn = document.getElementById('h2h-page-btn');
-            const partnerPageBtn = document.getElementById('partner-page-btn'); // 추가
+            const partnerPageBtn = document.getElementById('partner-page-btn');
 
-            // 버튼 존재 여부 로그
             console.log("setupInputListeners - 버튼 상태:");
             console.log("save-all:", !!saveAllBtn);
             console.log("update-ranking:", !!updateRankingBtn);
@@ -994,7 +1032,7 @@
                 console.log("h2h-page-btn 클릭");
                 window.location.href = 'h2h.html';
             });
-            partnerPageBtn?.addEventListener('click', () => { // 추가
+            partnerPageBtn?.addEventListener('click', () => {
                 console.log("partner-page-btn 클릭");
                 window.location.href = 'partner.html';
             });
