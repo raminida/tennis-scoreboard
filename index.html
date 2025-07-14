@@ -107,7 +107,7 @@
         @media screen and (max-width: 600px) {
             th, td { padding: 4px 2px; font-size: 0.7rem; }
             input[type="text"] { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
-            input.ranking-player, input.mmr { min-width: 60px; max-width: 90px; }
+            input.ranking-player, input.mmr { min-width: 70px; max-width: 100px; }
             input.best-partner { min-width: 200px; max-width: 225px; }
             .schedule-table td input.player1, .schedule-table td input.player2,
             .schedule-table td input.player3, .schedule-table td input.player4 { min-width: 50px; max-width: 60px; }
@@ -201,6 +201,17 @@
                 }
             }
             return gk_fileData[filename] || "";
+        }
+
+        function applyTheme(theme) {
+            const validTheme = theme === 'light' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', validTheme);
+            localStorage.setItem('theme', validTheme);
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.textContent = validTheme === 'dark' ? '☀️' : '🌙';
+            }
+            console.log(`테마 적용: ${validTheme}`);
         }
     </script>
 
@@ -396,7 +407,7 @@
                     const name = rawName.replace(/\*/g, '');
                     return {
                         name,
-                        mmr: row.querySelector('.mmr').value || '0',
+                        mmr: parseFloat(row.querySelector('.mmr').value) || 0,
                         championships: row.querySelector('.championship-star')?.dataset.count || '0',
                         wins: row.querySelector('.wins').value || '0',
                         losses: row.querySelector('.losses').value || '0',
@@ -562,8 +573,8 @@
                 if (player) {
                     row.cells[0].innerHTML = `${index + 1}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span>`;
                     row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
-                    row.querySelector('.mmr').value = player.mmr || '0';
-                    row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease.toFixed(2);
+                    row.querySelector('.mmr').value = isNaN(player.mmr) ? '1500' : Math.round(player.mmr);
+                    row.querySelector('.mmr').dataset.seasonMMRIncrease = isNaN(player.seasonMMRIncrease) ? '0.00' : player.seasonMMRIncrease.toFixed(2);
                     const champStar = row.querySelector('.championship-star');
                     champStar.dataset.count = player.championships;
                     champStar.textContent = player.championships == 1 ? '⭐' : player.championships > 1 ? `⭐(${player.championships})` : '';
@@ -588,15 +599,16 @@
             updateRankingBtn.disabled = true;
 
             const BASE_MMR = 1500;
-            const BASE_K = 28;
-            const BASE_GAMES = 20;
-            const MIXED_WIN_MULTIPLIER = 1.5; // 수정: 3.0 -> 1.5
-            const MIXED_MMR_MIN = 1400;
-            const MIXED_MMR_MAX = 1600; // 수정: 1700 -> 1600
-            const MIXED_LOSS_REDUCTION = 0.3;
-            const MALE_LOSS_MULTIPLIER = 1.5; // 수정: 3.0 -> 1.5
-            const MALE_WIN_REDUCTION = 0.3;
+            const BASE_K = 45;
+            const WIN_BONUS = 1.2;
+            const LOSS_REDUCTION = 0.8;
             const FOUR_POINT_MMR_MULTIPLIER = 0.6;
+            const MIXED_WIN_MULTIPLIER = 1.5;
+            const MIXED_MMR_MIN = 1400;
+            const MIXED_MMR_MAX = 1600;
+            const MIXED_LOSS_REDUCTION = 0.3;
+            const MALE_LOSS_MULTIPLIER = 1.5;
+            const MALE_WIN_REDUCTION = 0.3;
             const HANDICAP_BASE_POINT = 1500;
             const HANDICAP_ZERO_POINT = 1650;
             const HANDICAP_MAX = 150;
@@ -691,6 +703,7 @@
                     if (team1IsMixed || team2IsMixed) roundHasMixedMatch = true;
 
                     const getDynamicHandicap = (mmr) => {
+                        if (isNaN(mmr) || mmr <= 0) mmr = BASE_MMR;
                         if (mmr >= HANDICAP_ZERO_POINT) return 0;
                         if (mmr <= HANDICAP_BASE_POINT) return HANDICAP_MAX;
                         const progress = (mmr - HANDICAP_BASE_POINT) / (HANDICAP_ZERO_POINT - HANDICAP_BASE_POINT);
@@ -698,26 +711,27 @@
                     };
 
                     const getMixedWinMultiplier = (teamMMR) => {
+                        if (isNaN(teamMMR) || teamMMR <= 0) teamMMR = BASE_MMR;
                         if (teamMMR >= MIXED_MMR_MIN && teamMMR <= MIXED_MMR_MAX) return MIXED_WIN_MULTIPLIER;
                         return 1.0;
                     };
 
-                    let team1MMR = (players[p1].mmr + players[p2].mmr) / 2;
-                    let team2MMR = (players[p3].mmr + players[p4].mmr) / 2;
+                    let team1MMR = ((players[p1]?.mmr || BASE_MMR) + (players[p2]?.mmr || BASE_MMR)) / 2;
+                    let team2MMR = ((players[p3]?.mmr || BASE_MMR) + (players[p4]?.mmr || BASE_MMR)) / 2;
                     let effectiveTeam1MMR = team1MMR;
                     let effectiveTeam2MMR = team2MMR;
 
                     if (team1IsMixed) {
                         let handicap = 0;
-                        if (p1Raw.includes('*')) handicap += getDynamicHandicap(players[p1].mmr);
-                        if (p2Raw.includes('*')) handicap += getDynamicHandicap(players[p2].mmr);
+                        if (p1Raw.includes('*')) handicap += getDynamicHandicap(players[p1]?.mmr || BASE_MMR);
+                        if (p2Raw.includes('*')) handicap += getDynamicHandicap(players[p2]?.mmr || BASE_MMR);
                         effectiveTeam1MMR += handicap / (p1Raw.includes('*') && p2Raw.includes('*') ? 2 : 1);
                         effectiveTeam1MMR *= 1.5;
                     }
                     if (team2IsMixed) {
                         let handicap = 0;
-                        if (p3Raw.includes('*')) handicap += getDynamicHandicap(players[p3].mmr);
-                        if (p4Raw.includes('*')) handicap += getDynamicHandicap(players[p4].mmr);
+                        if (p3Raw.includes('*')) handicap += getDynamicHandicap(players[p3]?.mmr || BASE_MMR);
+                        if (p4Raw.includes('*')) handicap += getDynamicHandicap(players[p4]?.mmr || BASE_MMR);
                         effectiveTeam2MMR += handicap / (p3Raw.includes('*') && p4Raw.includes('*') ? 2 : 1);
                         effectiveTeam2MMR *= 1.5;
                     }
@@ -727,25 +741,33 @@
                     const actual1 = score1 > score2 ? 1 : 0;
                     const actual2 = score1 < score2 ? 1 : 0;
                     const gameDiff = Math.abs(score1 - score2);
-                    const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
+                    const scoreWeight = isNaN(gameDiff) ? 1.0 : 0.8 + (gameDiff / 6) * 0.7;
 
                     const updatePlayerMMR = (player, opponentTeamMMR, isWinner) => {
-                        const totalGames = player.wins + player.losses;
-                        let K = BASE_K / (1 + Math.log10(totalGames / BASE_GAMES + 1)) * (1 + Math.min(1, totalGames / 20));
-                        if (player.mmr > 1800) {
-                            K *= Math.max(0.3, 1 - (player.mmr - 1800) / 1000);
+                        if (!player) return 0;
+                        let K = BASE_K;
+                        let playerMMR = player.mmr || BASE_MMR;
+                        if (isNaN(playerMMR)) playerMMR = BASE_MMR;
+                        if (playerMMR > 1800) {
+                            K *= Math.max(0.3, 1 - (playerMMR - 1800) / 1000);
                         }
-                        const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - player.mmr) / 400));
-                        let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate);
-                        let opponentWeight = Math.min(1, opponentTeamMMR / player.mmr);
-                        if (player.mmr > 1800) {
-                            opponentWeight *= Math.max(0.5, 1 - (player.mmr - 1800) / 2000);
+                        if (isNaN(opponentTeamMMR)) opponentTeamMMR = BASE_MMR;
+                        const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
+                        let opponentWeight = Math.min(1, opponentTeamMMR / playerMMR);
+                        if (playerMMR > 1800) {
+                            opponentWeight *= Math.max(0.5, 1 - (playerMMR - 1800) / 2000);
                         }
-                        mmrChange *= opponentWeight * scoreWeight;
+                        let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * opponentWeight * scoreWeight;
                         if (isFourPoint) {
                             mmrChange *= FOUR_POINT_MMR_MULTIPLIER;
                         }
-                        return mmrChange;
+                        if (isWinner) {
+                            mmrChange *= WIN_BONUS;
+                        } else {
+                            mmrChange *= LOSS_REDUCTION;
+                        }
+                        const finalMMRChange = isNaN(mmrChange) ? 0 : Math.round(isWinner ? mmrChange : -Math.abs(mmrChange));
+                        return finalMMRChange;
                     };
 
                     let mmrChange1 = updatePlayerMMR(players[p1], team2MMR, actual1);
@@ -786,9 +808,9 @@
                     const updatePlayer = (name, isWinner, gameDiff, mmrChangeVal, isCloseGame, isDominantWin, isDominantLoss) => {
                         if (!players[name]) return;
                         players[name].totalSets++;
-                        players[name].gameDiff += gameDiff;
-                        players[name].mmr += mmrChangeVal;
-                        players[name].seasonMMRIncrease += mmrChangeVal;
+                        players[name].gameDiff += isNaN(gameDiff) ? 0 : gameDiff;
+                        players[name].mmr += isNaN(mmrChangeVal) ? 0 : mmrChangeVal;
+                        players[name].seasonMMRIncrease += isNaN(mmrChangeVal) ? 0 : mmrChangeVal;
                         if (isWinner) {
                             players[name].wins++;
                             if (!isFourPoint) {
@@ -834,7 +856,7 @@
                         }
                         const stats = partnerStats[player][partner];
                         stats.matches++;
-                        stats.gameDiffSum += gameDiff;
+                        stats.gameDiffSum += isNaN(gameDiff) ? 0 : gameDiff;
                         if (isWin) stats.wins++; else stats.losses++;
                     };
 
@@ -877,7 +899,7 @@
                 sortedPlayers.forEach(p => {
                     if (p.wins > 0 || p.losses > 0) {
                         const cleanName = p.name.replace(/[@.*]+/g, '_').replace(/_+/g, '_').trim();
-                        newSnapshot[cleanName] = Math.round(p.mmr);
+                        newSnapshot[cleanName] = isNaN(p.mmr) ? BASE_MMR : Math.round(p.mmr);
                     }
                 });
                 if (Object.keys(newSnapshot).length > 1) {
@@ -903,8 +925,8 @@
 
                     row.cells[0].innerHTML = `${index + 1}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span>`;
                     row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
-                    row.querySelector('.mmr').value = Math.round(player.mmr);
-                    row.querySelector('.mmr').dataset.seasonMMRIncrease = player.seasonMMRIncrease.toFixed(2);
+                    row.querySelector('.mmr').value = isNaN(player.mmr) ? '1500' : Math.round(player.mmr);
+                    row.querySelector('.mmr').dataset.seasonMMRIncrease = isNaN(player.seasonMMRIncrease) ? '0.00' : player.seasonMMRIncrease.toFixed(2);
                     const champStar = row.querySelector('.championship-star');
                     champStar.dataset.count = player.championships;
                     champStar.textContent = player.championships == 1 ? '⭐' : player.championships > 1 ? `⭐(${player.championships})` : '';
@@ -941,17 +963,6 @@
             await saveAllData();
             showToast('순위 업데이트 완료!');
             updateRankingBtn.disabled = false;
-        }
-
-        function applyTheme(theme) {
-            document.documentElement.setAttribute('data-theme', theme);
-            const themeToggle = document.getElementById('theme-toggle');
-            if (themeToggle) {
-                themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
-                localStorage.setItem('theme', theme);
-            } else {
-                console.warn("theme-toggle 요소 없음!");
-            }
         }
 
         function downloadCSV() {
@@ -1068,10 +1079,8 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log("DOMContentLoaded 이벤트 시작");
-            console.log("applyTheme 정의 여부 (시작 시점):", typeof applyTheme);
             waitForElements('#schedule-container, #ranking-table tbody', () => {
                 console.log("waitForElements 콜백 실행");
-                console.log("applyTheme 정의 여부 (콜백 내부):", typeof applyTheme);
                 try {
                     applyTheme(localStorage.getItem('theme') || 'dark');
                     console.log("applyTheme 호출 성공");
@@ -1091,7 +1100,7 @@
                 const themeToggle = document.getElementById('theme-toggle');
                 if (themeToggle) {
                     themeToggle.addEventListener('click', () => {
-                        console.log("themeToggle 클릭, applyTheme 호출");
+                        console.log("themeToggle 클릭");
                         try {
                             applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
                         } catch (e) {

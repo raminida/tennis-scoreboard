@@ -181,7 +181,7 @@
             text-align: center; 
             border-bottom: 1px solid var(--border-color); 
             font-size: 0.9rem; 
-            color: var(--text-color); /* 글씨색 명시적 설정 */
+            color: var(--text-color); 
         }
         th { 
             font-family: 'Poppins', sans-serif; 
@@ -191,19 +191,19 @@
         }
         html[data-theme="light"] th { 
             background-color: #F9FAFB; 
-            color: var(--primary-variant-color); /* 주간 모드에서도 선명한 색상 유지 */
+            color: var(--primary-variant-color); 
         }
         td.matchup { 
             white-space: normal; 
             min-width: 250px; 
         }
-        td.score-diff { 
+        td.score-diff, td.mmr-change { 
             color: var(--accent-gold); 
         }
-        td.score-diff.positive { 
+        td.score-diff.positive, td.mmr-change.positive { 
             color: #4CAF50; 
         }
-        td.score-diff.negative { 
+        td.score-diff.negative, td.mmr-change.negative { 
             color: #F44336; 
         }
         .stats-grid { 
@@ -276,7 +276,7 @@
             th, td { 
                 padding: 4px 2px; 
                 font-size: 0.7rem; 
-                color: var(--text-color); /* 모바일에서도 글씨색 명시 */
+                color: var(--text-color); 
             }
             td.matchup { 
                 min-width: 150px; 
@@ -321,6 +321,7 @@
                 <input type="text" id="player2" list="player-list" placeholder="선수 2 (선택)">
                 <datalist id="player-list"></datalist>
                 <button id="search-btn" class="btn">전적 검색</button>
+                <button id="back-btn" class="btn">메인으로</button>
             </div>
             <div class="stats-grid" id="stats-grid"></div>
             <div class="table-wrapper">
@@ -332,6 +333,7 @@
                             <th>대진</th>
                             <th>스코어</th>
                             <th>스코어차</th>
+                            <th>MMR 변화</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -373,6 +375,28 @@
             }
             return gk_fileData[filename] || "";
         }
+
+        function applyTheme(theme) {
+            const validTheme = theme === 'light' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', validTheme);
+            localStorage.setItem('theme', validTheme);
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.textContent = validTheme === 'dark' ? '☀️' : '🌙';
+            }
+            console.log(`테마 적용: ${validTheme}`);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            if (toast) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            } else {
+                console.warn("Toast 요소 없음!");
+            }
+        }
     </script>
 
     <script type="module">
@@ -393,21 +417,14 @@
             db = getFirestore(initializeApp(firebaseConfig));
             console.log("Firebase 초기화 성공!");
         } catch (e) {
-            console.error("Firebase 초기화 실패:", e);
+            console.error("Firebase 초기화 실패:", e.name, e.code, e.message, e.stack);
             showToast(`Firebase 초기화 실패: ${e.message || '알 수 없는 오류'}`);
-        }
-
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
         async function loadPlayerNames() {
             if (!db) {
                 showToast("DB 연결 실패!");
-                return;
+                return [];
             }
             try {
                 const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
@@ -418,20 +435,23 @@
                         `<option value="${player.isFemale ? `${player.name}*` : player.name}"></option>`
                     ).join('');
                     console.log("선수 목록 로드 완료:", players.length);
+                    return players;
                 } else {
                     console.warn("랭킹 데이터 없음!");
                     showToast("선수 목록이 없습니다!");
+                    return [];
                 }
             } catch (e) {
-                console.error("선수 목록 로드 실패:", e);
+                console.error("선수 목록 로드 실패:", e.name, e.code, e.message, e.stack);
                 showToast(`선수 목록 로드 실패: ${e.message || '알 수 없는 오류'}`);
+                return [];
             }
         }
 
         async function loadMatches() {
             if (!db) {
                 showToast("DB 연결 실패!");
-                return;
+                return [];
             }
             try {
                 const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
@@ -443,7 +463,7 @@
                     return [];
                 }
             } catch (e) {
-                console.error("스케줄 로드 실패:", e);
+                console.error("스케줄 로드 실패:", e.name, e.code, e.message, e.stack);
                 showToast(`스케줄 로드 실패: ${e.message || '알 수 없는 오류'}`);
                 return [];
             }
@@ -451,6 +471,133 @@
 
         function normalizeName(name) {
             return name ? name.replace(/[@.*\s]+/g, '').toLowerCase() : '';
+        }
+
+        function calculateMMRChange(match, playerName, isPlayerTeam1, players) {
+            const BASE_MMR = 1500;
+            const BASE_K = 45;
+            const WIN_BONUS = 1.2;
+            const LOSS_REDUCTION = 0.8;
+            const FOUR_POINT_MMR_MULTIPLIER = 0.6;
+            const MIXED_WIN_MULTIPLIER = 1.5;
+            const MIXED_MMR_MIN = 1400;
+            const MIXED_MMR_MAX = 1600;
+            const MIXED_LOSS_REDUCTION = 0.3;
+            const MALE_LOSS_MULTIPLIER = 1.5;
+            const MALE_WIN_REDUCTION = 0.3;
+            const HANDICAP_BASE_POINT = 1500;
+            const HANDICAP_ZERO_POINT = 1650;
+            const HANDICAP_MAX = 150;
+
+            let reason = '';
+            const player = players.find(p => normalizeName(p.name) === normalizeName(playerName)) || { mmr: BASE_MMR, isFemale: playerName.includes('*') };
+            const p1Raw = match.players[0] || '';
+            const p2Raw = match.players[1] || '';
+            const p3Raw = match.players[2] || '';
+            const p4Raw = match.players[3] || '';
+            const p1 = normalizeName(p1Raw);
+            const p2 = normalizeName(p2Raw);
+            const p3 = normalizeName(p3Raw);
+            const p4 = normalizeName(p4Raw);
+
+            if (!match.score || !/^\d+-\d+$/.test(match.score)) {
+                reason = '스코어 없음';
+                return { mmrChange: 0, reason };
+            }
+
+            const team1IsMixed = p1Raw.includes('*') || p2Raw.includes('*');
+            const team2IsMixed = p3Raw.includes('*') || p4Raw.includes('*');
+            const team1IsMale = !team1IsMixed;
+            const team2IsMale = !team2IsMixed;
+
+            const getDynamicHandicap = (mmr) => {
+                if (isNaN(mmr) || mmr <= 0) mmr = BASE_MMR;
+                if (mmr >= HANDICAP_ZERO_POINT) return 0;
+                if (mmr <= HANDICAP_BASE_POINT) return HANDICAP_MAX;
+                const progress = (mmr - HANDICAP_BASE_POINT) / (HANDICAP_ZERO_POINT - HANDICAP_BASE_POINT);
+                return Math.max(0, HANDICAP_MAX * (1 - progress));
+            };
+
+            const getMixedWinMultiplier = (teamMMR) => {
+                if (isNaN(teamMMR) || teamMMR <= 0) teamMMR = BASE_MMR;
+                if (teamMMR >= MIXED_MMR_MIN && teamMMR <= MIXED_MMR_MAX) return MIXED_WIN_MULTIPLIER;
+                return 1.0;
+            };
+
+            let team1MMR = ((players.find(p => normalizeName(p.name) === p1)?.mmr || BASE_MMR) + 
+                           (players.find(p => normalizeName(p.name) === p2)?.mmr || BASE_MMR)) / 2;
+            let team2MMR = ((players.find(p => normalizeName(p.name) === p3)?.mmr || BASE_MMR) + 
+                           (players.find(p => normalizeName(p.name) === p4)?.mmr || BASE_MMR)) / 2;
+            let effectiveTeam1MMR = team1MMR;
+            let effectiveTeam2MMR = team2MMR;
+
+            if (team1IsMixed) {
+                let handicap = 0;
+                if (p1Raw.includes('*')) handicap += getDynamicHandicap(players.find(p => normalizeName(p.name) === p1)?.mmr || BASE_MMR);
+                if (p2Raw.includes('*')) handicap += getDynamicHandicap(players.find(p => normalizeName(p.name) === p2)?.mmr || BASE_MMR);
+                effectiveTeam1MMR += handicap / (p1Raw.includes('*') && p2Raw.includes('*') ? 2 : 1);
+                effectiveTeam1MMR *= 1.5;
+                reason += '혼성팀 핸디캡, ';
+            }
+            if (team2IsMixed) {
+                let handicap = 0;
+                if (p3Raw.includes('*')) handicap += getDynamicHandicap(players.find(p => normalizeName(p.name) === p3)?.mmr || BASE_MMR);
+                if (p4Raw.includes('*')) handicap += getDynamicHandicap(players.find(p => normalizeName(p.name) === p4)?.mmr || BASE_MMR);
+                effectiveTeam2MMR += handicap / (p3Raw.includes('*') && p4Raw.includes('*') ? 2 : 1);
+                effectiveTeam2MMR *= 1.5;
+                reason += '상대 혼성팀 핸디캡, ';
+            }
+
+            const [score1, score2] = match.score.split('-').map(Number);
+            const isWinner = isPlayerTeam1 ? score1 > score2 : score2 > score1;
+            const gameDiff = Math.abs(score1 - score2);
+            const scoreWeight = isNaN(gameDiff) ? 1.0 : 0.8 + (gameDiff / 6) * 0.7;
+            const opponentTeamMMR = isPlayerTeam1 ? team2MMR : team1MMR;
+
+            let K = BASE_K;
+            let playerMMR = player.mmr || BASE_MMR;
+            if (isNaN(playerMMR)) playerMMR = BASE_MMR;
+            if (playerMMR > 1800) {
+                K *= Math.max(0.3, 1 - (playerMMR - 1800) / 1000);
+                reason += '높은 MMR 조정, ';
+            }
+            if (isNaN(opponentTeamMMR)) opponentTeamMMR = BASE_MMR;
+            const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
+            let opponentWeight = Math.min(1, opponentTeamMMR / playerMMR);
+            if (playerMMR > 1800) {
+                opponentWeight *= Math.max(0.5, 1 - (playerMMR - 1800) / 2000);
+                reason += '상대 MMR 가중치 조정, ';
+            }
+            let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * opponentWeight * scoreWeight;
+            if (match.isFourPoint) {
+                mmrChange *= FOUR_POINT_MMR_MULTIPLIER;
+                reason += '4점 경기 가중치, ';
+            }
+            if (isWinner) {
+                mmrChange *= WIN_BONUS;
+                reason += '승리 보너스, ';
+            } else {
+                mmrChange *= LOSS_REDUCTION;
+                reason += '패배 감소, ';
+            }
+            if (team1IsMixed && team2IsMale && isPlayerTeam1) {
+                const mixedWinMultiplier = getMixedWinMultiplier(team1MMR);
+                mmrChange *= isWinner ? mixedWinMultiplier : MIXED_LOSS_REDUCTION;
+                reason += isWinner ? '혼성팀 승리 보너스, ' : '혼성팀 패배 감소, ';
+            } else if (team2IsMixed && team1IsMale && !isPlayerTeam1) {
+                const mixedWinMultiplier = getMixedWinMultiplier(team2MMR);
+                mmrChange *= isWinner ? mixedWinMultiplier : MIXED_LOSS_REDUCTION;
+                reason += isWinner ? '혼성팀 승리 보너스, ' : '혼성팀 패배 감소, ';
+            } else if (team1IsMale && team2IsMixed && isPlayerTeam1) {
+                mmrChange *= isWinner ? MALE_WIN_REDUCTION : MALE_LOSS_MULTIPLIER;
+                reason += isWinner ? '남성팀 승리 감소, ' : '남성팀 패배 증가, ';
+            } else if (team2IsMale && team1IsMixed && !isPlayerTeam1) {
+                mmrChange *= isWinner ? MALE_WIN_REDUCTION : MALE_LOSS_MULTIPLIER;
+                reason += isWinner ? '남성팀 승리 감소, ' : '남성팀 패배 증가, ';
+            }
+            mmrChange = isNaN(mmrChange) ? 0 : Math.round(isWinner ? mmrChange : -Math.abs(mmrChange));
+            reason += `스코어 ${match.score}`;
+            return { mmrChange, reason };
         }
 
         async function filterMatches() {
@@ -470,6 +617,7 @@
             }
 
             const matches = await loadMatches();
+            const players = await loadPlayerNames();
             let filteredMatches = [];
             if (player2) {
                 filteredMatches = matches.filter(match => {
@@ -487,6 +635,11 @@
 
             const statsGrid = document.getElementById('stats-grid');
             const tableBody = document.querySelector('#h2h-table tbody');
+            if (!statsGrid || !tableBody) {
+                console.error("stats-grid 또는 h2h-table tbody 요소 없음!");
+                showToast("페이지 요소 오류!");
+                return;
+            }
             tableBody.innerHTML = '';
             statsGrid.innerHTML = '';
 
@@ -495,8 +648,8 @@
                 return;
             }
 
-            let wins = 0, losses = 0, totalGameDiff = 0;
-            filteredMatches.sort((a, b) => a.round - b.round); // 과거 경기부터 정렬
+            let wins = 0, losses = 0, totalGameDiff = 0, totalMMRChange = 0;
+            filteredMatches.sort((a, b) => a.round - b.round);
             filteredMatches.forEach(match => {
                 const player1Index = match.players.findIndex(p => normalizeName(p) === player1);
                 const isPlayer1Team1 = player1Index < 2;
@@ -538,6 +691,9 @@
                     totalGameDiff += gameDiff;
                 }
 
+                const { mmrChange, reason } = calculateMMRChange(match, player1Input, isPlayer1Team1, players);
+                totalMMRChange += mmrChange;
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${match.round}</td>
@@ -545,7 +701,9 @@
                     <td class="matchup">${matchup}</td>
                     <td>${match.score || '-'}</td>
                     <td class="score-diff ${gameDiff > 0 ? 'positive' : gameDiff < 0 ? 'negative' : ''}">${scoreDiffDisplay}</td>
+                    <td class="mmr-change ${mmrChange > 0 ? 'positive' : mmrChange < 0 ? 'negative' : ''}">${mmrChange !== 0 ? (mmrChange > 0 ? `+${mmrChange}` : mmrChange) : '-'}</td>
                 `;
+                row.title = `MMR 변화 이유: ${reason}`;
                 tableBody.appendChild(row);
             });
 
@@ -558,38 +716,83 @@
                 <div class="stat-box"><h3>패</h3><p>${losses}</p></div>
                 <div class="stat-box"><h3>승률(%)</h3><p>${winRate}</p></div>
                 <div class="stat-box"><h3>평균 점수차</h3><p>${avgGameDiff > 0 ? '+' : ''}${avgGameDiff}</p></div>
+                <div class="stat-box"><h3>총 MMR 변화</h3><p>${totalMMRChange > 0 ? '+' : ''}${totalMMRChange}</p></div>
             `;
             showToast(player2 ? "상대 전적 검색 완료!" : `${player1Input}의 전체 경기 기록 검색 완료!`);
         }
 
-        function applyTheme(theme) {
-            document.documentElement.setAttribute('data-theme', theme);
-            const themeToggle = document.getElementById('theme-toggle');
-            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
-            localStorage.setItem('theme', theme);
+        function waitForElements(selector, callback, retries = 20, delay = 200) {
+            let attempts = 0;
+            function check() {
+                const elements = document.querySelectorAll(selector);
+                const player1Input = document.getElementById('player1');
+                const player2Input = document.getElementById('player2');
+                const statsGrid = document.getElementById('stats-grid');
+                const tableBody = document.querySelector('#h2h-table tbody');
+                console.log(`waitForElements 시도 ${attempts + 1}: 요소 상태 - player1: ${!!player1Input}, player2: ${!!player2Input}, stats-grid: ${!!statsGrid}, h2h-table tbody: ${!!tableBody}, selector: ${elements.length}`);
+                if (elements.length > 0 && player1Input && player2Input && statsGrid && tableBody) {
+                    console.log("DOM 요소 모두 준비됨!");
+                    callback();
+                } else if (attempts < retries) {
+                    attempts++;
+                    console.log(`DOM 요소 대기 중 (${attempts}/${retries})...`);
+                    setTimeout(check, delay);
+                } else {
+                    console.error("DOM 요소 로드 실패:", selector);
+                    showToast("페이지 로드 오류! 요소를 찾을 수 없습니다.");
+                }
+            }
+            check();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("DOMContentLoaded 이벤트 실행");
-            applyTheme(localStorage.getItem('theme') || 'dark');
-            loadPlayerNames();
-            const searchBtn = document.getElementById('search-btn');
-            searchBtn.addEventListener('click', filterMatches);
-            document.getElementById('theme-toggle').addEventListener('click', () => 
-                applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark')
-            );
-            document.querySelectorAll('#player1, #player2').forEach(input => {
-                input.addEventListener('change', () => {
-                    const datalist = document.getElementById('player-list');
-                    const options = Array.from(datalist.options).map(opt => opt.value);
-                    if (input.value && !options.includes(input.value)) {
-                        input.value = '';
-                        showToast("유효한 선수 이름을 선택하세요!");
-                    }
+            console.log("DOMContentLoaded 이벤트 시작");
+            waitForElements('#player1, #player2, #stats-grid, #h2h-table tbody', () => {
+                console.log("waitForElements 콜백 실행");
+                try {
+                    applyTheme(localStorage.getItem('theme') || 'dark');
+                    console.log("applyTheme 호출 성공");
+                } catch (e) {
+                    console.error("applyTheme 호출 실패:", e.message, e.stack);
+                    showToast("테마 적용 오류!");
+                }
+                loadPlayerNames();
+                const searchBtn = document.getElementById('search-btn');
+                const backBtn = document.getElementById('back-btn');
+                const themeToggle = document.getElementById('theme-toggle');
+                if (searchBtn) {
+                    searchBtn.addEventListener('click', filterMatches);
+                }
+                if (backBtn) {
+                    backBtn.addEventListener('click', () => {
+                        window.location.href = 'index.html';
+                    });
+                }
+                if (themeToggle) {
+                    themeToggle.addEventListener('click', () => {
+                        console.log("themeToggle 클릭");
+                        try {
+                            applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+                        } catch (e) {
+                            console.error("themeToggle applyTheme 호출 실패:", e.message, e.stack);
+                            showToast("테마 전환 오류!");
+                        }
+                    });
+                }
+                document.querySelectorAll('#player1, #player2').forEach(input => {
+                    input.addEventListener('change', () => {
+                        const datalist = document.getElementById('player-list');
+                        const options = Array.from(datalist.options).map(opt => opt.value);
+                        if (input.value && !options.includes(input.value)) {
+                            input.value = '';
+                            showToast("유효한 선수 이름을 선택하세요!");
+                        }
+                    });
+                    input.addEventListener('keypress', e => {
+                        if (e.key === 'Enter') filterMatches();
+                    });
                 });
-                input.addEventListener('keypress', e => {
-                    if (e.key === 'Enter') filterMatches();
-                });
+                console.log("이벤트 리스너 설정 완료!");
             });
         });
     </script>
