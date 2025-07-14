@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -267,52 +228,53 @@
             align-items: center; 
             z-index: 1000; 
         }
-@media screen and (max-width: 600px) {
-    th, td { 
-        padding: 4px 2px; 
-        font-size: 0.7rem; 
-        color: var(--text-color); 
-    }
-    td.matchup { 
-        min-width: 120px; /* 150px에서 줄임 */
-        font-size: 0.65rem; /* 0.7rem에서 1포인트 줄임 */
-        letter-spacing: -0.3px; /* 글자 간격 좁힘 */
-        white-space: nowrap; /* 한 줄 유지 */
-        text-overflow: ellipsis; /* 긴 텍스트 잘라내고 ... 표시 */
-        overflow: hidden; /* 넘치는 텍스트 숨김 */
-    }
-    input[type="text"] { 
-        min-width: 150px; 
-        max-width: 100%; 
-        font-size: 0.9rem; 
-    }
-    .btn { 
-        padding: 8px 12px; 
-        font-size: 0.9rem; 
-    }
-    h1 { 
-        font-size: 2rem; 
-    }
-    h2 { 
-        font-size: 1.5rem; 
-    }
-    .input-group { 
-        flex-direction: column; 
-    }
-    .stats-grid { 
-        grid-template-columns: repeat(3, 1fr); 
-        gap: var(--spacing-sm); 
-    }
-    .stat-box { 
-        padding: 8px; 
-    }
-    .stat-box h3 { 
-        font-size: 0.9rem; 
-    }
-    .stat-box p { 
-        font-size: 1.1rem; 
-    }
-}
+        @media screen and (max-width: 600px) {
+            th, td { 
+                padding: 4px 2px; 
+                font-size: 0.7rem; 
+                color: var(--text-color); 
+            }
+            td.matchup { 
+                min-width: 100px; /* 150px에서 100px로 줄임 */
+                max-width: 200px; /* 넘치지 않게 제한 */
+                font-size: 0.7rem; /* 0.65rem에서 0.7rem으로 복구 */
+                letter-spacing: -0.5px; /* -0.3px에서 더 좁힘 */
+                white-space: nowrap; /* 강제로 한 줄 */
+                overflow: hidden; /* 넘치는 텍스트 숨김 */
+                text-overflow: ellipsis; /* ...으로 표시 */
+            }
+            input[type="text"] { 
+                min-width: 150px; 
+                max-width: 100%; 
+                font-size: 0.9rem; 
+            }
+            .btn { 
+                padding: 8px 12px; 
+                font-size: 0.9rem; 
+            }
+            h1 { 
+                font-size: 2rem; 
+            }
+            h2 { 
+                font-size: 1.5rem; 
+            }
+            .input-group { 
+                flex-direction: column; 
+            }
+            .stats-grid { 
+                grid-template-columns: repeat(3, 1fr); 
+                gap: var(--spacing-sm); 
+            }
+            .stat-box { 
+                padding: 8px; 
+            }
+            .stat-box h3 { 
+                font-size: 0.9rem; 
+            }
+            .stat-box p { 
+                font-size: 1.1rem; 
+            }
+        }
     </style>
 </head>
 <body>
@@ -708,7 +670,7 @@
                     <td class="score-diff ${gameDiff > 0 ? 'positive' : gameDiff < 0 ? 'negative' : ''}">${scoreDiffDisplay}</td>
                     <td class="mmr-change ${mmrChange > 0 ? 'positive' : mmrChange < 0 ? 'negative' : ''}">${mmrChange !== 0 ? (mmrChange > 0 ? `+${mmrChange}` : mmrChange) : '-'}</td>
                 `;
-                row.title = `MMR 변화 이유: ${reason}`;
+                row.title = `대진: ${matchup}\nMMR 변화 이유: ${reason}`;
                 tableBody.appendChild(row);
             });
 
