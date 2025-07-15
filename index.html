@@ -65,6 +65,44 @@
         .saved-info { color: var(--text-secondary-color); margin-left: 5px; font-size: 0.8rem; }
         .champion-name { color: var(--accent-gold); font-weight: bold; }
         input[type="checkbox"] { margin: 0 auto; display: block; }
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--surface-color);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 30px var(--shadow-color);
+            z-index: 2000;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            max-width: 400px;
+            text-align: center;
+        }
+        .popup.show { display: block; }
+        .close-btn {
+            position: absolute;
+            top: var(--spacing-sm);
+            right: var(--spacing-sm);
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .overlay.show { display: block; }
         @media screen and (max-width: 600px) {
             th, td { padding: 4px 2px; font-size: 0.7rem; }
             input[type="text"] { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
@@ -79,6 +117,7 @@
             h1 { font-size: 2rem; }
             h2 { font-size: 1.5rem; }
             .saved-info { font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: inline-block; vertical-align: middle; }
+            .popup { max-width: 300px; padding: var(--spacing-md); }
         }
     </style>
 </head>
@@ -88,6 +127,9 @@
         <h1>2025 호수 오픈</h1>
         <div class="section">
             <h2>경기 일정</h2>
+            <div class="input-group">
+                <button id="how-to-use-btn" class="btn">이용방법</button>
+            </div>
             <div id="schedule-container"></div>
             <button id="save-all" class="btn">모든 데이터 저장</button>
             <button id="update-ranking" class="btn update-btn">순위 업데이트</button>
@@ -124,12 +166,18 @@
             <div class="btn-group">
                 <a href="dash.html" class="btn" id="dashboard-link">통계 대시보드</a>
                 <button id="download-csv" class="btn">CSV 다운로드</button>
-                <button id="h2h-page-btn" class="btn">상대 전적 보기</button>
+                <button id="h2h-page-btn" class="btn">개인전적 & 상대전적 검색</button>
                 <button id="partner-page-btn" class="btn">파트너 전적 보기</button>
             </div>
         </div>
     </div>
     <div id="toast" class="toast"></div>
+    <div id="popup" class="popup">
+        <button class="close-btn" id="close-popup">×</button>
+        <h3>이용 방법</h3>
+        <p>게임 끝나면 회차 눌러 빈 회차에 이름 작성 (6게임 또는 4게임만 가능, 4게임은 체크 필수). 여성은 이름 뒤 * 붙이고, 스코어 입력 후 '모든 데이터 저장' 버튼 누르면 끝!</p>
+    </div>
+    <div id="overlay" class="overlay"></div>
 
     <script type="text/javascript">
         var gk_isXlsx = false;
@@ -366,12 +414,15 @@
                 const rankingData = Array.from(rankingRows).map(row => {
                     const rawName = row.querySelector('.ranking-player').value.trim();
                     const name = rawName.replace(/\*/g, '');
+                    const wins = parseInt(row.querySelector('.wins').value) || 0;
+                    const losses = parseInt(row.querySelector('.losses').value) || 0;
+                    const totalGames = wins + losses;
                     return {
                         name,
                         mmr: parseFloat(row.querySelector('.mmr').value) || 0,
                         championships: row.querySelector('.championship-star')?.dataset.count || '0',
-                        wins: row.querySelector('.wins').value || '0',
-                        losses: row.querySelector('.losses').value || '0',
+                        wins,
+                        losses,
                         winRate: row.querySelector('.win-rate').value || '0',
                         avgGameDiff: row.querySelector('.avg-game-diff').value || '0.00',
                         closeRate: row.querySelector('.close-rate').value || '0',
@@ -383,7 +434,7 @@
                         streakCount: parseInt(row.querySelector('.streak-cell')?.textContent.replace(/[WL]/, '') || '0'),
                         streakIsWin: row.querySelector('.streak-cell')?.classList.contains('streak-win')
                     };
-                }).filter(player => player.name);
+                }).filter(player => player.name && (player.wins + player.losses > 0));
                 const rankingDocRef = doc(db, 'league', 'data', 'rankings', 'v1');
                 batch.set(rankingDocRef, { players: rankingData, lastUpdated: serverTimestamp() }, { merge: true });
 
@@ -984,6 +1035,7 @@
             const toggleRankingsBtn = document.getElementById('toggle-rankings');
             const h2hPageBtn = document.getElementById('h2h-page-btn');
             const partnerPageBtn = document.getElementById('partner-page-btn');
+            const howToUseBtn = document.getElementById('how-to-use-btn');
 
             console.log("setupInputListeners - 버튼 상태:");
             console.log("save-all:", !!saveAllBtn);
@@ -991,6 +1043,7 @@
             console.log("toggle-rankings:", !!toggleRankingsBtn);
             console.log("h2h-page-btn:", !!h2hPageBtn);
             console.log("partner-page-btn:", !!partnerPageBtn);
+            console.log("how-to-use-btn:", !!howToUseBtn);
 
             saveAllBtn?.addEventListener('click', saveAllData);
             updateRankingBtn?.addEventListener('click', updateRanking);
@@ -1007,6 +1060,16 @@
             partnerPageBtn?.addEventListener('click', () => {
                 console.log("partner-page-btn 클릭");
                 window.location.href = 'partner.html';
+            });
+            howToUseBtn?.addEventListener('click', () => {
+                console.log("how-to-use-btn 클릭");
+                document.getElementById('popup').classList.add('show');
+                document.getElementById('overlay').classList.add('show');
+            });
+
+            document.getElementById('close-popup')?.addEventListener('click', () => {
+                document.getElementById('popup').classList.remove('show');
+                document.getElementById('overlay').classList.remove('show');
             });
 
             document.querySelectorAll('.filter-btn').forEach(btn => {
