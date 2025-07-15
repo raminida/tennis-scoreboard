@@ -514,93 +514,92 @@
             }
         }
 
-        async function loadData() {
-            if (!db) {
-                showToast("DB 연결 실패");
-                return;
-            }
-            try {
-                const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
-                const savedRounds = new Map();
-                if (scheduleDoc.exists()) {
-                    const scheduleData = scheduleDoc.data().matches || [];
-                    const roundWins = {};
-                    const roundMatches = {};
-                    scheduleData.forEach(match => {
-                        const roundId = match.round;
-                        if (!roundMatches[roundId]) roundMatches[roundId] = [];
-                        roundMatches[roundId].push(match);
-                        if (match.players.some(p => p.trim()) || match.score.trim()) {
-                            const timestamp = match.timestamp || new Date().toISOString();
-                            const champions = [];
-                            if (match.score && /^\d+-\d+$/.test(match.score) && !match.isFourPoint) {
-                                const [score1, score2] = match.score.split('-').map(Number);
-                                const winners = score1 > score2 ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
-                                winners.forEach(player => {
-                                    if (!roundWins[roundId]) roundWins[roundId] = {};
-                                    if (!roundWins[roundId][player]) roundWins[roundId][player] = 0;
-                                    roundWins[roundId][player]++;
-                                    if (roundWins[roundId][player] === 3 && !champions.includes(player)) {
-                                        champions.push(player.replace(/\*/g, ''));
-                                    }
-                                });
-                            }
-                            savedRounds.set(roundId, { timestamp, champions });
-                        }
-                    });
-                    createScheduleRounds(savedRounds);
-                    document.querySelectorAll('.schedule-table').forEach(table => {
-                        const roundId = table.getAttribute('data-round-id');
-                        const matches = scheduleData.filter(m => m.round == roundId);
-                        const rows = table.querySelectorAll('tbody tr');
-                        rows.forEach((row, index) => {
-                            const match = matches[index];
-                            if (match) {
-                                row.querySelector('.player1').value = match.players[0] || '';
-                                row.querySelector('.player2').value = match.players[1] || '';
-                                row.querySelector('.player3').value = match.players[2] || '';
-                                row.querySelector('.player4').value = match.players[3] || '';
-                                row.querySelector('.score').value = match.score || '';
-                                row.querySelector('.is-four-point').checked = match.isFourPoint || false;
+async function loadData() {
+    if (!db) {
+        showToast("DB 연결 실패");
+        return;
+    }
+    try {
+        const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
+        const savedRounds = new Map();
+        if (scheduleDoc.exists()) {
+            const scheduleData = scheduleDoc.data().matches || [];
+            const roundWins = {};
+            const roundMatches = {};
+            scheduleData.forEach(match => {
+                const roundId = match.round;
+                if (!roundMatches[roundId]) roundMatches[roundId] = [];
+                roundMatches[roundId].push(match);
+                if (match.players.some(p => p.trim()) || match.score.trim()) {
+                    const timestamp = match.timestamp || new Date().toISOString();
+                    const champions = [];
+                    if (match.score && /^\d+-\d+$/.test(match.score) && !match.isFourPoint) {
+                        const [score1, score2] = match.score.split('-').map(Number);
+                        const winners = score1 > score2 ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
+                        winners.forEach(player => {
+                            if (!roundWins[roundId]) roundWins[roundId] = {};
+                            if (!roundWins[roundId][player]) roundWins[roundId][player] = 0;
+                            roundWins[roundId][player]++;
+                            if (roundWins[roundId][player] === 3 && !champions.includes(player)) {
+                                champions.push(player.replace(/\*/g, ''));
                             }
                         });
-                    });
-                    console.log("스케줄 데이터 로드 완료!");
-                } else {
-                    console.warn("스케줄 데이터 없음!");
-                    createScheduleRounds();
-                    showToast("스케줄 데이터가 없습니다!");
-                }
-
-                const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-                let rankingData = [];
-                if (rankingDoc.exists()) {
-                    rankingData = rankingDoc.data().players || [];
-                    updateRankingTable(rankingData);
-                    console.log("랭킹 데이터 로드 완료!");
-                } else {
-                    console.warn("랭킹 데이터 없음!");
-                    showToast("랭킹 데이터가 없습니다!");
-                }
-
-                // 백업 상태 확인 및 경고
-                const backupsCollection = collection(db, 'league', 'backups', 'data');
-                const backupSnapshot = await getDocs(backupsCollection);
-                const lastBackupDoc = backupSnapshot.docs.sort((a, b) => b.data().timestamp - a.data().timestamp)[0];
-                if (lastBackupDoc && lastBackupDoc.exists()) {
-                    const lastBackup = lastBackupDoc.data();
-                    const currentSchedule = scheduleData;
-                    const currentRankings = rankingData;
-                    if (JSON.stringify(lastBackup.schedule) !== JSON.stringify(currentSchedule) || JSON.stringify(lastBackup.rankings) !== JSON.stringify(currentRankings)) {
-                        showToast("최신 백업과 데이터 불일치! 수동 점검 필요!");
                     }
+                    savedRounds.set(roundId, { timestamp, champions });
                 }
-            } catch (e) {
-                console.error("로드 실패:", e.name, e.code, e.message, e.stack);
-                showToast(`데이터 로드 실패: ${e.message || '알 수 없는 오류'}`);
-            }
+            });
+            createScheduleRounds(savedRounds);
+            document.querySelectorAll('.schedule-table').forEach(table => {
+                const roundId = table.getAttribute('data-round-id');
+                const matches = scheduleData.filter(m => m.round == roundId);
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach((row, index) => {
+                    const match = matches[index];
+                    if (match) {
+                        row.querySelector('.player1').value = match.players[0] || '';
+                        row.querySelector('.player2').value = match.players[1] || '';
+                        row.querySelector('.player3').value = match.players[2] || '';
+                        row.querySelector('.player4').value = match.players[3] || '';
+                        row.querySelector('.score').value = match.score || '';
+                        row.querySelector('.is-four-point').checked = match.isFourPoint || false;
+                    }
+                });
+            });
+            console.log("스케줄 데이터 로드 완료!");
+        } else {
+            console.warn("스케줄 데이터 없음!");
+            createScheduleRounds();
+            showToast("스케줄 데이터가 없습니다!");
         }
 
+        const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
+        let rankingData = [];
+        if (rankingDoc.exists()) {
+            rankingData = rankingDoc.data().players || [];
+            updateRankingTable(rankingData);
+            console.log("랭킹 데이터 로드 완료!");
+        } else {
+            console.warn("랭킹 데이터 없음!");
+            showToast("랭킹 데이터가 없습니다!");
+        }
+
+        // 백업 상태 확인 및 경고 (페이지에서 숨기고 콘솔에만 출력)
+        const backupsCollection = collection(db, 'league', 'backups', 'data');
+        const backupSnapshot = await getDocs(backupsCollection);
+        const lastBackupDoc = backupSnapshot.docs.sort((a, b) => b.data().timestamp - a.data().timestamp)[0];
+        if (lastBackupDoc && lastBackupDoc.exists()) {
+            const lastBackup = lastBackupDoc.data();
+            const currentSchedule = scheduleDoc.exists() ? scheduleDoc.data().matches || [] : [];
+            const currentRankings = rankingData;
+            if (JSON.stringify(lastBackup.schedule) !== JSON.stringify(currentSchedule) || JSON.stringify(lastBackup.rankings) !== JSON.stringify(currentRankings)) {
+                console.warn("최신 백업과 데이터 불일치! 수동 점검 필요!");
+            }
+        }
+    } catch (e) {
+        console.error("로드 실패:", e.name, e.code, e.message, e.stack);
+        showToast(`데이터 로드 실패: ${e.message || '알 수 없는 오류'}`);
+    }
+}
         // 매일 아침 6시 KST에 자동 백업 스케줄링
         function scheduleDailyBackup() {
             const now = new Date();
@@ -1145,15 +1144,12 @@
                 toggleRankingsBtn.textContent = isVisible ? '더보기' : '접기';
             });
             h2hPageBtn?.addEventListener('click', () => {
-                console.log("h2h-page-btn 클릭");
                 window.location.href = 'h2h.html';
             });
             partnerPageBtn?.addEventListener('click', () => {
-                console.log("partner-page-btn 클릭");
                 window.location.href = 'partner.html';
             });
             howToUseBtn?.addEventListener('click', () => {
-                console.log("how-to-use-btn 클릭");
                 document.getElementById('popup').classList.add('show');
                 document.getElementById('overlay').classList.add('show');
             });
@@ -1187,6 +1183,17 @@
                     const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
                     if (rankingDoc.exists()) {
                         updateRankingTable(rankingDoc.data().players || []);
+                    }
+                });
+            });
+
+            // 선수 이름 클릭 시 h2h 페이지로 이동
+            document.querySelectorAll('.ranking-player').forEach(input => {
+                input.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const playerName = encodeURIComponent(input.value.trim().replace(/\*/g, ''));
+                    if (playerName) {
+                        window.location.href = `h2h.html?player=${playerName}`;
                     }
                 });
             });

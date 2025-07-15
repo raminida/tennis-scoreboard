@@ -1,4 +1,43 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -235,13 +274,13 @@
                 color: var(--text-color); 
             }
             td.matchup { 
-                min-width: 100px; /* 150px에서 100px로 줄임 */
-                max-width: 200px; /* 넘치지 않게 제한 */
-                font-size: 0.7rem; /* 0.65rem에서 0.7rem으로 복구 */
-                letter-spacing: -0.5px; /* -0.3px에서 더 좁힘 */
-                white-space: nowrap; /* 강제로 한 줄 */
-                overflow: hidden; /* 넘치는 텍스트 숨김 */
-                text-overflow: ellipsis; /* ...으로 표시 */
+                min-width: 100px; 
+                max-width: 200px; 
+                font-size: 0.7rem; 
+                letter-spacing: -0.5px; 
+                white-space: nowrap; 
+                overflow: hidden; 
+                text-overflow: ellipsis; 
             }
             input[type="text"] { 
                 min-width: 150px; 
@@ -568,8 +607,11 @@
         }
 
         async function filterMatches() {
-            const player1Input = document.getElementById('player1').value.trim();
+            const urlParams = new URLSearchParams(window.location.search);
+            const playerFromURL = decodeURIComponent(urlParams.get('player') || '').replace(/\*/g, '');
+            const player1Input = document.getElementById('player1').value.trim() || playerFromURL;
             const player2Input = document.getElementById('player2').value.trim();
+
             if (!player1Input) {
                 showToast("선수 1을 선택하세요!");
                 return;
@@ -724,6 +766,7 @@
                     showToast("테마 적용 오류!");
                 }
                 loadPlayerNames();
+                filterMatches(); // 쿼리 파라미터로 넘어오면 바로 로드
                 const searchBtn = document.getElementById('search-btn');
                 const backBtn = document.getElementById('back-btn');
                 const themeToggle = document.getElementById('theme-toggle');
