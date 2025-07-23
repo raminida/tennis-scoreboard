@@ -243,11 +243,11 @@
             }
 
             const endDate = new Date().getTime();
-            const startDate = endDate - 30 * 24 * 60 * 60 * 1000; // 30일 전
-            const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+            const startDate = endDate - 60 * 24 * 60 * 60 * 1000; // 60일 전
+            const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
             let intervalDates = [];
-            for (let t = startDate; t <= endDate; t += THREE_DAYS_MS) {
+            for (let t = startDate; t <= endDate; t += SEVEN_DAYS_MS) {
                 intervalDates.push(t);
             }
 
@@ -387,21 +387,15 @@
             matchesSnap.forEach(doc => {
                 const data = doc.data();
                 const createdAt = new Date(data.createdAt || '1970-01-01');
-                if ((!data.player1 || !data.player2 || !data.winner || !data.loserPlayer1 || !data.loserPlayer2) || createdAt < new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000)) {
+                if ((!data.player1 || !data.player2 || !data.winner || !data.loserPlayer1 || !data.loserPlayer2) || createdAt < new Date(new Date().getTime() - 60 * 24 * 60 * 60 * 1000)) {
                     batch.delete(doc.ref);
                     invalidCount++;
-                    console.log(`불완전한 매치 삭제 예정: ${doc.id}`, data);
                 }
             });
             if (invalidCount > 0) {
                 await batch.commit().catch(e => {
                     console.error(`불완전한 매치 삭제 실패: ${e.message}`);
-                    showToast("매치 데이터 삭제 실패!");
                 });
-                console.log(`불완전한 매치 ${invalidCount}개 삭제 완료`);
-                showToast(`불완전한 매치 ${invalidCount}개 삭제 완료!`);
-            } else {
-                console.log("불완전한 매치 없음");
             }
             return invalidCount;
         };
@@ -463,7 +457,7 @@
                 console.log("MMR 히스토리:", fullMmrHistory.length, "스냅샷");
 
                 const endDate = new Date().getTime();
-                const startDate = endDate - 30 * 24 * 60 * 60 * 1000; // 30일 전
+                const startDate = endDate - 60 * 24 * 60 * 60 * 1000; // 60일 전
                 let roundTimestamps = [];
                 if (scheduleSnap && scheduleSnap.exists() && Array.isArray(scheduleSnap.data().matches)) {
                     roundTimestamps = scheduleSnap.data().matches
@@ -476,8 +470,8 @@
                         .filter((v, i, arr) => i === 0 || v.timestamp !== arr[i - 1].timestamp);
                     console.log("스케줄 타임스탬프:", roundTimestamps);
                 } else {
-                    console.warn("스케줄 데이터 없음, 3일 간격 기본 스냅샷 사용");
-                    showToast("스케줄 데이터 없음, 3일 간격 기본 스냅샷 사용");
+                    console.warn("스케줄 데이터 없음, 7일 간격 기본 스냅샷 사용");
+                    showToast("스케줄 데이터 없음, 7일 간격 기본 스냅샷 사용");
                 }
 
                 fullMmrHistory = fullMmrHistory.filter(h => {
@@ -485,9 +479,9 @@
                     return createdAt >= startDate && createdAt <= endDate;
                 });
 
-                const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+                const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
                 let intervalDates = [];
-                for (let t = startDate; t <= endDate; t += THREE_DAYS_MS) {
+                for (let t = startDate; t <= endDate; t += SEVEN_DAYS_MS) {
                     intervalDates.push(t);
                 }
 
@@ -753,7 +747,7 @@
                 const { data, timestamp } = JSON.parse(cachedMatches);
                 const cacheAge = (Date.now() - timestamp) / (1000 * 60 * 60);
                 if (cacheAge < 24) {
-                    matchesData = data.filter(match => match && match.player1 && match.player2 && match.winner && match.loserPlayer1 && match.loserPlayer2 && new Date(match.createdAt || '1970-01-01') >= new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000));
+                    matchesData = data.filter(match => match && match.player1 && match.player2 && match.winner && match.loserPlayer1 && match.loserPlayer2 && new Date(match.createdAt || '1970-01-01') >= new Date(new Date().getTime() - 60 * 24 * 60 * 60 * 1000));
                     console.log("로컬 캐시에서 매치 데이터 로드:", matchesData.length, "경기, 캐시 나이:", cacheAge.toFixed(2), "시간");
                 } else {
                     console.log("매치 데이터 캐시 오래됨, Firestore에서 로드 시도");
