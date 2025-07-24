@@ -22,7 +22,7 @@
         .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 40px; }
         .stat-card { background: var(--surface-color); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color); }
         .stat-title { font-size: 0.9rem; color: var(--text-secondary-color); margin-bottom: 8px; }
-        .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--text-color); }
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--text-color); }
         .section { background: var(--surface-color); padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 3rem; border: 1px solid var(--border-color); }
         h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; color: var(--primary-color); margin-bottom: 20px; border-bottom: 2px solid var(--border-color); }
         #mmr-chart-container { height: 400px; }
@@ -43,6 +43,7 @@
                 white-space: normal;
             }
             .player-name { font-size: 2.2rem; }
+            .stat-value { font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -78,7 +79,7 @@
         <div class="section">
             <h2>최근 10경기</h2>
             <table class="recent-matches-table">
-                <thead><tr><th>결과</th><th>파트너</th><th>상대1</th><th>상대2</th><th>스코어</th></tr></thead>
+                <thead><tr><th>결과</th><th>파트너</th><th>상대팀</th><th>스코어</th><th>MMR 변동</th></tr></thead>
                 <tbody id="recent-matches-body"></tbody>
             </table>
         </div>
@@ -147,12 +148,12 @@
             renderMmrChart(mmrHistory, playerName);
             
             // Populate Recent Matches
-            renderRecentMatches(allMatches, playerName);
+            renderRecentMatches(allMatches, playerName, mmrHistory);
 
             // Setup H2H
             setupH2H(allMatches, allPlayers, playerName);
         };
-
+        
         const renderMmrChart = (history, playerName) => {
             const ctx = document.getElementById('mmr-chart')?.getContext('2d');
             if (!ctx) return;
@@ -200,7 +201,28 @@
             });
         };
 
-        const renderRecentMatches = (allMatches, playerName) => {
+        const constants = {
+            BASE_MMR: 1500, BASE_K: 45, WIN_BONUS: 1.1, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
+            MMR_DIFF_THRESHOLD: 200, REDUCED_LOSS_REDUCTION: 0.5, MMR_LOSS_CAP: 30
+        };
+
+        const calculateMMRChangeForMatch = (playerMMR, partnerMMR, opponentTeamMMR, isWinner, isFourPoint, scoreWeight) => {
+            let K = constants.BASE_K;
+            const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
+            let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
+            if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
+            
+            if (isWinner) {
+                mmrChange *= constants.WIN_BONUS;
+            } else {
+                const mmrDiff = Math.abs(playerMMR - (partnerMMR || constants.BASE_MMR));
+                mmrChange *= mmrDiff >= constants.MMR_DIFF_THRESHOLD ? constants.REDUCED_LOSS_REDUCTION : constants.LOSS_REDUCTION;
+                if (Math.abs(mmrChange) > constants.MMR_LOSS_CAP) mmrChange = -constants.MMR_LOSS_CAP;
+            }
+            return Math.round(mmrChange);
+        };
+
+        const renderRecentMatches = (allMatches, playerName, mmrHistory) => {
             const tbody = document.getElementById('recent-matches-body');
             tbody.innerHTML = '';
             const playerMatches = allMatches.filter(m => m.players && m.players.includes(playerName)).slice(-10).reverse();
@@ -215,16 +237,38 @@
                 const playerTeamIndex = match.players.findIndex(p => p === playerName) < 2 ? 0 : 1;
                 const isWinner = (playerTeamIndex === 0 && s1 > s2) || (playerTeamIndex === 1 && s2 > s1);
                 
-                const partner = playerTeamIndex === 0 ? match.players[1] : match.players[0];
-                const opponents = playerTeamIndex === 0 ? [match.players[2], match.players[3]] : [match.players[0], match.players[1]];
+                const partnerName = playerTeamIndex === 0 ? match.players[1] : match.players[0];
+                const opponentNames = playerTeamIndex === 0 ? [match.players[2], match.players[3]] : [match.players[0], match.players[1]];
+
+                let mmrChange = 0;
+                const matchTime = new Date(match.timestamp || 0).getTime();
+                const snapshotBefore = mmrHistory.filter(h => new Date(h.createdAt).getTime() <= matchTime).pop();
+
+                if (snapshotBefore) {
+                    const getMmr = (pName) => snapshotBefore[pName.replace(/[@.*]+/g, '').trim().toLowerCase().replace(/\./g, '_')] || constants.BASE_MMR;
+                    
+                    const mainPlayerMMR = getMmr(playerName);
+                    const partnerMMR = getMmr(partnerName);
+                    const opponent1MMR = getMmr(opponentNames[0]);
+                    const opponent2MMR = getMmr(opponentNames[1]);
+                    const opponentTeamMMR = (opponent1MMR + opponent2MMR) / 2;
+
+                    const gameDiff = Math.abs(s1 - s2);
+                    const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
+
+                    mmrChange = calculateMMRChangeForMatch(mainPlayerMMR, partnerMMR, opponentTeamMMR, isWinner, match.isFourPoint, scoreWeight);
+                }
+                
+                const mmrChangeString = mmrChange > 0 ? `+${mmrChange}` : (mmrChange < 0 ? `${mmrChange}` : '0');
+                const mmrChangeClass = mmrChange > 0 ? 'win' : (mmrChange < 0 ? 'loss' : '');
 
                 const row = `
                     <tr>
                         <td class="${isWinner ? 'win' : 'loss'}">${isWinner ? '승' : '패'}</td>
-                        <td>${partner}</td>
-                        <td>${opponents[0]}</td>
-                        <td>${opponents[1]}</td>
+                        <td>${partnerName}</td>
+                        <td>${opponentNames[0]} & ${opponentNames[1]}</td>
                         <td>${match.score}</td>
+                        <td class="${mmrChangeClass}">${mmrChangeString}</td>
                     </tr>
                 `;
                 tbody.innerHTML += row;

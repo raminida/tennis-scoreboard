@@ -42,6 +42,8 @@
         .streak-none { color: var(--text-secondary-color); }
         #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; }
         input[type="text"], input[type="search"], select { width: 100%; min-width: 70px; max-width: 100px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
+        .schedule-table .player-input { min-width: 90px; max-width: 130px; }
+        .schedule-table .score-input { min-width: 40px; max-width: 60px; }
         input.ranking-player, input.mmr { min-width: 80px; max-width: 120px; }
         input.readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
         html[data-theme="light"] input.readonly { background-color: #f0f0f0; }
@@ -116,8 +118,8 @@
             input[type="text"], input[type="search"], select { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
             input.ranking-player, input.mmr { min-width: 70px; max-width: 100px; }
             input.best-partner { min-width: 200px; max-width: 225px; }
-            .schedule-table td input.player1, .schedule-table td input.player2,
-            .schedule-table td input.player3, .schedule-table td input.player4 { min-width: 50px; max-width: 60px; }
+            .schedule-table .player-input { min-width: 65px; max-width: 80px; }
+            .schedule-table .score-input { min-width: 40px; max-width: 50px; }
             .schedule-table th, .schedule-table td { padding: 4px 1px; }
             .schedule-table td { border: 0.5px solid var(--border-color); }
             .btn { padding: 8px 12px; font-size: 0.9rem; }
@@ -246,12 +248,12 @@
                                 <tbody>
                                     ${Array(3).fill().map(() => `
                                     <tr>
-                                        <td><input type="text" placeholder="이름" class="player1"></td>
-                                        <td><input type="text" placeholder="이름" class="player2"></td>
+                                        <td><input type="text" placeholder="이름" class="player1 player-input"></td>
+                                        <td><input type="text" placeholder="이름" class="player2 player-input"></td>
                                         <td>vs</td>
-                                        <td><input type="text" placeholder="이름" class="player3"></td>
-                                        <td><input type="text" placeholder="이름" class="player4"></td>
-                                        <td><input type="text" placeholder="6-4" class="score"></td>
+                                        <td><input type="text" placeholder="이름" class="player3 player-input"></td>
+                                        <td><input type="text" placeholder="이름" class="player4 player-input"></td>
+                                        <td><input type="text" placeholder="6-4" class="score score-input"></td>
                                         <td><input type="checkbox" class="is-four-point"></td>
                                     </tr>`).join('')}
                                 </tbody>
