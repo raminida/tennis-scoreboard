@@ -635,7 +635,6 @@
         async function restoreScheduleFromBackup() {
             try {
                 const backupCol = collection(db, 'league', 'backups', 'data');
-                // Corrected orderBy to use a field name string 'timestamp'
                 const q = query(backupCol, orderBy('timestamp', 'desc'), limit(1));
                 const backupSnap = await getDocs(q);
 
