@@ -41,7 +41,9 @@
         .streak-loss { color: #F44336; font-weight: bold; }
         .streak-none { color: var(--text-secondary-color); }
         #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; }
-        input[type="text"] { width: 100%; min-width: 70px; max-width: 100px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
+        input[type="text"], input[type="search"], select { width: 100%; min-width: 70px; max-width: 100px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
+        .score-select { max-width: 60px; min-width: 50px; padding: var(--spacing-sm) 4px; }
+        .score-cell { display: flex; align-items: center; justify-content: center; gap: 4px; }
         input.ranking-player, input.mmr { min-width: 80px; max-width: 120px; }
         input.readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
         html[data-theme="light"] input.readonly { background-color: #f0f0f0; }
@@ -55,12 +57,11 @@
         .championship-star { color: var(--accent-gold); text-shadow: 0 0 5px var(--shadow-color); font-size: 1.1rem; font-weight: 900; }
         .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .ranking-player[value$="*"] { color: var(--primary-variant-color); }
-        .ranking-filter { display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-md); }
+        .ranking-controls { display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-md); flex-wrap: wrap; }
+        .ranking-filter { display: flex; gap: var(--spacing-sm); }
+        #ranking-search { max-width: 200px; }
         .filter-btn { padding: var(--spacing-sm) var(--spacing-md); background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer; color: var(--text-color); font-weight: 700; }
         .filter-btn.active { background: var(--primary-color); color: var(--bg-color); }
-        .toggle-btn { padding: var(--spacing-sm) var(--spacing-md); margin: var(--spacing-sm) auto; display: block; }
-        tr.lower-rank { display: none; }
-        tr.lower-rank.show { display: table-row; }
         .saved-indicator { color: var(--accent-gold); margin-left: 5px; font-size: 0.9rem; }
         .saved-info { color: var(--text-secondary-color); margin-left: 5px; font-size: 0.8rem; }
         .champion-name { color: var(--accent-gold); font-weight: bold; }
@@ -103,14 +104,22 @@
             z-index: 1000;
         }
         .overlay.show { display: block; }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .saved-round.hidden {
+            display: none;
+        }
         @media screen and (max-width: 600px) {
             th, td { padding: 4px 2px; font-size: 0.7rem; }
-            input[type="text"] { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
+            input[type="text"], input[type="search"], select { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
             input.ranking-player, input.mmr { min-width: 70px; max-width: 100px; }
             input.best-partner { min-width: 200px; max-width: 225px; }
             .schedule-table td input.player1, .schedule-table td input.player2,
             .schedule-table td input.player3, .schedule-table td input.player4 { min-width: 50px; max-width: 60px; }
-            .schedule-table td input.score { min-width: 50px; max-width: 60px; }
             .schedule-table th, .schedule-table td { padding: 4px 1px; }
             .schedule-table td { border: 0.5px solid var(--border-color); }
             .btn { padding: 8px 12px; font-size: 0.9rem; }
@@ -118,10 +127,12 @@
             h2 { font-size: 1.5rem; }
             .saved-info { font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: inline-block; vertical-align: middle; }
             .popup { max-width: 300px; padding: var(--spacing-md); }
+            .ranking-controls { flex-direction: column; }
         }
     </style>
 </head>
 <body>
+    <datalist id="player-list"></datalist>
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
         <h1>2025 호수 오픈</h1>
@@ -129,6 +140,7 @@
             <h2>경기 일정</h2>
             <div class="input-group">
                 <button id="how-to-use-btn" class="btn">이용방법</button>
+                <button id="toggle-saved-rounds" class="btn">저장된 회차 보이기</button>
             </div>
             <div id="schedule-container"></div>
             <button id="save-all" class="btn">모든 데이터 저장</button>
@@ -136,10 +148,13 @@
         </div>
         <div class="section">
             <h2>시즌 순위표</h2>
-            <div class="ranking-filter">
-                <button class="filter-btn active" data-filter="all">통합 순위</button>
-                <button class="filter-btn" data-filter="male">남자 순위</button>
-                <button class="filter-btn" data-filter="female">여자 순위</button>
+            <div class="ranking-controls">
+                <div class="ranking-filter">
+                    <button class="filter-btn active" data-filter="all">통합 순위</button>
+                    <button class="filter-btn" data-filter="male">남자 순위</button>
+                    <button class="filter-btn" data-filter="female">여자 순위</button>
+                </div>
+                <input type="search" id="ranking-search" placeholder="선수 이름 검색...">
             </div>
             <div class="table-wrapper">
                 <table id="ranking-table">
@@ -162,11 +177,10 @@
                     <tbody></tbody>
                 </table>
             </div>
-            <button id="toggle-rankings" class="btn toggle-btn">더보기</button>
             <div class="btn-group">
                 <a href="dash.html" class="btn" id="dashboard-link">통계 대시보드</a>
                 <button id="download-csv" class="btn">CSV 다운로드</button>
-                <button id="h2h-page-btn" class="btn">개인전적 & 상대전적 검색</button>
+                <a href="h2h.html" class="btn" id="h2h-page-btn">개인 프로필 & 상대전적</a>
                 <button id="partner-page-btn" class="btn">파트너 전적 보기</button>
             </div>
         </div>
@@ -181,7 +195,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch, onSnapshot } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
@@ -194,6 +208,7 @@
 
         const db = getFirestore(initializeApp(firebaseConfig));
         let currentFilter = 'all', sortKey = 'mmr', sortOrder = 'desc';
+        let allPlayersData = [];
 
         const showToast = (message) => {
             const toast = document.getElementById('toast');
@@ -206,7 +221,7 @@
             const validTheme = theme === 'light' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', validTheme);
             localStorage.setItem('theme', validTheme);
-            document.getElementById('theme-toggle').textContent = validTheme === 'dark' ? '☀️' : '�';
+            document.getElementById('theme-toggle').textContent = validTheme === 'dark' ? '☀️' : '🌙';
         };
 
         const createScheduleRounds = (savedRounds = new Map()) => {
@@ -214,6 +229,8 @@
             if (!container) return showToast("스케줄 컨테이너 오류!");
             let roundsHtml = '';
             const roundsPerCategory = 30, totalRounds = 150;
+            const scoreOptions = Array.from({length: 8}, (_, i) => `<option value="${i}">${i}</option>`).join('');
+
             for (let category = 0; category < Math.ceil(totalRounds / roundsPerCategory); category++) {
                 const startRound = category * roundsPerCategory + 1;
                 const endRound = Math.min((category + 1) * roundsPerCategory, totalRounds);
@@ -224,20 +241,24 @@
                     const savedDate = roundData?.timestamp ? new Date(roundData.timestamp).toLocaleDateString('ko-KR') : '';
                     const champions = roundData?.champions?.map(name => `<span class="champion-name">${name}</span>`).join(', ') || '없음';
                     roundsHtml += `
-                    <details>
+                    <details class="${isSaved ? 'saved-round' : ''}">
                         <summary>${i}회${isSaved ? `<span class="saved-indicator">💾</span><span class="saved-info">[${savedDate}, 우승: ${champions}]</span>` : ''}</summary>
                         <div class="table-wrapper">
                             <table class="schedule-table" data-round-id="${i}">
                                 <thead><tr><th>Player 1</th><th>Player 2</th><th>vs</th><th>Player 3</th><th>Player 4</th><th>Score</th><th>4점 선취</th></tr></thead>
                                 <tbody>
                                     ${Array(3).fill().map(() => `
-                                    <tr><td><input type="text" placeholder="이름" class="player1"></td>
-                                        <td><input type="text" placeholder="이름" class="player2"></td>
+                                    <tr>
+                                        <td><input type="text" placeholder="이름" class="player1" list="player-list"></td>
+                                        <td><input type="text" placeholder="이름" class="player2" list="player-list"></td>
                                         <td>vs</td>
-                                        <td><input type="text" placeholder="이름" class="player3"></td>
-                                        <td><input type="text" placeholder="이름" class="player4"></td>
-                                        <td><input type="text" placeholder="6-4" class="score"></td>
-                                        <td><input type="checkbox" class="is-four-point"></td></tr>`).join('')}
+                                        <td><input type="text" placeholder="이름" class="player3" list="player-list"></td>
+                                        <td><input type="text" placeholder="이름" class="player4" list="player-list"></td>
+                                        <td class="score-cell">
+                                            <select class="score1 score-select">${scoreOptions}</select> : <select class="score2 score-select">${scoreOptions}</select>
+                                        </td>
+                                        <td><input type="checkbox" class="is-four-point"></td>
+                                    </tr>`).join('')}
                                 </tbody>
                             </table>
                         </div>
@@ -247,60 +268,25 @@
             }
             container.innerHTML = roundsHtml;
         };
-
-        const createRankingRows = () => {
-            const rankingBody = document.querySelector('#ranking-table tbody');
-            if (!rankingBody) return showToast("순위표 오류!");
-            let rowsHtml = '';
-            for (let i = 1; i <= 100; i++) {
-                rowsHtml += `
-                <tr${i > 20 ? ' class="lower-rank"' : ''}>
-                    <td class="rank-cell">${i}</td>
-                    <td><input type="text" placeholder="선수 ${i}" class="ranking-player"></td>
-                    <td><input type="text" class="mmr readonly" readonly></td>
-                    <td><span class="championship-star"></span></td>
-                    <td><input type="text" class="wins readonly" readonly></td>
-                    <td><input type="text" class="losses readonly" readonly></td>
-                    <td><input type="text" class="win-rate readonly" readonly></td>
-                    <td><input type="text" class="avg-game-diff readonly" readonly></td>
-                    <td><input type="text" class="close-rate readonly" readonly></td>
-                    <td><input type="text" class="dominant-wins readonly" readonly></td>
-                    <td><input type="text" class="dominant-losses readonly" readonly></td>
-                    <td><input type="text" class="best-partner readonly" readonly></td>
-                </tr>`;
-            }
-            rankingBody.innerHTML = rowsHtml;
-        };
-
-        // BUG FIX: "모든 데이터 저장" 버튼은 이제 경기 일정만 저장합니다.
+        
         const saveAllData = async () => {
             if (!db) return showToast('DB 연결 실패!');
             const saveAllBtn = document.getElementById('save-all');
             saveAllBtn.disabled = true;
+            saveAllBtn.textContent = '저장 중...';
             try {
                 const batch = writeBatch(db);
-                const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
-                const existingRounds = new Map((scheduleDoc.data()?.matches || []).reduce((map, match) => {
-                    if (!map.has(match.round)) map.set(match.round, { timestamp: match.timestamp, matches: [] });
-                    map.get(match.round).matches.push(match);
-                    return map;
-                }, new Map()));
-
                 const scheduleData = [];
                 document.querySelectorAll('.schedule-table').forEach(table => {
                     const roundId = parseInt(table.getAttribute('data-round-id'));
                     table.querySelectorAll('tbody tr').forEach(row => {
                         const players = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
-                        const score = row.querySelector('.score').value.trim();
+                        const score1 = row.querySelector('.score1').value;
+                        const score2 = row.querySelector('.score2').value;
+                        const score = `${score1}-${score2}`;
                         const isFourPoint = row.querySelector('.is-four-point').checked;
                         if (players.every(p => p)) {
-                            scheduleData.push({
-                                round: roundId,
-                                players,
-                                score,
-                                isFourPoint,
-                                timestamp: existingRounds.get(roundId)?.timestamp || new Date().toISOString()
-                            });
+                            scheduleData.push({ round: roundId, players, score, isFourPoint });
                         }
                     });
                 });
@@ -312,378 +298,218 @@
                 showToast(`일정 저장 실패: ${e.message || '알 수 없는 오류'}`);
             } finally {
                 saveAllBtn.disabled = false;
+                saveAllBtn.textContent = '모든 데이터 저장';
             }
         };
 
-        const loadData = async () => {
-            if (!db) return showToast("DB 연결 실패");
-            try {
-                const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
-                const savedRounds = new Map();
-                if (scheduleDoc.exists()) {
-                    const scheduleData = scheduleDoc.data().matches || [];
-                    const roundWins = {};
-                    scheduleData.forEach(match => {
-                        const roundId = match.round;
-                        if (!savedRounds.has(roundId)) savedRounds.set(roundId, { timestamp: match.timestamp, champions: [] });
-                        if (match.players.some(p => p.trim()) || match.score.trim()) {
-                            if (match.score && /^\d+-\d+$/.test(match.score) && !match.isFourPoint) {
-                                const [score1, score2] = match.score.split('-').map(Number);
-                                const winners = score1 > score2 ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
-                                winners.forEach(player => {
-                                    if (!roundWins[roundId]) roundWins[roundId] = {};
-                                    roundWins[roundId][player] = (roundWins[roundId][player] || 0) + 1;
-                                    if (roundWins[roundId][player] === 3 && !savedRounds.get(roundId).champions.includes(player.replace(/\*/g, ''))) {
-                                        savedRounds.get(roundId).champions.push(player.replace(/\*/g, ''));
-                                    }
-                                });
-                            }
-                        }
-                    });
-                    createScheduleRounds(savedRounds);
-                    document.querySelectorAll('.schedule-table').forEach(table => {
-                        const roundId = table.getAttribute('data-round-id');
-                        const matches = scheduleData.filter(m => m.round == roundId);
-                        table.querySelectorAll('tbody tr').forEach((row, index) => {
-                            const match = matches[index];
-                            if (match) {
-                                ['player1', 'player2', 'player3', 'player4'].forEach((cls, i) => row.querySelector(`.${cls}`).value = match.players[i] || '');
-                                row.querySelector('.score').value = match.score || '';
-                                row.querySelector('.is-four-point').checked = match.isFourPoint || false;
-                            }
-                        });
-                    });
-                } else {
-                    createScheduleRounds();
-                    showToast("스케줄 데이터가 없습니다!");
-                }
-
-                const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-                if (rankingDoc.exists()) {
-                    updateRankingTable(rankingDoc.data().players || []);
-                } else {
-                    showToast("랭킹 데이터가 없습니다!");
-                }
-            } catch (e) {
-                showToast(`데이터 로드 실패: ${e.message || '알 수 없는 오류'}`);
-            }
+        const populatePlayerDatalist = () => {
+            const datalist = document.getElementById('player-list');
+            if (!datalist) return;
+            const playerNames = new Set(allPlayersData.map(p => p.name));
+            datalist.innerHTML = [...playerNames].map(name => `<option value="${name}"></option>`).join('');
         };
-
+        
         const updateRankingTable = (rankingData) => {
-            const filteredData = currentFilter === 'male' ? rankingData.filter(p => !p.isFemale) : currentFilter === 'female' ? rankingData.filter(p => p.isFemale) : rankingData;
-            filteredData.sort((a, b) => {
-                if (sortKey === 'rank') return sortOrder === 'asc' ? a.rank - b.rank : b.rank - a.rank;
-                if (sortKey === 'player') return sortOrder === 'asc' ? a.name.localeCompare(b.name, 'ko') : b.name.localeCompare(a.name, 'ko');
-                if (sortKey === 'mmr') return sortOrder === 'asc' ? a.mmr - b.mmr : b.mmr - a.mmr;
-                if (sortKey === 'championships') return sortOrder === 'asc' ? parseInt(a.championships) - parseInt(b.championships) : parseInt(b.championships) - parseInt(a.championships);
-                if (sortKey === 'wins') return sortOrder === 'asc' ? parseInt(a.wins) - parseInt(b.wins) : parseInt(b.wins) - parseInt(a.wins);
-                if (sortKey === 'losses') return sortOrder === 'asc' ? parseInt(a.losses) - parseInt(b.losses) : parseInt(b.losses) - parseInt(a.losses);
-                if (sortKey === 'winRate') return sortOrder === 'asc' ? parseFloat(a.winRate) - parseFloat(b.winRate) : parseFloat(b.winRate) - parseFloat(a.winRate);
-                if (sortKey === 'avgGameDiff') return sortOrder === 'asc' ? parseFloat(a.avgGameDiff) - parseFloat(b.avgGameDiff) : parseFloat(b.avgGameDiff) - parseFloat(a.avgGameDiff);
-                if (sortKey === 'closeRate') return sortOrder === 'asc' ? parseFloat(a.closeRate) - parseFloat(b.closeRate) : parseFloat(b.closeRate) - parseFloat(a.closeRate);
-                if (sortKey === 'dominantWins') return sortOrder === 'asc' ? parseInt(a.dominantWins) - parseInt(b.dominantWins) : parseInt(b.dominantWins) - parseInt(a.dominantWins);
-                if (sortKey === 'dominantLosses') return sortOrder === 'asc' ? parseInt(a.dominantLosses) - parseInt(b.dominantLosses) : parseInt(b.dominantLosses) - parseInt(a.dominantLosses);
-                if (sortKey === 'bestPartner') {
-                    const winsA = parseInt(a.bestPartner.match(/(\d+)승/)?.[1] || 0);
-                    const winsB = parseInt(b.bestPartner.match(/(\d+)승/)?.[1] || 0);
-                    return sortOrder === 'asc' ? winsA - winsB : winsB - winsA;
+            allPlayersData = rankingData; 
+            populatePlayerDatalist();
+
+            // 1. Filter by gender first
+            let genderFilteredData;
+            if (currentFilter === 'male') {
+                genderFilteredData = rankingData.filter(p => !p.isFemale);
+            } else if (currentFilter === 'female') {
+                genderFilteredData = rankingData.filter(p => p.isFemale);
+            } else {
+                genderFilteredData = [...rankingData];
+            }
+
+            // 2. Sort the gender-filtered list
+            genderFilteredData.sort((a, b) => {
+                const valA = a[sortKey];
+                const valB = b[sortKey];
+                let compare = 0;
+                if (sortKey === 'player') {
+                    compare = (valA || '').localeCompare(valB || '', 'ko');
+                } else if (sortKey === 'bestPartner') {
+                    const winsA = parseInt((valA || '').match(/(\d+)승/)?.[1] || 0);
+                    const winsB = parseInt((valB || '').match(/(\d+)승/)?.[1] || 0);
+                    compare = winsB - winsA;
+                } else {
+                    compare = (parseFloat(valB) || 0) - (parseFloat(valA) || 0);
                 }
-                return 0;
+                return sortOrder === 'asc' ? -compare : compare;
             });
 
-            document.querySelectorAll('#ranking-table tbody tr').forEach((row, index) => {
-                const player = filteredData[index];
-                if (player) {
-                    row.cells[0].innerHTML = `${index + 1}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span>`;
-                    row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
-                    row.querySelector('.mmr').value = isNaN(player.mmr) ? '1500' : Math.round(player.mmr);
-                    row.querySelector('.mmr').dataset.seasonMMRIncrease = isNaN(player.seasonMMRIncrease) ? '0.00' : player.seasonMMRIncrease.toFixed(2);
-                    const champStar = row.querySelector('.championship-star');
-                    champStar.dataset.count = player.championships;
-                    champStar.textContent = player.championships == 1 ? '⭐' : player.championships > 1 ? `⭐(${player.championships})` : '';
-                    row.querySelector('.wins').value = player.wins || '0';
-                    row.querySelector('.losses').value = player.losses || '0';
-                    row.querySelector('.win-rate').value = player.winRate || '0';
-                    row.querySelector('.avg-game-diff').value = player.avgGameDiff || '0.00';
-                    row.querySelector('.close-rate').value = player.closeRate || '0';
-                    row.querySelector('.dominant-wins').value = player.dominantWins || '0%';
-                    row.querySelector('.dominant-losses').value = player.dominantLosses || '0%';
-                    row.querySelector('.best-partner').value = player.bestPartner || '-';
-                } else {
-                    row.cells[0].innerHTML = `${index + 1}<span class="streak-cell streak-none">–</span>`;
-                    row.querySelectorAll('input:not([type=button])').forEach(input => input.value = '');
-                    row.querySelector('.championship-star').textContent = '';
-                }
+            // 3. Assign the correct rank within the gender-filtered context
+            genderFilteredData.forEach((player, index) => {
+                player.rank = index + 1;
             });
+
+            // 4. Now, apply the text search filter
+            const searchTerm = document.getElementById('ranking-search').value.toLowerCase();
+            const finalFilteredData = genderFilteredData.filter(p => p.name.toLowerCase().includes(searchTerm));
+
+            const rankingBody = document.querySelector('#ranking-table tbody');
+            if(!rankingBody) return;
+            rankingBody.innerHTML = ''; 
+            
+            if (finalFilteredData.length === 0) {
+                 rankingBody.innerHTML = `<tr><td colspan="12">표시할 데이터가 없습니다.</td></tr>`;
+                 return;
+            }
+
+            // 5. Render the result, using the 'rank' property assigned in step 3
+            finalFilteredData.forEach((player) => {
+                const row = rankingBody.insertRow();
+                row.innerHTML = `
+                    <td class="rank-cell">${player.rank}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span></td>
+                    <td><input type="text" value="${player.isFemale ? `${player.name}*` : player.name}" class="ranking-player readonly" readonly></td>
+                    <td><input type="text" value="${isNaN(player.mmr) ? '1500' : Math.round(player.mmr)}" class="mmr readonly" readonly></td>
+                    <td><span class="championship-star" data-count="${player.championships || 0}">${(player.championships || 0) == 1 ? '⭐' : (player.championships || 0) > 1 ? `⭐(${player.championships})` : ''}</span></td>
+                    <td><input type="text" value="${player.wins || '0'}" class="wins readonly" readonly></td>
+                    <td><input type="text" value="${player.losses || '0'}" class="losses readonly" readonly></td>
+                    <td><input type="text" value="${player.winRate || '0'}" class="win-rate readonly" readonly></td>
+                    <td><input type="text" value="${player.avgGameDiff || '0.00'}" class="avg-game-diff readonly" readonly></td>
+                    <td><input type="text" value="${player.closeRate || '0'}" class="close-rate readonly" readonly></td>
+                    <td><input type="text" value="${player.dominantWins || '0%'}" class="dominant-wins readonly" readonly></td>
+                    <td><input type="text" value="${player.dominantLosses || '0%'}" class="dominant-losses readonly" readonly></td>
+                    <td><input type="text" value="${player.bestPartner || '-'}" class="best-partner readonly" readonly></td>
+                `;
+            });
+            rankingBody.querySelectorAll('.ranking-player').forEach(input => input.addEventListener('click', () => {
+                const playerName = encodeURIComponent(input.value.trim().replace(/\*/g, ''));
+                if (playerName) window.location.href = `h2h.html?player=${playerName}`;
+            }));
         };
 
         const updateRanking = async () => {
             const updateRankingBtn = document.getElementById('update-ranking');
             updateRankingBtn.disabled = true;
-            const constants = {
-                BASE_MMR: 1500, BASE_K: 45, WIN_BONUS: 1.1, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
-                MIXED_WIN_MULTIPLIER: 1.5, MIXED_MMR_MIN: 1400, MIXED_MMR_MAX: 1600, MIXED_LOSS_REDUCTION: 0.3,
-                MALE_LOSS_MULTIPLIER: 1.5, MALE_WIN_REDUCTION: 0.3, HANDICAP_BASE_POINT: 1500, HANDICAP_ZERO_POINT: 1650,
-                HANDICAP_MAX: 150, MMR_LOSS_CAP: 30, 
-                MMR_DIFF_THRESHOLD: 200, 
-                REDUCED_LOSS_REDUCTION: 0.5 
-            };
+            updateRankingBtn.textContent = '계산 중...';
+            showToast('순위 계산을 시작합니다. 잠시만 기다려주세요...');
 
-            const players = {}, partnerStats = {}, streaks = {};
+            setTimeout(async () => {
+                const constants = {
+                    BASE_MMR: 1500, BASE_K: 45, WIN_BONUS: 1.1, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
+                    MMR_DIFF_THRESHOLD: 200, REDUCED_LOSS_REDUCTION: 0.5 
+                };
 
-            document.querySelectorAll('.schedule-table').forEach(table => {
-                let roundHasMixedMatch = false;
-                const roundId = table.getAttribute('data-round-id');
-                const roundWins = {};
-                table.querySelectorAll('tbody tr').forEach(row => {
-                    const playersRaw = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
-                    const playerNames = playersRaw.map(p => p.replace(/\*/g, ''));
-                    const score = row.querySelector('.score').value.trim();
-                    const isFourPoint = row.querySelector('.is-four-point').checked;
-                    if (!playerNames.every(p => p) || !/^\d+-\d+$/.test(score)) return;
+                const players = {}, partnerStats = {}, streaks = {};
 
-                    playerNames.forEach((name, idx) => {
-                        if (name && !players[name]) {
-                            players[name] = {
-                                name, wins: 0, losses: 0, winRate: 0, gameDiff: 0, avgGameDiff: 0, mmr: constants.BASE_MMR,
-                                championships: 0, closeWins: 0, closeSets: 0, closeLosses: 0, dominantWins: 0, dominantLosses: 0,
-                                totalSets: 0, isFemale: playersRaw[idx].includes('*'), seasonMMRIncrease: 0, streakCount: 0, streakIsWin: false
-                            };
-                            partnerStats[name] = {};
-                            streaks[name] = { count: 0, isWin: false };
-                        }
-                    });
-
-                    const team1IsMixed = playersRaw[0].includes('*') || playersRaw[1].includes('*');
-                    const team2IsMixed = playersRaw[2].includes('*') || playersRaw[3].includes('*');
-                    const team1IsMale = !team1IsMixed, team2IsMale = !team2IsMixed;
-                    if (team1IsMixed || team2IsMixed) roundHasMixedMatch = true;
-
-                    const getDynamicHandicap = (mmr) => {
-                        mmr = isNaN(mmr) ? constants.BASE_MMR : mmr;
-                        if (mmr >= constants.HANDICAP_ZERO_POINT) return 0;
-                        if (mmr <= constants.HANDICAP_BASE_POINT) return constants.HANDICAP_MAX;
-                        const progress = (mmr - constants.HANDICAP_BASE_POINT) / (constants.HANDICAP_ZERO_POINT - constants.HANDICAP_BASE_POINT);
-                        return Math.max(0, constants.HANDICAP_MAX * (1 - progress));
-                    };
-
-                    const getMixedWinMultiplier = (teamMMR) => {
-                        teamMMR = isNaN(teamMMR) ? constants.BASE_MMR : teamMMR;
-                        return (teamMMR >= constants.MIXED_MMR_MIN && teamMMR <= constants.MIXED_MMR_MAX) ? constants.MIXED_WIN_MULTIPLIER : 1.0;
-                    };
-
-                    let team1MMR = ((players[playerNames[0]]?.mmr || constants.BASE_MMR) + (players[playerNames[1]]?.mmr || constants.BASE_MMR)) / 2;
-                    let team2MMR = ((players[playerNames[2]]?.mmr || constants.BASE_MMR) + (players[playerNames[3]]?.mmr || constants.BASE_MMR)) / 2;
-                    let effectiveTeam1MMR = team1MMR, effectiveTeam2MMR = team2MMR;
-
-                    if (team1IsMixed) {
-                        let handicap = (playersRaw[0].includes('*') ? getDynamicHandicap(players[playerNames[0]]?.mmr) : 0) + (playersRaw[1].includes('*') ? getDynamicHandicap(players[playerNames[1]]?.mmr) : 0);
-                        effectiveTeam1MMR += handicap / (playersRaw[0].includes('*') && playersRaw[1].includes('*') ? 2 : 1);
-                        effectiveTeam1MMR *= 1.5;
-                    }
-                    if (team2IsMixed) {
-                        let handicap = (playersRaw[2].includes('*') ? getDynamicHandicap(players[playerNames[2]]?.mmr) : 0) + (playersRaw[3].includes('*') ? getDynamicHandicap(players[playerNames[3]]?.mmr) : 0);
-                        effectiveTeam2MMR += handicap / (playersRaw[2].includes('*') && playersRaw[3].includes('*') ? 2 : 1);
-                        effectiveTeam2MMR *= 1.5;
-                    }
-
-                    const expected1 = 1 / (1 + Math.pow(10, (effectiveTeam2MMR - effectiveTeam1MMR) / 400));
-                    const [score1, score2] = score.split('-').map(Number);
-                    const actual1 = score1 > score2 ? 1 : 0, actual2 = score1 < score2 ? 1 : 0;
-                    const gameDiff = Math.abs(score1 - score2);
-                    const scoreWeight = isNaN(gameDiff) ? 1.0 : 0.8 + (gameDiff / 6) * 0.7;
-
-                    const updatePlayerMMR = (player, opponentTeamMMR, isWinner, partnerMMR) => {
-                        if (!player) return 0;
-                        let K = constants.BASE_K, playerMMR = player.mmr || constants.BASE_MMR;
-                        if (isNaN(playerMMR)) playerMMR = constants.BASE_MMR;
-                        if (playerMMR > 1800) K *= Math.max(0.3, 1 - (playerMMR - 1800) / 1000);
-                        opponentTeamMMR = isNaN(opponentTeamMMR) ? constants.BASE_MMR : opponentTeamMMR;
-                        const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
-                        let opponentWeight = Math.min(1, opponentTeamMMR / playerMMR);
-                        if (playerMMR > 1800) opponentWeight *= Math.max(0.5, 1 - (playerMMR - 1800) / 2000);
-                        let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * opponentWeight * scoreWeight;
-                        if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
-                        
-                        if (isWinner) {
-                            mmrChange *= constants.WIN_BONUS;
-                        } else {
-                            const mmrDiff = Math.abs(playerMMR - (partnerMMR || constants.BASE_MMR));
-                            const lossReduction = mmrDiff >= constants.MMR_DIFF_THRESHOLD ? constants.REDUCED_LOSS_REDUCTION : constants.LOSS_REDUCTION;
-                            mmrChange *= lossReduction;
-                            
-                            if (Math.abs(mmrChange) > constants.MMR_LOSS_CAP) mmrChange = -constants.MMR_LOSS_CAP;
-                        }
-                        return isNaN(mmrChange) ? 0 : Math.round(isWinner ? mmrChange : -Math.abs(mmrChange));
-                    };
-
-                    const mmrChanges = [
-                        updatePlayerMMR(players[playerNames[0]], team2MMR, actual1, players[playerNames[1]]?.mmr),
-                        updatePlayerMMR(players[playerNames[1]], team2MMR, actual1, players[playerNames[0]]?.mmr),
-                        updatePlayerMMR(players[playerNames[2]], team1MMR, actual2, players[playerNames[3]]?.mmr),
-                        updatePlayerMMR(players[playerNames[3]], team1MMR, actual2, players[playerNames[2]]?.mmr)
-                    ];
-
-                    if (team1IsMixed && team2IsMale) {
-                        const mixedWinMultiplier = getMixedWinMultiplier(team1MMR);
-                        if (actual1 === 1) {
-                            mmrChanges[0] *= mixedWinMultiplier;
-                            mmrChanges[1] *= mixedWinMultiplier;
-                            mmrChanges[2] *= constants.MALE_LOSS_MULTIPLIER;
-                            mmrChanges[3] *= constants.MALE_LOSS_MULTIPLIER;
-                        } else {
-                            mmrChanges[0] *= constants.MIXED_LOSS_REDUCTION;
-                            mmrChanges[1] *= constants.MIXED_LOSS_REDUCTION;
-                            mmrChanges[2] *= constants.MALE_WIN_REDUCTION;
-                            mmrChanges[3] *= constants.MALE_WIN_REDUCTION;
-                        }
-                    } else if (team2IsMixed && team1IsMale) {
-                        const mixedWinMultiplier = getMixedWinMultiplier(team2MMR);
-                        if (actual2 === 1) {
-                            mmrChanges[2] *= mixedWinMultiplier;
-                            mmrChanges[3] *= mixedWinMultiplier;
-                            mmrChanges[0] *= constants.MALE_LOSS_MULTIPLIER;
-                            mmrChanges[1] *= constants.MALE_LOSS_MULTIPLIER;
-                        } else {
-                            mmrChanges[2] *= constants.MIXED_LOSS_REDUCTION;
-                            mmrChanges[3] *= constants.MIXED_LOSS_REDUCTION;
-                            mmrChanges[0] *= constants.MALE_WIN_REDUCTION;
-                            mmrChanges[1] *= constants.MALE_WIN_REDUCTION;
-                        }
-                    }
-
-                    const isClose = Math.abs(score1 - score2) <= 2;
-                    const updatePlayer = (name, isWinner, gameDiff, mmrChange, isCloseGame, isDominant) => {
-                        if (!players[name]) return;
-                        players[name].totalSets++;
-                        players[name].gameDiff += isNaN(gameDiff) ? 0 : gameDiff;
-                        players[name].mmr += isNaN(mmrChange) ? 0 : mmrChange;
-                        players[name].seasonMMRIncrease += isNaN(mmrChange) ? 0 : mmrChange;
-                        if (isWinner) {
-                            players[name].wins++;
-                            if (!isFourPoint) {
-                                roundWins[name] = (roundWins[name] || 0) + 1;
-                            }
-                            if (isCloseGame) players[name].closeWins++;
-                            streaks[name].count = streaks[name].isWin ? streaks[name].count + 1 : 1;
-                            streaks[name].isWin = true;
-                        } else {
-                            players[name].losses++;
-                            if (isCloseGame) players[name].closeLosses++;
-                            streaks[name].count = !streaks[name].isWin ? streaks[name].count + 1 : 1;
-                            streaks[name].isWin = false;
-                        }
-                        if (isCloseGame) players[name].closeSets++;
-                        if (isDominant) players[name][isWinner ? 'dominantWins' : 'dominantLosses']++;
-                        players[name].streakCount = streaks[name].count;
-                        players[name].streakIsWin = streaks[name].isWin;
-                    };
-
-                    updatePlayer(playerNames[0], actual1, score1 - score2, mmrChanges[0], isClose, gameDiff >= 5);
-                    updatePlayer(playerNames[1], actual1, score1 - score2, mmrChanges[1], isClose, gameDiff >= 5);
-                    updatePlayer(playerNames[2], actual2, score2 - score1, mmrChanges[2], isClose, gameDiff >= 5);
-                    updatePlayer(playerNames[3], actual2, score2 - score1, mmrChanges[3], isClose, gameDiff >= 5);
-
-                    const updatePartnerStats = (player, partner, isWin, gameDiff) => {
-                        if (!players[player] || !players[partner]) return;
-                        partnerStats[player][partner] = partnerStats[player][partner] || { wins: 0, losses: 0, gameDiffSum: 0, matches: 0 };
-                        const stats = partnerStats[player][partner];
-                        stats.matches++;
-                        stats.gameDiffSum += isNaN(gameDiff) ? 0 : gameDiff;
-                        if (isWin) stats.wins++; else stats.losses++;
-                    };
-
-                    if (actual1 > 0) {
-                        updatePartnerStats(playerNames[0], playerNames[1], true, score1 - score2);
-                        updatePartnerStats(playerNames[1], playerNames[0], true, score1 - score2);
-                        updatePartnerStats(playerNames[2], playerNames[3], false, score2 - score1);
-                        updatePartnerStats(playerNames[3], playerNames[2], false, score2 - score1);
-                    } else {
-                        updatePartnerStats(playerNames[0], playerNames[1], false, score1 - score2);
-                        updatePartnerStats(playerNames[1], playerNames[0], false, score1 - score2);
-                        updatePartnerStats(playerNames[2], playerNames[3], true, score2 - score1);
-                        updatePartnerStats(playerNames[3], playerNames[2], true, score2 - score1);
-                    }
-                });
-
-                Object.keys(roundWins).forEach(pName => {
-                    if (roundWins[pName] === 3 && players[pName] && !(players[pName].isFemale && roundHasMixedMatch)) {
-                        players[pName].championships++;
-                    }
-                });
-            });
-
-            Object.values(players).forEach(player => {
-                const totalGames = player.wins + player.losses;
-                player.winRate = totalGames > 0 ? Math.round((player.wins / totalGames) * 100) : 0;
-                player.avgGameDiff = player.totalSets > 0 ? (player.gameDiff / player.totalSets).toFixed(2) : '0.00';
-                player.closeRate = player.totalSets >= 2 ? (player.closeSets === 0 ? '0' : Math.round(player.closeSets / player.totalSets * 100)) : '0';
-                
-                player.dominantWins = player.totalSets > 0 ? `${Math.round((player.dominantWins / player.totalSets) * 100)}%(${player.dominantWins}승)` : '0%';
-                player.dominantLosses = player.totalSets > 0 ? `${Math.round((player.dominantLosses / player.totalSets) * 100)}%(${player.dominantLosses}패)` : '0%';
-
-                let bestPartner = { name: '-', wins: 0, losses: 0, score: -Infinity };
-                if (partnerStats[player.name]) {
-                    for (const partnerName in partnerStats[player.name]) {
-                        const stats = partnerStats[player.name][partnerName];
-                        if (stats.matches > 0) {
-                            const partnerScore = (stats.wins * 100) + (stats.matches > 0 ? stats.gameDiffSum / stats.matches * 10 : 0);
-                            if (partnerScore > bestPartner.score) {
-                                bestPartner = { name: partnerName, wins: stats.wins, losses: stats.losses, score: partnerScore };
-                            }
-                        }
-                    }
-                }
-                player.bestPartner = bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name.replace(/\*/g, '')} (${bestPartner.wins}승${bestPartner.losses}패)`;
-            });
-
-            const allPlayers = Object.values(players);
-
-            // BUG FIX: 순위 업데이트 시 계산된 데이터를 기반으로 모든 관련 데이터를 저장합니다.
-            try {
-                const batch = writeBatch(db);
-
-                // 1. 순위 데이터 저장
-                batch.set(doc(db, 'league', 'data', 'rankings', 'v1'), { players: allPlayers, lastUpdated: serverTimestamp() }, { merge: true });
-
-                // 2. 순위 히스토리 저장
-                const rankingHistoryDocRef = doc(db, 'league', 'data', 'rankingHistory', 'v1');
-                const rankingHistorySnap = await getDoc(rankingHistoryDocRef);
-                const existingHistory = rankingHistorySnap.data()?.snapshots || [];
-                existingHistory.push({
-                    snapshotId: existingHistory.length + 1,
-                    createdAt: new Date().toISOString(),
-                    rankings: allPlayers.map((player, index) => ({ name: player.name, rank: index + 1 }))
-                });
-                batch.set(rankingHistoryDocRef, { snapshots: existingHistory }, { merge: true });
-
-                // 3. 백업 저장
-                const scheduleDataForBackup = [];
-                 document.querySelectorAll('.schedule-table').forEach(table => {
-                    const roundId = parseInt(table.getAttribute('data-round-id'));
+                document.querySelectorAll('.schedule-table').forEach(table => {
                     table.querySelectorAll('tbody tr').forEach(row => {
-                        const players = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
-                        const score = row.querySelector('.score').value.trim();
+                        const playersRaw = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
+                        const playerNames = playersRaw.map(p => p.replace(/\*/g, ''));
+                        const score1 = row.querySelector('.score1').value;
+                        const score2 = row.querySelector('.score2').value;
+                        const score = `${score1}-${score2}`;
                         const isFourPoint = row.querySelector('.is-four-point').checked;
-                        if (players.every(p => p)) {
-                            scheduleDataForBackup.push({ round: roundId, players, score, isFourPoint });
-                        }
+                        if (!playerNames.every(p => p) || !/^\d+-\d+$/.test(score)) return;
+
+                        playerNames.forEach((name, idx) => {
+                            if (name && !players[name]) {
+                                players[name] = {
+                                    name, wins: 0, losses: 0, mmr: constants.BASE_MMR, championships: 0, 
+                                    closeWins: 0, closeSets: 0, dominantWins: 0, dominantLosses: 0,
+                                    totalSets: 0, gameDiff: 0, isFemale: playersRaw[idx].includes('*'), 
+                                    streakCount: 0, streakIsWin: false
+                                };
+                                partnerStats[name] = {};
+                                streaks[name] = { count: 0, isWin: false };
+                            }
+                        });
+
+                        let team1MMR = ((players[playerNames[0]]?.mmr || constants.BASE_MMR) + (players[playerNames[1]]?.mmr || constants.BASE_MMR)) / 2;
+                        let team2MMR = ((players[playerNames[2]]?.mmr || constants.BASE_MMR) + (players[playerNames[3]]?.mmr || constants.BASE_MMR)) / 2;
+                        
+                        const [s1, s2] = score.split('-').map(Number);
+                        const actual1 = s1 > s2 ? 1 : 0;
+                        const gameDiff = Math.abs(s1 - s2);
+                        const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
+
+                        const updatePlayerMMR = (player, opponentTeamMMR, isWinner, partnerMMR) => {
+                            if (!player) return 0;
+                            let K = constants.BASE_K, playerMMR = player.mmr || constants.BASE_MMR;
+                            const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
+                            let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
+                            if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
+                            
+                            if (isWinner) mmrChange *= constants.WIN_BONUS;
+                            else mmrChange *= Math.abs(playerMMR - (partnerMMR || constants.BASE_MMR)) >= constants.MMR_DIFF_THRESHOLD ? constants.REDUCED_LOSS_REDUCTION : constants.LOSS_REDUCTION;
+                            
+                            return Math.round(mmrChange);
+                        };
+
+                        const mmrChanges = [
+                            updatePlayerMMR(players[playerNames[0]], team2MMR, actual1, players[playerNames[1]]?.mmr),
+                            updatePlayerMMR(players[playerNames[1]], team2MMR, actual1, players[playerNames[0]]?.mmr),
+                            updatePlayerMMR(players[playerNames[2]], team1MMR, 1 - actual1, players[playerNames[3]]?.mmr),
+                            updatePlayerMMR(players[playerNames[3]], team1MMR, 1 - actual1, players[playerNames[2]]?.mmr)
+                        ];
+
+                        const isClose = Math.abs(s1 - s2) <= 2;
+                        const updatePlayer = (name, isWinner, gameDiffVal, mmrChange, isCloseGame, isDominant) => {
+                            if (!players[name]) return;
+                            players[name].totalSets++;
+                            players[name].gameDiff += isWinner ? gameDiffVal : -gameDiffVal;
+                            players[name].mmr += mmrChange;
+                            if (isWinner) {
+                                players[name].wins++;
+                                if (isCloseGame) players[name].closeWins++;
+                                streaks[name].count = streaks[name].isWin ? streaks[name].count + 1 : 1;
+                                streaks[name].isWin = true;
+                            } else {
+                                players[name].losses++;
+                                streaks[name].count = !streaks[name].isWin ? streaks[name].count + 1 : 1;
+                                streaks[name].isWin = false;
+                            }
+                            if (isCloseGame) players[name].closeSets++;
+                            if (isDominant) players[name][isWinner ? 'dominantWins' : 'dominantLosses']++;
+                            players[name].streakCount = streaks[name].count;
+                            players[name].streakIsWin = streaks[name].isWin;
+                        };
+
+                        updatePlayer(playerNames[0], actual1, gameDiff, mmrChanges[0], isClose, gameDiff >= 5);
+                        updatePlayer(playerNames[1], actual1, gameDiff, mmrChanges[1], isClose, gameDiff >= 5);
+                        updatePlayer(playerNames[2], 1 - actual1, gameDiff, mmrChanges[2], isClose, gameDiff >= 5);
+                        updatePlayer(playerNames[3], 1 - actual1, gameDiff, mmrChanges[3], isClose, gameDiff >= 5);
                     });
                 });
-                batch.set(doc(collection(db, 'league', 'backups', 'data'), `backup_${new Date().toISOString().replace(/[:.]/g, '-')}`), {
-                    schedule: scheduleDataForBackup,
-                    rankings: allPlayers,
-                    timestamp: serverTimestamp()
+
+                Object.values(players).forEach(player => {
+                    const totalGames = player.wins + player.losses;
+                    player.winRate = totalGames > 0 ? Math.round((player.wins / totalGames) * 100) : 0;
+                    player.avgGameDiff = player.totalSets > 0 ? (player.gameDiff / player.totalSets).toFixed(2) : '0.00';
+                    player.closeRate = player.totalSets > 0 ? Math.round((player.closeSets / player.totalSets) * 100) : 0;
+                    player.dominantWins = player.totalSets > 0 ? `${Math.round((player.dominantWins / player.totalSets) * 100)}%(${player.dominantWins}승)` : '0%';
+                    player.dominantLosses = player.totalSets > 0 ? `${Math.round((player.dominantLosses / player.totalSets) * 100)}%(${player.dominantLosses}패)` : '0%';
                 });
 
-                await batch.commit();
-                showToast('순위 업데이트 및 저장 완료!');
-            } catch (e) {
-                showToast(`랭킹 저장 실패: ${e.message || '알 수 없는 오류'}`);
-            }
+                const allCalculatedPlayers = Object.values(players);
 
-            updateRankingTable(allPlayers);
-            updateRankingBtn.disabled = false;
+                try {
+                    const batch = writeBatch(db);
+                    batch.set(doc(db, 'league', 'data', 'rankings', 'v1'), { players: allCalculatedPlayers, lastUpdated: serverTimestamp() });
+                    
+                    const rankingHistoryDocRef = doc(db, 'league', 'data', 'rankingHistory', 'v1');
+                    const rankingHistorySnap = await getDoc(rankingHistoryDocRef);
+                    const existingHistory = rankingHistorySnap.data()?.snapshots || [];
+                    existingHistory.push({
+                        snapshotId: existingHistory.length + 1,
+                        createdAt: new Date().toISOString(),
+                        ...Object.fromEntries(allCalculatedPlayers.map(p => [p.name.replace(/\./g, '_'), p.mmr]))
+                    });
+                    batch.set(rankingHistoryDocRef, { snapshots: existingHistory });
+
+                    await batch.commit();
+                    showToast('순위 업데이트 및 저장 완료!');
+                } catch (e) {
+                    showToast(`랭킹 저장 실패: ${e.message || '알 수 없는 오류'}`);
+                } finally {
+                    updateRankingBtn.disabled = false;
+                    updateRankingBtn.textContent = '순위 업데이트';
+                }
+            }, 10);
         };
 
         const downloadCSV = () => {
@@ -715,37 +541,40 @@
             document.body.removeChild(link);
         };
 
-        const scheduleDailyBackup = () => {
-            const now = new Date();
-            const nextBackup = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (now.getHours() >= 6 ? 1 : 0), 6);
-            setTimeout(async () => {
-                if (!db) return;
-                try {
-                    const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
-                    const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-                    await setDoc(doc(collection(db, 'league', 'backups', 'data'), `daily_backup_${new Date().toISOString().replace(/[:.]/g, '-')}`), {
-                        schedule: scheduleDoc.data()?.matches || [],
-                        rankings: rankingDoc.data()?.players || [],
-                        timestamp: serverTimestamp()
-                    });
-                    showToast("일일 백업 완료!");
-                } catch (e) {
-                    showToast(`일일 백업 실패: ${e.message || '알 수 없는 오류'}`);
+        const toggleSavedRounds = () => {
+            const btn = document.getElementById('toggle-saved-rounds');
+            const isHidden = document.querySelector('.saved-round')?.classList.contains('hidden');
+            
+            document.querySelectorAll('.saved-round').forEach(round => {
+                round.classList.toggle('hidden', !isHidden);
+            });
+            
+            btn.textContent = isHidden ? '저장된 회차 숨기기' : '저장된 회차 보이기';
+        };
+
+        const hideSavedRoundsByDefault = () => {
+            document.querySelectorAll('.saved-round').forEach(round => {
+                round.classList.add('hidden');
+            });
+            const btn = document.getElementById('toggle-saved-rounds');
+            if (btn) btn.textContent = '저장된 회차 보이기';
+        };
+
+        const focusOnNextRound = () => {
+            const firstUnsavedRound = document.querySelector('details:not(.saved-round):not(.round-group)');
+            if (firstUnsavedRound) {
+                const groupDetails = firstUnsavedRound.closest('.round-group');
+                if (groupDetails) {
+                    groupDetails.open = true;
+                    groupDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
-                scheduleDailyBackup();
-            }, nextBackup - now);
+            }
         };
 
         const setupInputListeners = () => {
             document.getElementById('save-all')?.addEventListener('click', saveAllData);
             document.getElementById('update-ranking')?.addEventListener('click', updateRanking);
             document.getElementById('download-csv')?.addEventListener('click', downloadCSV);
-            document.getElementById('toggle-rankings')?.addEventListener('click', () => {
-                const lowerRanks = document.querySelectorAll('.lower-rank');
-                const isVisible = lowerRanks[0]?.classList.contains('show');
-                lowerRanks.forEach(row => row.classList.toggle('show'));
-                document.getElementById('toggle-rankings').textContent = isVisible ? '더보기' : '접기';
-            });
             document.getElementById('h2h-page-btn')?.addEventListener('click', () => window.location.href = 'h2h.html');
             document.getElementById('partner-page-btn')?.addEventListener('click', () => window.location.href = 'partner.html');
             document.getElementById('how-to-use-btn')?.addEventListener('click', () => {
@@ -757,56 +586,76 @@
                 document.getElementById('overlay').classList.remove('show');
             });
 
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', async () => {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentFilter = btn.dataset.filter;
-                const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-                if (rankingDoc.exists()) updateRankingTable(rankingDoc.data().players || []);
+                updateRankingTable(allPlayersData);
             }));
 
-            document.querySelectorAll('#ranking-table thead th[data-sort]').forEach(th => th.addEventListener('click', async () => {
-                sortKey = th.dataset.sort;
-                sortOrder = sortKey === sortKey ? (sortOrder === 'asc' ? 'desc' : 'asc') : 'desc';
-                const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-                if (rankingDoc.exists()) updateRankingTable(rankingDoc.data().players || []);
+            document.querySelectorAll('#ranking-table thead th[data-sort]').forEach(th => th.addEventListener('click', () => {
+                const newSortKey = th.dataset.sort;
+                sortOrder = (sortKey === newSortKey && sortOrder === 'desc') ? 'asc' : 'desc';
+                sortKey = newSortKey;
+                updateRankingTable(allPlayersData);
             }));
+            
+            document.getElementById('theme-toggle')?.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
 
-            document.querySelectorAll('.ranking-player').forEach(input => input.addEventListener('click', () => {
-                const playerName = encodeURIComponent(input.value.trim().replace(/\*/g, ''));
-                if (playerName) window.location.href = `h2h.html?player=${playerName}`;
-            }));
+            document.getElementById('toggle-saved-rounds')?.addEventListener('click', toggleSavedRounds);
+            
+            document.getElementById('ranking-search')?.addEventListener('input', () => updateRankingTable(allPlayersData));
         };
 
         document.addEventListener('DOMContentLoaded', () => {
-            const waitForElements = (selector, callback, retries = 20, delay = 200) => {
-                let attempts = 0;
-                const check = () => {
-                    if (document.querySelectorAll(selector).length && document.getElementById('schedule-container') && document.querySelector('#ranking-table tbody')) {
-                        callback();
-                    } else if (attempts < retries) {
-                        attempts++;
-                        setTimeout(check, delay);
-                    } else {
-                        showToast("페이지 로드 오류! 요소를 찾을 수 없습니다.");
-                    }
-                };
-                check();
-            };
+            setupInputListeners();
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            applyTheme(savedTheme);
 
-            waitForElements('#schedule-container, #ranking-table tbody', () => {
-                applyTheme(localStorage.getItem('theme') || 'dark');
-                createRankingRows();
-                if (db) {
-                    loadData();
-                    scheduleDailyBackup();
-                } else {
-                    showToast("DB 연결 없음!");
-                }
-                setupInputListeners();
-            });
+            if (db) {
+                onSnapshot(doc(db, 'league', 'data', 'rankings', 'v1'), (doc) => {
+                    console.log("실시간 랭킹 업데이트 수신");
+                    const players = doc.exists() ? doc.data().players || [] : [];
+                    updateRankingTable(players);
+                });
+
+                onSnapshot(doc(db, 'league', 'data', 'schedule', 'v1'), (doc) => {
+                    console.log("실시간 스케줄 업데이트 수신");
+                    const savedRounds = new Map();
+                    if (doc.exists()) {
+                        const scheduleData = doc.data().matches || [];
+                        scheduleData.forEach(match => {
+                            if (!savedRounds.has(match.round)) savedRounds.set(match.round, { timestamp: match.timestamp, champions: [], matches: [] });
+                            savedRounds.get(match.round).matches.push(match);
+                        });
+                    }
+                    createScheduleRounds(savedRounds);
+                    if (doc.exists()) {
+                         const scheduleData = doc.data().matches || [];
+                         document.querySelectorAll('.schedule-table').forEach(table => {
+                            const roundId = table.getAttribute('data-round-id');
+                            const matches = scheduleData.filter(m => m.round == roundId);
+                            table.querySelectorAll('tbody tr').forEach((row, index) => {
+                                const match = matches[index];
+                                if (match) {
+                                    ['player1', 'player2', 'player3', 'player4'].forEach((cls, i) => row.querySelector(`.${cls}`).value = match.players[i] || '');
+                                    const [s1, s2] = (match.score || '0-0').split('-');
+                                    row.querySelector('.score1').value = s1;
+                                    row.querySelector('.score2').value = s2;
+                                    row.querySelector('.is-four-point').checked = match.isFourPoint || false;
+                                }
+                            });
+                        });
+                    }
+                    hideSavedRoundsByDefault();
+                });
+            } else {
+                showToast("DB 연결 없음!");
+            }
         });
     </script>
 </body>
 </html>
-�
