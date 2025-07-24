@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="dark">
+<html lang="ko" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,6 +35,15 @@
         .loss { color: #F44336; }
         .btn { display: inline-block; padding: 12px 28px; margin-top: 20px; background: linear-gradient(135deg,var(--primary-color),var(--primary-variant-color)); color: #FFF; text-decoration: none; border-radius: 8px; font-weight: 700; }
         [data-theme="dark"] .btn { color: var(--bg-color); }
+        
+        @media (max-width: 600px) {
+            .recent-matches-table th, .recent-matches-table td {
+                padding: 8px 4px;
+                font-size: 0.8rem;
+                white-space: normal;
+            }
+            .player-name { font-size: 2.2rem; }
+        }
     </style>
 </head>
 <body>
@@ -53,7 +62,7 @@
         </div>
 
         <div class="section">
-            <h2>MMR 변동 그래프</h2>
+            <h2>MMR 변동 그래프 (최근 2개월)</h2>
             <div id="mmr-chart-container"><canvas id="mmr-chart"></canvas></div>
         </div>
 
@@ -94,7 +103,7 @@
 
         const getPlayerNameFromURL = () => {
             const params = new URLSearchParams(window.location.search);
-            return params.get('player');
+            return decodeURIComponent(params.get('player'));
         };
 
         const loadProfileData = async () => {
@@ -128,9 +137,11 @@
             document.getElementById('stat-mmr').textContent = Math.round(playerData.mmr);
             document.getElementById('stat-rank').textContent = `${allPlayers.sort((a,b) => b.mmr - a.mmr).findIndex(p => p.name === playerName) + 1}위`;
             document.getElementById('stat-record').textContent = `${playerData.wins}승 ${playerData.losses}패`;
-            document.getElementById('stat-winrate').textContent = `${playerData.winRate}%`;
+            const totalGames = (playerData.wins || 0) + (playerData.losses || 0);
+            const winRate = totalGames > 0 ? ((playerData.wins / totalGames) * 100).toFixed(1) : "0.0";
+            document.getElementById('stat-winrate').textContent = `${winRate}%`;
             document.getElementById('stat-champs').textContent = playerData.championships || 0;
-            document.getElementById('stat-partner').textContent = (playerData.bestPartner || '-').split(' ')[0];
+            document.getElementById('stat-partner').textContent = playerData.bestPartner || '-';
 
             // Render MMR Chart
             renderMmrChart(mmrHistory, playerName);
@@ -147,8 +158,29 @@
             if (!ctx) return;
 
             const cleanName = playerName.replace(/[@.*]+/g, '').trim().toLowerCase().replace(/\./g, '_');
-            const labels = history.map(h => new Date(h.createdAt).toLocaleDateString('ko-KR'));
-            const data = history.map(h => h[cleanName] ?? null);
+            
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - 60);
+
+            const chartHistory = history.filter(h => new Date(h.createdAt) >= startDate);
+            
+            const labels = [];
+            const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+            for (let d = new Date(startDate); d <= endDate; d.setTime(d.getTime() + SEVEN_DAYS_MS)) {
+                labels.push(new Date(d).toLocaleDateString('ko-KR'));
+            }
+
+            const data = labels.map(labelDate => {
+                const targetDate = new Date(labelDate.replace(/\s/g, '').replace(/년|월/g, '-').replace(/일/, ''));
+                const snapshotsBefore = chartHistory
+                    .filter(h => new Date(h.createdAt) <= targetDate && h[cleanName] !== undefined);
+                
+                if (snapshotsBefore.length > 0) {
+                    return snapshotsBefore[snapshotsBefore.length - 1][cleanName];
+                }
+                return null; 
+            });
 
             new Chart(ctx, {
                 type: 'line',
@@ -160,7 +192,8 @@
                         borderColor: 'var(--primary-color)',
                         backgroundColor: 'rgba(76, 175, 80, 0.2)',
                         fill: true,
-                        tension: 0.3
+                        tension: 0.3,
+                        spanGaps: true
                     }]
                 },
                 options: { maintainAspectRatio: false, scales: { y: { ticks: { color: 'var(--text-secondary-color)' } }, x: { ticks: { color: 'var(--text-secondary-color)' } } } }
@@ -170,7 +203,7 @@
         const renderRecentMatches = (allMatches, playerName) => {
             const tbody = document.getElementById('recent-matches-body');
             tbody.innerHTML = '';
-            const playerMatches = allMatches.filter(m => m.players.includes(playerName)).slice(-10).reverse();
+            const playerMatches = allMatches.filter(m => m.players && m.players.includes(playerName)).slice(-10).reverse();
 
             if(playerMatches.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5">최근 경기 기록이 없습니다.</td></tr>';
@@ -200,7 +233,7 @@
 
         const setupH2H = (allMatches, allPlayers, mainPlayerName) => {
             const select = document.getElementById('opponent-select');
-            select.innerHTML = allPlayers
+            select.innerHTML = '<option value="">상대 선택...</option>' + allPlayers
                 .filter(p => p.name !== mainPlayerName)
                 .sort((a,b) => a.name.localeCompare(b.name, 'ko'))
                 .map(p => `<option value="${p.name}">${p.name}</option>`)
@@ -208,9 +241,15 @@
             
             select.addEventListener('change', (e) => {
                 const opponentName = e.target.value;
+                if (!opponentName) {
+                    document.getElementById('h2h-result').textContent = '상대를 선택하세요.';
+                    return;
+                }
+
                 let wins = 0, losses = 0;
 
                 allMatches.forEach(match => {
+                    if (!match.players || match.players.length < 4) return;
                     const playerTeam = match.players.slice(0, 2);
                     const opponentTeam = match.players.slice(2, 4);
 
@@ -230,7 +269,11 @@
             });
         };
 
-        document.addEventListener('DOMContentLoaded', loadProfileData);
+        document.addEventListener('DOMContentLoaded', () => {
+             const savedTheme = localStorage.getItem('theme') || 'light';
+             document.documentElement.setAttribute('data-theme', savedTheme);
+             loadProfileData();
+        });
     </script>
 </body>
 </html>

@@ -42,8 +42,6 @@
         .streak-none { color: var(--text-secondary-color); }
         #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; }
         input[type="text"], input[type="search"], select { width: 100%; min-width: 70px; max-width: 100px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
-        .score-select { max-width: 60px; min-width: 50px; padding: var(--spacing-sm) 4px; }
-        .score-cell { display: flex; align-items: center; justify-content: center; gap: 4px; }
         input.ranking-player, input.mmr { min-width: 80px; max-width: 120px; }
         input.readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
         html[data-theme="light"] input.readonly { background-color: #f0f0f0; }
@@ -132,7 +130,6 @@
     </style>
 </head>
 <body>
-    <datalist id="player-list"></datalist>
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
         <h1>2025 호수 오픈</h1>
@@ -182,6 +179,7 @@
                 <button id="download-csv" class="btn">CSV 다운로드</button>
                 <a href="h2h.html" class="btn" id="h2h-page-btn">개인 프로필 & 상대전적</a>
                 <button id="partner-page-btn" class="btn">파트너 전적 보기</button>
+                <button id="download-html" class="btn">HTML 다운로드</button>
             </div>
         </div>
     </div>
@@ -229,7 +227,6 @@
             if (!container) return showToast("스케줄 컨테이너 오류!");
             let roundsHtml = '';
             const roundsPerCategory = 30, totalRounds = 150;
-            const scoreOptions = Array.from({length: 8}, (_, i) => `<option value="${i}">${i}</option>`).join('');
 
             for (let category = 0; category < Math.ceil(totalRounds / roundsPerCategory); category++) {
                 const startRound = category * roundsPerCategory + 1;
@@ -249,14 +246,12 @@
                                 <tbody>
                                     ${Array(3).fill().map(() => `
                                     <tr>
-                                        <td><input type="text" placeholder="이름" class="player1" list="player-list"></td>
-                                        <td><input type="text" placeholder="이름" class="player2" list="player-list"></td>
+                                        <td><input type="text" placeholder="이름" class="player1"></td>
+                                        <td><input type="text" placeholder="이름" class="player2"></td>
                                         <td>vs</td>
-                                        <td><input type="text" placeholder="이름" class="player3" list="player-list"></td>
-                                        <td><input type="text" placeholder="이름" class="player4" list="player-list"></td>
-                                        <td class="score-cell">
-                                            <select class="score1 score-select">${scoreOptions}</select> : <select class="score2 score-select">${scoreOptions}</select>
-                                        </td>
+                                        <td><input type="text" placeholder="이름" class="player3"></td>
+                                        <td><input type="text" placeholder="이름" class="player4"></td>
+                                        <td><input type="text" placeholder="6-4" class="score"></td>
                                         <td><input type="checkbox" class="is-four-point"></td>
                                     </tr>`).join('')}
                                 </tbody>
@@ -281,9 +276,7 @@
                     const roundId = parseInt(table.getAttribute('data-round-id'));
                     table.querySelectorAll('tbody tr').forEach(row => {
                         const players = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
-                        const score1 = row.querySelector('.score1').value;
-                        const score2 = row.querySelector('.score2').value;
-                        const score = `${score1}-${score2}`;
+                        const score = row.querySelector('.score').value.trim();
                         const isFourPoint = row.querySelector('.is-four-point').checked;
                         if (players.every(p => p)) {
                             scheduleData.push({ round: roundId, players, score, isFourPoint });
@@ -301,19 +294,10 @@
                 saveAllBtn.textContent = '모든 데이터 저장';
             }
         };
-
-        const populatePlayerDatalist = () => {
-            const datalist = document.getElementById('player-list');
-            if (!datalist) return;
-            const playerNames = new Set(allPlayersData.map(p => p.name));
-            datalist.innerHTML = [...playerNames].map(name => `<option value="${name}"></option>`).join('');
-        };
         
         const updateRankingTable = (rankingData) => {
             allPlayersData = rankingData; 
-            populatePlayerDatalist();
 
-            // 1. Filter by gender first
             let genderFilteredData;
             if (currentFilter === 'male') {
                 genderFilteredData = rankingData.filter(p => !p.isFemale);
@@ -323,7 +307,6 @@
                 genderFilteredData = [...rankingData];
             }
 
-            // 2. Sort the gender-filtered list
             genderFilteredData.sort((a, b) => {
                 const valA = a[sortKey];
                 const valB = b[sortKey];
@@ -340,12 +323,10 @@
                 return sortOrder === 'asc' ? -compare : compare;
             });
 
-            // 3. Assign the correct rank within the gender-filtered context
             genderFilteredData.forEach((player, index) => {
                 player.rank = index + 1;
             });
 
-            // 4. Now, apply the text search filter
             const searchTerm = document.getElementById('ranking-search').value.toLowerCase();
             const finalFilteredData = genderFilteredData.filter(p => p.name.toLowerCase().includes(searchTerm));
 
@@ -358,7 +339,6 @@
                  return;
             }
 
-            // 5. Render the result, using the 'rank' property assigned in step 3
             finalFilteredData.forEach((player) => {
                 const row = rankingBody.insertRow();
                 row.innerHTML = `
@@ -400,9 +380,7 @@
                     table.querySelectorAll('tbody tr').forEach(row => {
                         const playersRaw = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
                         const playerNames = playersRaw.map(p => p.replace(/\*/g, ''));
-                        const score1 = row.querySelector('.score1').value;
-                        const score2 = row.querySelector('.score2').value;
-                        const score = `${score1}-${score2}`;
+                        const score = row.querySelector('.score').value.trim();
                         const isFourPoint = row.querySelector('.is-four-point').checked;
                         if (!playerNames.every(p => p) || !/^\d+-\d+$/.test(score)) return;
 
@@ -541,6 +519,17 @@
             document.body.removeChild(link);
         };
 
+        const downloadHTML = () => {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'index.html';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
         const toggleSavedRounds = () => {
             const btn = document.getElementById('toggle-saved-rounds');
             const isHidden = document.querySelector('.saved-round')?.classList.contains('hidden');
@@ -575,6 +564,7 @@
             document.getElementById('save-all')?.addEventListener('click', saveAllData);
             document.getElementById('update-ranking')?.addEventListener('click', updateRanking);
             document.getElementById('download-csv')?.addEventListener('click', downloadCSV);
+            document.getElementById('download-html')?.addEventListener('click', downloadHTML);
             document.getElementById('h2h-page-btn')?.addEventListener('click', () => window.location.href = 'h2h.html');
             document.getElementById('partner-page-btn')?.addEventListener('click', () => window.location.href = 'partner.html');
             document.getElementById('how-to-use-btn')?.addEventListener('click', () => {
@@ -642,9 +632,7 @@
                                 const match = matches[index];
                                 if (match) {
                                     ['player1', 'player2', 'player3', 'player4'].forEach((cls, i) => row.querySelector(`.${cls}`).value = match.players[i] || '');
-                                    const [s1, s2] = (match.score || '0-0').split('-');
-                                    row.querySelector('.score1').value = s1;
-                                    row.querySelector('.score2').value = s2;
+                                    row.querySelector('.score').value = match.score || '';
                                     row.querySelector('.is-four-point').checked = match.isFourPoint || false;
                                 }
                             });
