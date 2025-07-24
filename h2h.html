@@ -30,7 +30,7 @@
         #opponent-select { flex-grow: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--surface-color); color: var(--text-color); }
         .h2h-result { font-size: 1.2rem; font-weight: bold; }
         .recent-matches-table { width: 100%; border-collapse: collapse; }
-        .recent-matches-table th, .recent-matches-table td { padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); }
+        .recent-matches-table th, .recent-matches-table td { padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
         .win { color: #4CAF50; }
         .loss { color: #F44336; }
         .btn { display: inline-block; padding: 12px 28px; margin-top: 20px; background: linear-gradient(135deg,var(--primary-color),var(--primary-variant-color)); color: #FFF; text-decoration: none; border-radius: 8px; font-weight: 700; }
@@ -38,13 +38,12 @@
         
         @media (max-width: 600px) {
             .player-name { font-size: 2.2rem; }
-            h2 { font-size: 1.5rem; }
-            .stat-card { padding: 15px; }
-            .stat-value { font-size: 1.3rem; }
+            h2 { font-size: 1.4rem; white-space: nowrap; }
+            .stat-card { padding: 12px; }
+            .stat-value { font-size: 1.2rem; }
             .recent-matches-table th, .recent-matches-table td {
                 padding: 8px 4px;
                 font-size: 0.8rem;
-                white-space: nowrap;
             }
         }
     </style>
@@ -227,7 +226,7 @@
         const renderRecentMatches = (allMatches, playerName, mmrHistory) => {
             const tbody = document.getElementById('recent-matches-body');
             tbody.innerHTML = '';
-            const playerMatches = allMatches.filter(m => m.players && m.players.includes(playerName)).slice(-10);
+            const playerMatches = allMatches.filter(m => m.players && m.players.includes(playerName)).slice(-10).reverse();
 
             if(playerMatches.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5">최근 경기 기록이 없습니다.</td></tr>';
@@ -236,10 +235,17 @@
 
             playerMatches.forEach(match => {
                 const [s1, s2] = match.score.split('-').map(Number);
-                const playerTeamIndex = match.players.findIndex(p => p === playerName) < 2 ? 0 : 1;
+                const playerIndexInMatch = match.players.findIndex(p => p === playerName);
+                const playerTeamIndex = playerIndexInMatch < 2 ? 0 : 1;
                 const isWinner = (playerTeamIndex === 0 && s1 > s2) || (playerTeamIndex === 1 && s2 > s1);
                 
-                const partnerName = playerTeamIndex === 0 ? match.players[1] : match.players[0];
+                let partnerName;
+                if (playerTeamIndex === 0) {
+                    partnerName = playerIndexInMatch === 0 ? match.players[1] : match.players[0];
+                } else {
+                    partnerName = playerIndexInMatch === 2 ? match.players[3] : match.players[2];
+                }
+                
                 const opponentNames = playerTeamIndex === 0 ? [match.players[2], match.players[3]] : [match.players[0], match.players[1]];
 
                 let mmrChange = 0;
