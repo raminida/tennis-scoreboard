@@ -190,16 +190,18 @@
     <div id="overlay" class="overlay"></div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch, onSnapshot } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch, onSnapshot, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
             authDomain: "tennis-plan-jibung.firebaseapp.com",
+            databaseURL: "https://tennis-plan-jibung-default-rtdb.firebaseio.com",
             projectId: "tennis-plan-jibung",
             storageBucket: "tennis-plan-jibung.appspot.com",
             messagingSenderId: "491083537160",
-            appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd"
+            appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd",
+            measurementId: "G-4CSJLPFJD6"
         };
 
         const db = getFirestore(initializeApp(firebaseConfig));
@@ -268,6 +270,16 @@
             saveAllBtn.disabled = true;
             saveAllBtn.textContent = '저장 중...';
             try {
+                const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
+                const existingTimestamps = new Map();
+                if (scheduleDoc.exists()) {
+                    (scheduleDoc.data().matches || []).forEach(match => {
+                        if (!existingTimestamps.has(match.round)) {
+                            existingTimestamps.set(match.round, match.timestamp);
+                        }
+                    });
+                }
+
                 const batch = writeBatch(db);
                 const scheduleData = [];
                 document.querySelectorAll('.schedule-table').forEach(table => {
@@ -277,7 +289,13 @@
                         const score = row.querySelector('.score').value.trim();
                         const isFourPoint = row.querySelector('.is-four-point').checked;
                         if (players.every(p => p)) {
-                            scheduleData.push({ round: roundId, players, score, isFourPoint });
+                            scheduleData.push({ 
+                                round: roundId, 
+                                players, 
+                                score, 
+                                isFourPoint,
+                                timestamp: existingTimestamps.get(roundId) || new Date().toISOString()
+                            });
                         }
                     });
                 });
@@ -614,6 +632,36 @@
             document.getElementById('ranking-search')?.addEventListener('input', () => updateRankingTable(allPlayersData));
         };
 
+        async function restoreScheduleFromBackup() {
+            try {
+                const backupCol = collection(db, 'league', 'backups', 'data');
+                // Corrected orderBy to use a field name string 'timestamp'
+                const q = query(backupCol, orderBy('timestamp', 'desc'), limit(1));
+                const backupSnap = await getDocs(q);
+
+                if (backupSnap.empty) {
+                    showToast("백업 데이터도 없습니다.");
+                    return null;
+                }
+
+                const latestBackup = backupSnap.docs[0].data();
+                const scheduleData = latestBackup.schedule;
+
+                if (scheduleData && scheduleData.length > 0) {
+                    await setDoc(doc(db, 'league', 'data', 'schedule', 'v1'), { matches: scheduleData, lastUpdated: serverTimestamp() });
+                    showToast("최신 백업에서 경기 기록을 복구했습니다.");
+                    return scheduleData;
+                } else {
+                    showToast("백업에 복구할 경기 기록이 없습니다.");
+                    return null;
+                }
+            } catch (error) {
+                console.error("백업 복구 실패:", error);
+                showToast(`백업 복구 실패: ${error.message}`);
+                return null;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             setupInputListeners();
             const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -626,58 +674,69 @@
                     updateRankingTable(players);
                 });
 
-                onSnapshot(doc(db, 'league', 'data', 'schedule', 'v1'), (doc) => {
+                onSnapshot(doc(db, 'league', 'data', 'schedule', 'v1'), async (docSnap) => {
                     console.log("실시간 스케줄 업데이트 수신");
-                    const savedRounds = new Map();
-                    if (doc.exists()) {
-                        const scheduleData = doc.data().matches || [];
-                        const roundWins = {};
-
-                        scheduleData.forEach(match => {
-                            if (!savedRounds.has(match.round)) {
-                                savedRounds.set(match.round, { timestamp: match.timestamp, champions: [], matches: [] });
-                            }
-                            savedRounds.get(match.round).matches.push(match);
-                        });
-
-                        scheduleData.forEach(match => {
-                            const roundId = match.round;
-                            if (match.score && /^\d+-\d+$/.test(match.score) && !match.isFourPoint) {
-                                const [score1, score2] = match.score.split('-').map(Number);
-                                const winners = score1 > score2 ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
-                                winners.forEach(player => {
-                                    if (!player) return;
-                                    if (!roundWins[roundId]) roundWins[roundId] = {};
-                                    roundWins[roundId][player] = (roundWins[roundId][player] || 0) + 1;
-                                    const cleanPlayerName = player.replace(/\*/g, '');
-                                    if (roundWins[roundId][player] === 3 && !savedRounds.get(roundId).champions.includes(cleanPlayerName)) {
-                                        savedRounds.get(roundId).champions.push(cleanPlayerName);
-                                    }
-                                });
-                            }
-                        });
-                    }
-                    createScheduleRounds(savedRounds);
-                    if (doc.exists()) {
-                         const scheduleData = doc.data().matches || [];
-                         document.querySelectorAll('.schedule-table').forEach(table => {
-                            const roundId = table.getAttribute('data-round-id');
-                            const matches = scheduleData.filter(m => m.round == roundId);
-                            table.querySelectorAll('tbody tr').forEach((row, index) => {
-                                const match = matches[index];
-                                if (match) {
-                                    ['player1', 'player2', 'player3', 'player4'].forEach((cls, i) => row.querySelector(`.${cls}`).value = match.players[i] || '');
-                                    row.querySelector('.score').value = match.score || '';
-                                    row.querySelector('.is-four-point').checked = match.isFourPoint || false;
-                                }
-                            });
-                        });
+                    let scheduleData = [];
+                    if (docSnap.exists() && docSnap.data().matches && docSnap.data().matches.length > 0) {
+                        scheduleData = docSnap.data().matches;
+                        processAndRenderSchedule(scheduleData);
+                    } else {
+                        console.log("기본 경기 기록이 비어있습니다. 백업에서 복구를 시도합니다.");
+                        const restoredData = await restoreScheduleFromBackup();
+                        if (!restoredData) {
+                             createScheduleRounds();
+                             showToast("경기 기록이 없습니다.");
+                        }
                     }
                 });
             } else {
                 showToast("DB 연결 없음!");
             }
         });
+
+        function processAndRenderSchedule(scheduleData) {
+            const savedRounds = new Map();
+            const roundWins = {};
+
+            scheduleData.forEach(match => {
+                if (!savedRounds.has(match.round)) {
+                    savedRounds.set(match.round, { timestamp: match.timestamp, champions: [], matches: [] });
+                }
+                savedRounds.get(match.round).matches.push(match);
+            });
+
+            scheduleData.forEach(match => {
+                const roundId = match.round;
+                if (match.score && /^\d+-\d+$/.test(match.score) && !match.isFourPoint) {
+                    const [score1, score2] = match.score.split('-').map(Number);
+                    const winners = score1 > score2 ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
+                    winners.forEach(player => {
+                        if (!player) return;
+                        if (!roundWins[roundId]) roundWins[roundId] = {};
+                        roundWins[roundId][player] = (roundWins[roundId][player] || 0) + 1;
+                        const cleanPlayerName = player.replace(/\*/g, '');
+                        if (roundWins[roundId][player] === 3 && !savedRounds.get(roundId).champions.includes(cleanPlayerName)) {
+                            savedRounds.get(roundId).champions.push(cleanPlayerName);
+                        }
+                    });
+                }
+            });
+            
+            createScheduleRounds(savedRounds);
+            
+            document.querySelectorAll('.schedule-table').forEach(table => {
+                const roundId = table.getAttribute('data-round-id');
+                const matches = scheduleData.filter(m => m.round == roundId);
+                table.querySelectorAll('tbody tr').forEach((row, index) => {
+                    const match = matches[index];
+                    if (match) {
+                        ['player1', 'player2', 'player3', 'player4'].forEach((cls, i) => row.querySelector(`.${cls}`).value = match.players[i] || '');
+                        row.querySelector('.score').value = match.score || '';
+                        row.querySelector('.is-four-point').checked = match.isFourPoint || false;
+                    }
+                });
+            });
+        }
     </script>
 </body>
 </html>
