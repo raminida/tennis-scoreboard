@@ -42,7 +42,7 @@
         .streak-none { color: var(--text-secondary-color); }
         #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; }
         input[type="text"], input[type="search"], select { width: 100%; min-width: 70px; max-width: 100px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
-        .schedule-table .player-input { min-width: 90px; max-width: 130px; }
+        .schedule-table .player-input { min-width: 80px; max-width: 110px; }
         .schedule-table .score-input { min-width: 40px; max-width: 60px; }
         input.ranking-player, input.mmr { min-width: 80px; max-width: 120px; }
         input.readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
@@ -110,15 +110,12 @@
             margin-bottom: 20px;
             flex-wrap: wrap;
         }
-        .saved-round.hidden {
-            display: none;
-        }
         @media screen and (max-width: 600px) {
             th, td { padding: 4px 2px; font-size: 0.7rem; }
             input[type="text"], input[type="search"], select { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
             input.ranking-player, input.mmr { min-width: 70px; max-width: 100px; }
             input.best-partner { min-width: 200px; max-width: 225px; }
-            .schedule-table .player-input { min-width: 65px; max-width: 80px; }
+            .schedule-table .player-input { min-width: 70px; max-width: 90px; }
             .schedule-table .score-input { min-width: 40px; max-width: 50px; }
             .schedule-table th, .schedule-table td { padding: 4px 1px; }
             .schedule-table td { border: 0.5px solid var(--border-color); }
@@ -139,7 +136,6 @@
             <h2>경기 일정</h2>
             <div class="input-group">
                 <button id="how-to-use-btn" class="btn">이용방법</button>
-                <button id="toggle-saved-rounds" class="btn">저장된 회차 보이기</button>
             </div>
             <div id="schedule-container"></div>
             <button id="save-all" class="btn">모든 데이터 저장</button>
@@ -532,36 +528,6 @@
             document.body.removeChild(link);
         };
 
-        const toggleSavedRounds = () => {
-            const btn = document.getElementById('toggle-saved-rounds');
-            const isHidden = document.querySelector('.saved-round')?.classList.contains('hidden');
-            
-            document.querySelectorAll('.saved-round').forEach(round => {
-                round.classList.toggle('hidden', !isHidden);
-            });
-            
-            btn.textContent = isHidden ? '저장된 회차 숨기기' : '저장된 회차 보이기';
-        };
-
-        const hideSavedRoundsByDefault = () => {
-            document.querySelectorAll('.saved-round').forEach(round => {
-                round.classList.add('hidden');
-            });
-            const btn = document.getElementById('toggle-saved-rounds');
-            if (btn) btn.textContent = '저장된 회차 보이기';
-        };
-
-        const focusOnNextRound = () => {
-            const firstUnsavedRound = document.querySelector('details:not(.saved-round):not(.round-group)');
-            if (firstUnsavedRound) {
-                const groupDetails = firstUnsavedRound.closest('.round-group');
-                if (groupDetails) {
-                    groupDetails.open = true;
-                    groupDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            }
-        };
-
         const setupInputListeners = () => {
             document.getElementById('save-all')?.addEventListener('click', saveAllData);
             document.getElementById('update-ranking')?.addEventListener('click', updateRanking);
@@ -596,8 +562,6 @@
                 const currentTheme = document.documentElement.getAttribute('data-theme');
                 applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
             });
-
-            document.getElementById('toggle-saved-rounds')?.addEventListener('click', toggleSavedRounds);
             
             document.getElementById('ranking-search')?.addEventListener('input', () => updateRankingTable(allPlayersData));
         };
@@ -619,9 +583,30 @@
                     const savedRounds = new Map();
                     if (doc.exists()) {
                         const scheduleData = doc.data().matches || [];
+                        const roundWins = {};
+
                         scheduleData.forEach(match => {
-                            if (!savedRounds.has(match.round)) savedRounds.set(match.round, { timestamp: match.timestamp, champions: [], matches: [] });
+                            if (!savedRounds.has(match.round)) {
+                                savedRounds.set(match.round, { timestamp: match.timestamp, champions: [], matches: [] });
+                            }
                             savedRounds.get(match.round).matches.push(match);
+                        });
+
+                        scheduleData.forEach(match => {
+                            const roundId = match.round;
+                            if (match.score && /^\d+-\d+$/.test(match.score) && !match.isFourPoint) {
+                                const [score1, score2] = match.score.split('-').map(Number);
+                                const winners = score1 > score2 ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
+                                winners.forEach(player => {
+                                    if (!player) return;
+                                    if (!roundWins[roundId]) roundWins[roundId] = {};
+                                    roundWins[roundId][player] = (roundWins[roundId][player] || 0) + 1;
+                                    const cleanPlayerName = player.replace(/\*/g, '');
+                                    if (roundWins[roundId][player] === 3 && !savedRounds.get(roundId).champions.includes(cleanPlayerName)) {
+                                        savedRounds.get(roundId).champions.push(cleanPlayerName);
+                                    }
+                                });
+                            }
                         });
                     }
                     createScheduleRounds(savedRounds);
@@ -640,7 +625,6 @@
                             });
                         });
                     }
-                    hideSavedRoundsByDefault();
                 });
             } else {
                 showToast("DB 연결 없음!");
