@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -218,98 +179,41 @@
     </div>
     <div id="overlay" class="overlay"></div>
 
-    <script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-            return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-            if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-                try {
-                    var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                    var firstSheetName = workbook.SheetNames[0];
-                    var worksheet = workbook.Sheets[firstSheetName];
-                    var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                    var filteredData = jsonData.filter(row => row.some(filledCell));
-                    var headerRowIndex = filteredData.findIndex((row, index) =>
-                        row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                    );
-                    if (headerRowIndex === -1 || headerRowIndex > 25) {
-                        headerRowIndex = 0;
-                    }
-                    var csv = XLSX.utils.sheet_to_csv(XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)), { header: 1 });
-                    console.log(`XLSX 파일 ${filename} 파싱 성공`);
-                    return csv;
-                } catch (e) {
-                    console.error("XLSX 파싱 오류:", e.name, e.message, e.stack);
-                    showToast(`XLSX 파싱 실패: ${e.message || '알 수 없는 오류'}`);
-                    return "";
-                }
-            }
-            return gk_fileData[filename] || "";
-        }
-
-        function applyTheme(theme) {
-            const validTheme = theme === 'light' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', validTheme);
-            localStorage.setItem('theme', validTheme);
-            const themeToggle = document.getElementById('theme-toggle');
-            if (themeToggle) {
-                themeToggle.textContent = validTheme === 'dark' ? '☀️' : '🌙';
-            }
-            console.log(`테마 적용: ${validTheme}`);
-        }
-    </script>
-
-    <script type="module" defer>
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU", 
-            authDomain: "tennis-plan-jibung.firebaseapp.com", 
-            projectId: "tennis-plan-jibung", 
-            storageBucket: "tennis-plan-jibung.appspot.com", 
-            messagingSenderId: "491083537160", 
-            appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd" 
+        const firebaseConfig = {
+            apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
+            authDomain: "tennis-plan-jibung.firebaseapp.com",
+            projectId: "tennis-plan-jibung",
+            storageBucket: "tennis-plan-jibung.appspot.com",
+            messagingSenderId: "491083537160",
+            appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd"
         };
 
-        let db;
-        try {
-            db = getFirestore(initializeApp(firebaseConfig));
-            console.log("Firebase 초기화 성공!");
-        } catch (e) { 
-            console.error("Firebase 초기화 실패:", e.name, e.code, e.message, e.stack);
-            showToast(`Firebase 초기화 실패: ${e.message || '알 수 없는 오류'}`);
-        }
+        const db = getFirestore(initializeApp(firebaseConfig));
+        let currentFilter = 'all', sortKey = 'mmr', sortOrder = 'desc';
 
-        let currentFilter = 'all';
-        let sortKey = 'mmr';
-        let sortOrder = 'desc';
-
-        function showToast(message) {
+        const showToast = (message) => {
             const toast = document.getElementById('toast');
-            if (toast) {
-                toast.textContent = message;
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 3000);
-            } else {
-                console.warn("Toast 요소 없음!");
-            }
-        }
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        };
 
-        function createScheduleRounds(savedRounds = new Map()) {
+        const applyTheme = (theme) => {
+            const validTheme = theme === 'light' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', validTheme);
+            localStorage.setItem('theme', validTheme);
+            document.getElementById('theme-toggle').textContent = validTheme === 'dark' ? '☀️' : '�';
+        };
+
+        const createScheduleRounds = (savedRounds = new Map()) => {
             const container = document.getElementById('schedule-container');
-            if (!container) {
-                console.error("schedule-container 요소 없음!");
-                showToast("스케줄 컨테이너 오류!");
-                return;
-            }
+            if (!container) return showToast("스케줄 컨테이너 오류!");
             let roundsHtml = '';
-            const roundsPerCategory = 30;
-            const totalRounds = 150;
+            const roundsPerCategory = 30, totalRounds = 150;
             for (let category = 0; category < Math.ceil(totalRounds / roundsPerCategory); category++) {
                 const startRound = category * roundsPerCategory + 1;
                 const endRound = Math.min((category + 1) * roundsPerCategory, totalRounds);
@@ -326,9 +230,14 @@
                             <table class="schedule-table" data-round-id="${i}">
                                 <thead><tr><th>Player 1</th><th>Player 2</th><th>vs</th><th>Player 3</th><th>Player 4</th><th>Score</th><th>4점 선취</th></tr></thead>
                                 <tbody>
-                                    <tr><td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td><td><input type="checkbox" class="is-four-point"></td></tr>
-                                    <tr><td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td><td><input type="checkbox" class="is-four-point"></td></tr>
-                                    <tr><td><input type="text" placeholder="이름" class="player1"></td><td><input type="text" placeholder="이름" class="player2"></td><td>vs</td><td><input type="text" placeholder="이름" class="player3"></td><td><input type="text" placeholder="이름" class="player4"></td><td><input type="text" placeholder="6-4" class="score"></td><td><input type="checkbox" class="is-four-point"></td></tr>
+                                    ${Array(3).fill().map(() => `
+                                    <tr><td><input type="text" placeholder="이름" class="player1"></td>
+                                        <td><input type="text" placeholder="이름" class="player2"></td>
+                                        <td>vs</td>
+                                        <td><input type="text" placeholder="이름" class="player3"></td>
+                                        <td><input type="text" placeholder="이름" class="player4"></td>
+                                        <td><input type="text" placeholder="6-4" class="score"></td>
+                                        <td><input type="checkbox" class="is-four-point"></td></tr>`).join('')}
                                 </tbody>
                             </table>
                         </div>
@@ -337,16 +246,11 @@
                 roundsHtml += `</div></details>`;
             }
             container.innerHTML = roundsHtml;
-            console.log("회차 일정표 렌더링 완료!");
-        }
+        };
 
-        function createRankingRows() {
+        const createRankingRows = () => {
             const rankingBody = document.querySelector('#ranking-table tbody');
-            if (!rankingBody) {
-                console.error("ranking-table tbody 요소 없음!");
-                showToast("순위표 오류!");
-                return;
-            }
+            if (!rankingBody) return showToast("순위표 오류!");
             let rowsHtml = '';
             for (let i = 1; i <= 100; i++) {
                 rowsHtml += `
@@ -366,302 +270,120 @@
                 </tr>`;
             }
             rankingBody.innerHTML = rowsHtml;
-            console.log("순위표 렌더링 완료!");
-        }
+        };
 
-        async function saveAllData() {
-            if (!db) {
-                showToast('DB 연결 실패!');
-                return;
-            }
+        // BUG FIX: "모든 데이터 저장" 버튼은 이제 경기 일정만 저장합니다.
+        const saveAllData = async () => {
+            if (!db) return showToast('DB 연결 실패!');
             const saveAllBtn = document.getElementById('save-all');
             saveAllBtn.disabled = true;
             try {
                 const batch = writeBatch(db);
-
                 const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
-                const existingScheduleData = scheduleDoc.exists() ? scheduleDoc.data().matches || [] : [];
-                const existingRounds = new Map();
-                existingScheduleData.forEach(match => {
-                    if (!existingRounds.has(match.round)) {
-                        existingRounds.set(match.round, { timestamp: match.timestamp, matches: [] });
-                    }
-                    existingRounds.get(match.round).matches.push(match);
-                });
+                const existingRounds = new Map((scheduleDoc.data()?.matches || []).reduce((map, match) => {
+                    if (!map.has(match.round)) map.set(match.round, { timestamp: match.timestamp, matches: [] });
+                    map.get(match.round).matches.push(match);
+                    return map;
+                }, new Map()));
 
                 const scheduleData = [];
                 document.querySelectorAll('.schedule-table').forEach(table => {
                     const roundId = parseInt(table.getAttribute('data-round-id'));
-                    const rows = table.querySelectorAll('tbody tr');
-                    rows.forEach(row => {
-                        const player1 = row.querySelector('.player1').value.trim();
-                        const player2 = row.querySelector('.player2').value.trim();
-                        const player3 = row.querySelector('.player3').value.trim();
-                        const player4 = row.querySelector('.player4').value.trim();
-                        const scoreInput = row.querySelector('.score').value.trim();
+                    table.querySelectorAll('tbody tr').forEach(row => {
+                        const players = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
+                        const score = row.querySelector('.score').value.trim();
                         const isFourPoint = row.querySelector('.is-four-point').checked;
-                        if (player1 && player2 && player3 && player4) {
-                            const existingRound = existingRounds.get(roundId);
-                            const timestamp = existingRound?.timestamp ? existingRound.timestamp : new Date().toISOString();
+                        if (players.every(p => p)) {
                             scheduleData.push({
                                 round: roundId,
-                                players: [player1, player2, player3, player4],
-                                score: scoreInput || '',
-                                isFourPoint: isFourPoint,
-                                timestamp: timestamp
-                            });
-                        }
-                    });
-                });
-                const scheduleDocRef = doc(db, 'league', 'data', 'schedule', 'v1');
-                batch.set(scheduleDocRef, { matches: scheduleData, lastUpdated: serverTimestamp() }, { merge: true });
-
-                const matchDataList = [];
-                document.querySelectorAll('.schedule-table').forEach(table => {
-                    const roundId = parseInt(table.getAttribute('data-round-id'));
-                    const rows = table.querySelectorAll('tbody tr');
-                    rows.forEach(row => {
-                        const player1 = row.querySelector('.player1').value.trim();
-                        const player2 = row.querySelector('.player2').value.trim();
-                        const player3 = row.querySelector('.player3').value.trim();
-                        const player4 = row.querySelector('.player4').value.trim();
-                        const scoreInput = row.querySelector('.score').value.trim();
-                        const isFourPoint = row.querySelector('.is-four-point').checked;
-                        if (player1 && player2 && player3 && player4 && scoreInput && /^\d+-\d+$/.test(scoreInput)) {
-                            const [score1, score2] = scoreInput.split('-').map(Number);
-                            const winner = score1 > score2 ? (player1 || player2) : (player3 || player4);
-                            const gameDiff = Math.abs(score1 - score2);
-                            const existingRound = existingRounds.get(roundId);
-                            const timestamp = existingRound && existingRound.timestamp ? existingRound.timestamp : new Date().toISOString();
-                            matchDataList.push({
-                                player1: player1 || player2,
-                                player2: player3 || player4,
-                                winner,
-                                gameDiff,
+                                players,
+                                score,
                                 isFourPoint,
-                                timestamp: timestamp
+                                timestamp: existingRounds.get(roundId)?.timestamp || new Date().toISOString()
                             });
                         }
                     });
                 });
-                matchDataList.forEach((match, index) => {
-                    const matchDocRef = doc(collection(db, 'league/matches/data'), `match_${Date.now()}_${index}`);
-                    batch.set(matchDocRef, match);
-                });
-
-                const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
-                const rankingData = Array.from(rankingRows).map(row => {
-                    const rawName = row.querySelector('.ranking-player').value.trim();
-                    const name = rawName.replace(/\*/g, '');
-                    const wins = parseInt(row.querySelector('.wins').value) || 0;
-                    const losses = parseInt(row.querySelector('.losses').value) || 0;
-                    const totalGames = wins + losses;
-                    return {
-                        name,
-                        mmr: parseFloat(row.querySelector('.mmr').value) || 0,
-                        championships: row.querySelector('.championship-star')?.dataset.count || '0',
-                        wins,
-                        losses,
-                        winRate: row.querySelector('.win-rate').value || '0',
-                        avgGameDiff: row.querySelector('.avg-game-diff').value || '0.00',
-                        closeRate: row.querySelector('.close-rate').value || '0',
-                        dominantWins: row.querySelector('.dominant-wins').value || '0',
-                        dominantLosses: row.querySelector('.dominant-losses').value || '0',
-                        bestPartner: row.querySelector('.best-partner').value || '-',
-                        isFemale: rawName.includes('*'),
-                        seasonMMRIncrease: parseFloat(row.querySelector('.mmr').dataset.seasonMMRIncrease) || 0,
-                        streakCount: parseInt(row.querySelector('.streak-cell')?.textContent.replace(/[WL]/, '') || '0'),
-                        streakIsWin: row.querySelector('.streak-cell')?.classList.contains('streak-win')
-                    };
-                }).filter(player => player.name && (player.wins + player.losses > 0));
-                const rankingDocRef = doc(db, 'league', 'data', 'rankings', 'v1');
-                batch.set(rankingDocRef, { players: rankingData, lastUpdated: serverTimestamp() }, { merge: true });
-
-                const rankingHistoryDocRef = doc(db, 'league', 'data', 'rankingHistory', 'v1');
-                const rankingHistorySnap = await getDoc(rankingHistoryDocRef);
-                const existingHistory = rankingHistorySnap.exists() ? rankingHistorySnap.data().snapshots || [] : [];
-                const newSnapshot = {
-                    snapshotId: existingHistory.length + 1,
-                    createdAt: new Date().toISOString(),
-                    rankings: rankingData.map((player, index) => ({
-                        name: player.name,
-                        rank: index + 1
-                    }))
-                };
-                existingHistory.push(newSnapshot);
-                batch.set(rankingHistoryDocRef, { snapshots: existingHistory }, { merge: true });
-
-                // 백업 로직 수정: league/backups/data로 변경
-                const backupDocRef = doc(collection(db, 'league', 'backups', 'data'), `backup_${new Date().toISOString().replace(/[:.]/g, '-')}`);
-                batch.set(backupDocRef, {
-                    schedule: scheduleData,
-                    rankings: rankingData,
-                    timestamp: serverTimestamp()
-                });
+                batch.set(doc(db, 'league', 'data', 'schedule', 'v1'), { matches: scheduleData, lastUpdated: serverTimestamp() }, { merge: true });
 
                 await batch.commit();
-                console.log("통합 데이터 및 백업 저장 성공!");
-                showToast("모든 데이터 저장 및 백업 완료!");
+                showToast("경기 일정 저장 완료!");
             } catch (e) {
-                console.error("데이터 저장 실패:", e.name, e.code, e.message, e.stack);
-                showToast(`데이터 저장 실패: ${e.message || '알 수 없는 오류'}`);
-                if (e.code === 'unavailable') {
-                    console.log("오프라인 모드: 데이터가 로컬 캐시에 큐잉됨.");
-                    showToast("오프라인 모드: 데이터가 나중에 동기화됩니다!");
-                }
+                showToast(`일정 저장 실패: ${e.message || '알 수 없는 오류'}`);
             } finally {
                 saveAllBtn.disabled = false;
             }
-        }
+        };
 
-async function loadData() {
-    if (!db) {
-        showToast("DB 연결 실패");
-        return;
-    }
-    try {
-        const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
-        const savedRounds = new Map();
-        if (scheduleDoc.exists()) {
-            const scheduleData = scheduleDoc.data().matches || [];
-            const roundWins = {};
-            const roundMatches = {};
-            scheduleData.forEach(match => {
-                const roundId = match.round;
-                if (!roundMatches[roundId]) roundMatches[roundId] = [];
-                roundMatches[roundId].push(match);
-                if (match.players.some(p => p.trim()) || match.score.trim()) {
-                    const timestamp = match.timestamp || new Date().toISOString();
-                    const champions = [];
-                    if (match.score && /^\d+-\d+$/.test(match.score) && !match.isFourPoint) {
-                        const [score1, score2] = match.score.split('-').map(Number);
-                        const winners = score1 > score2 ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
-                        winners.forEach(player => {
-                            if (!roundWins[roundId]) roundWins[roundId] = {};
-                            if (!roundWins[roundId][player]) roundWins[roundId][player] = 0;
-                            roundWins[roundId][player]++;
-                            if (roundWins[roundId][player] === 3 && !champions.includes(player)) {
-                                champions.push(player.replace(/\*/g, ''));
+        const loadData = async () => {
+            if (!db) return showToast("DB 연결 실패");
+            try {
+                const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
+                const savedRounds = new Map();
+                if (scheduleDoc.exists()) {
+                    const scheduleData = scheduleDoc.data().matches || [];
+                    const roundWins = {};
+                    scheduleData.forEach(match => {
+                        const roundId = match.round;
+                        if (!savedRounds.has(roundId)) savedRounds.set(roundId, { timestamp: match.timestamp, champions: [] });
+                        if (match.players.some(p => p.trim()) || match.score.trim()) {
+                            if (match.score && /^\d+-\d+$/.test(match.score) && !match.isFourPoint) {
+                                const [score1, score2] = match.score.split('-').map(Number);
+                                const winners = score1 > score2 ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
+                                winners.forEach(player => {
+                                    if (!roundWins[roundId]) roundWins[roundId] = {};
+                                    roundWins[roundId][player] = (roundWins[roundId][player] || 0) + 1;
+                                    if (roundWins[roundId][player] === 3 && !savedRounds.get(roundId).champions.includes(player.replace(/\*/g, ''))) {
+                                        savedRounds.get(roundId).champions.push(player.replace(/\*/g, ''));
+                                    }
+                                });
+                            }
+                        }
+                    });
+                    createScheduleRounds(savedRounds);
+                    document.querySelectorAll('.schedule-table').forEach(table => {
+                        const roundId = table.getAttribute('data-round-id');
+                        const matches = scheduleData.filter(m => m.round == roundId);
+                        table.querySelectorAll('tbody tr').forEach((row, index) => {
+                            const match = matches[index];
+                            if (match) {
+                                ['player1', 'player2', 'player3', 'player4'].forEach((cls, i) => row.querySelector(`.${cls}`).value = match.players[i] || '');
+                                row.querySelector('.score').value = match.score || '';
+                                row.querySelector('.is-four-point').checked = match.isFourPoint || false;
                             }
                         });
-                    }
-                    savedRounds.set(roundId, { timestamp, champions });
-                }
-            });
-            createScheduleRounds(savedRounds);
-            document.querySelectorAll('.schedule-table').forEach(table => {
-                const roundId = table.getAttribute('data-round-id');
-                const matches = scheduleData.filter(m => m.round == roundId);
-                const rows = table.querySelectorAll('tbody tr');
-                rows.forEach((row, index) => {
-                    const match = matches[index];
-                    if (match) {
-                        row.querySelector('.player1').value = match.players[0] || '';
-                        row.querySelector('.player2').value = match.players[1] || '';
-                        row.querySelector('.player3').value = match.players[2] || '';
-                        row.querySelector('.player4').value = match.players[3] || '';
-                        row.querySelector('.score').value = match.score || '';
-                        row.querySelector('.is-four-point').checked = match.isFourPoint || false;
-                    }
-                });
-            });
-            console.log("스케줄 데이터 로드 완료!");
-        } else {
-            console.warn("스케줄 데이터 없음!");
-            createScheduleRounds();
-            showToast("스케줄 데이터가 없습니다!");
-        }
-
-        const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-        let rankingData = [];
-        if (rankingDoc.exists()) {
-            rankingData = rankingDoc.data().players || [];
-            updateRankingTable(rankingData);
-            console.log("랭킹 데이터 로드 완료!");
-        } else {
-            console.warn("랭킹 데이터 없음!");
-            showToast("랭킹 데이터가 없습니다!");
-        }
-
-        // 백업 상태 확인 및 경고 (페이지에서 숨기고 콘솔에만 출력)
-        const backupsCollection = collection(db, 'league', 'backups', 'data');
-        const backupSnapshot = await getDocs(backupsCollection);
-        const lastBackupDoc = backupSnapshot.docs.sort((a, b) => b.data().timestamp - a.data().timestamp)[0];
-        if (lastBackupDoc && lastBackupDoc.exists()) {
-            const lastBackup = lastBackupDoc.data();
-            const currentSchedule = scheduleDoc.exists() ? scheduleDoc.data().matches || [] : [];
-            const currentRankings = rankingData;
-            if (JSON.stringify(lastBackup.schedule) !== JSON.stringify(currentSchedule) || JSON.stringify(lastBackup.rankings) !== JSON.stringify(currentRankings)) {
-                console.warn("최신 백업과 데이터 불일치! 수동 점검 필요!");
-            }
-        }
-    } catch (e) {
-        console.error("로드 실패:", e.name, e.code, e.message, e.stack);
-        showToast(`데이터 로드 실패: ${e.message || '알 수 없는 오류'}`);
-    }
-}
-        // 매일 아침 6시 KST에 자동 백업 스케줄링
-        function scheduleDailyBackup() {
-            const now = new Date();
-            const nextBackup = new Date(now);
-            nextBackup.setHours(6, 0, 0, 0);
-            if (now > nextBackup) nextBackup.setDate(nextBackup.getDate() + 1);
-            const timeUntilBackup = nextBackup - now;
-
-            setTimeout(async () => {
-                if (!db) return;
-                try {
-                    const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
-                    const scheduleData = scheduleDoc.exists() ? scheduleDoc.data().matches || [] : [];
-                    const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-                    const rankingData = rankingDoc.exists() ? rankingDoc.data().players || [] : [];
-                    const backupDocRef = doc(collection(db, 'league', 'backups', 'data'), `daily_backup_${new Date().toISOString().replace(/[:.]/g, '-')}`);
-                    await setDoc(backupDocRef, {
-                        schedule: scheduleData,
-                        rankings: rankingData,
-                        timestamp: serverTimestamp()
                     });
-                    console.log("일일 백업 완료!");
-                    showToast("일일 백업 완료!");
-                } catch (e) {
-                    console.error("일일 백업 실패:", e.name, e.code, e.message, e.stack);
-                    showToast(`일일 백업 실패: ${e.message || '알 수 없는 오류'}`);
+                } else {
+                    createScheduleRounds();
+                    showToast("스케줄 데이터가 없습니다!");
                 }
-                scheduleDailyBackup(); // 다음 날로 재스케줄링
-            }, timeUntilBackup);
-        }
 
-        function updateRankingTable(rankingData) {
-            let filteredData = rankingData;
-            if (currentFilter === 'male') filteredData = rankingData.filter(p => !p.isFemale);
-            else if (currentFilter === 'female') filteredData = rankingData.filter(p => p.isFemale);
+                const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
+                if (rankingDoc.exists()) {
+                    updateRankingTable(rankingDoc.data().players || []);
+                } else {
+                    showToast("랭킹 데이터가 없습니다!");
+                }
+            } catch (e) {
+                showToast(`데이터 로드 실패: ${e.message || '알 수 없는 오류'}`);
+            }
+        };
 
+        const updateRankingTable = (rankingData) => {
+            const filteredData = currentFilter === 'male' ? rankingData.filter(p => !p.isFemale) : currentFilter === 'female' ? rankingData.filter(p => p.isFemale) : rankingData;
             filteredData.sort((a, b) => {
-                if (sortKey === 'rank') {
-                    return sortOrder === 'asc' ? a.rank - b.rank : b.rank - a.rank;
-                } else if (sortKey === 'player') {
-                    const nameA = a.name.toLowerCase();
-                    const nameB = b.name.toLowerCase();
-                    return sortOrder === 'asc' ? nameA.localeCompare(nameB, 'ko') : nameB.localeCompare(nameA, 'ko');
-                } else if (sortKey === 'mmr') {
-                    return sortOrder === 'asc' ? a.mmr - b.mmr : b.mmr - a.mmr;
-                } else if (sortKey === 'championships') {
-                    return sortOrder === 'asc' ? parseInt(a.championships) - parseInt(b.championships) : parseInt(b.championships) - parseInt(a.championships);
-                } else if (sortKey === 'wins') {
-                    return sortOrder === 'asc' ? parseInt(a.wins) - parseInt(b.wins) : parseInt(b.wins) - parseInt(a.wins);
-                } else if (sortKey === 'losses') {
-                    return sortOrder === 'asc' ? parseInt(a.losses) - parseInt(b.losses) : parseInt(b.losses) - parseInt(a.losses);
-                } else if (sortKey === 'winRate') {
-                    return sortOrder === 'asc' ? parseFloat(a.winRate) - parseFloat(b.winRate) : parseFloat(b.winRate) - parseFloat(a.winRate);
-                } else if (sortKey === 'avgGameDiff') {
-                    return sortOrder === 'asc' ? parseFloat(a.avgGameDiff) - parseFloat(b.avgGameDiff) : parseFloat(b.avgGameDiff) - parseFloat(a.avgGameDiff);
-                } else if (sortKey === 'closeRate') {
-                    return sortOrder === 'asc' ? parseFloat(a.closeRate) - parseFloat(b.closeRate) : parseFloat(b.closeRate) - parseFloat(a.closeRate);
-                } else if (sortKey === 'dominantWins') {
-                    return sortOrder === 'asc' ? parseInt(a.dominantWins) - parseInt(b.dominantWins) : parseInt(b.dominantWins) - parseInt(a.dominantWins);
-                } else if (sortKey === 'dominantLosses') {
-                    return sortOrder === 'asc' ? parseInt(a.dominantLosses) - parseInt(b.dominantLosses) : parseInt(b.dominantLosses) - parseInt(a.dominantLosses);
-                } else if (sortKey === 'bestPartner') {
+                if (sortKey === 'rank') return sortOrder === 'asc' ? a.rank - b.rank : b.rank - a.rank;
+                if (sortKey === 'player') return sortOrder === 'asc' ? a.name.localeCompare(b.name, 'ko') : b.name.localeCompare(a.name, 'ko');
+                if (sortKey === 'mmr') return sortOrder === 'asc' ? a.mmr - b.mmr : b.mmr - a.mmr;
+                if (sortKey === 'championships') return sortOrder === 'asc' ? parseInt(a.championships) - parseInt(b.championships) : parseInt(b.championships) - parseInt(a.championships);
+                if (sortKey === 'wins') return sortOrder === 'asc' ? parseInt(a.wins) - parseInt(b.wins) : parseInt(b.wins) - parseInt(a.wins);
+                if (sortKey === 'losses') return sortOrder === 'asc' ? parseInt(a.losses) - parseInt(b.losses) : parseInt(b.losses) - parseInt(a.losses);
+                if (sortKey === 'winRate') return sortOrder === 'asc' ? parseFloat(a.winRate) - parseFloat(b.winRate) : parseFloat(b.winRate) - parseFloat(a.winRate);
+                if (sortKey === 'avgGameDiff') return sortOrder === 'asc' ? parseFloat(a.avgGameDiff) - parseFloat(b.avgGameDiff) : parseFloat(b.avgGameDiff) - parseFloat(a.avgGameDiff);
+                if (sortKey === 'closeRate') return sortOrder === 'asc' ? parseFloat(a.closeRate) - parseFloat(b.closeRate) : parseFloat(b.closeRate) - parseFloat(a.closeRate);
+                if (sortKey === 'dominantWins') return sortOrder === 'asc' ? parseInt(a.dominantWins) - parseInt(b.dominantWins) : parseInt(b.dominantWins) - parseInt(a.dominantWins);
+                if (sortKey === 'dominantLosses') return sortOrder === 'asc' ? parseInt(a.dominantLosses) - parseInt(b.dominantLosses) : parseInt(b.dominantLosses) - parseInt(a.dominantLosses);
+                if (sortKey === 'bestPartner') {
                     const winsA = parseInt(a.bestPartner.match(/(\d+)승/)?.[1] || 0);
                     const winsB = parseInt(b.bestPartner.match(/(\d+)승/)?.[1] || 0);
                     return sortOrder === 'asc' ? winsA - winsB : winsB - winsA;
@@ -669,8 +391,7 @@ async function loadData() {
                 return 0;
             });
 
-            const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
-            rankingRows.forEach((row, index) => {
+            document.querySelectorAll('#ranking-table tbody tr').forEach((row, index) => {
                 const player = filteredData[index];
                 if (player) {
                     row.cells[0].innerHTML = `${index + 1}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span>`;
@@ -685,8 +406,8 @@ async function loadData() {
                     row.querySelector('.win-rate').value = player.winRate || '0';
                     row.querySelector('.avg-game-diff').value = player.avgGameDiff || '0.00';
                     row.querySelector('.close-rate').value = player.closeRate || '0';
-                    row.querySelector('.dominant-wins').value = player.dominantWins || '0';
-                    row.querySelector('.dominant-losses').value = player.dominantLosses || '0';
+                    row.querySelector('.dominant-wins').value = player.dominantWins || '0%';
+                    row.querySelector('.dominant-losses').value = player.dominantLosses || '0%';
                     row.querySelector('.best-partner').value = player.bestPartner || '-';
                 } else {
                     row.cells[0].innerHTML = `${index + 1}<span class="streak-cell streak-none">–</span>`;
@@ -694,268 +415,178 @@ async function loadData() {
                     row.querySelector('.championship-star').textContent = '';
                 }
             });
-        }
+        };
 
-        async function updateRanking() {
+        const updateRanking = async () => {
             const updateRankingBtn = document.getElementById('update-ranking');
             updateRankingBtn.disabled = true;
+            const constants = {
+                BASE_MMR: 1500, BASE_K: 45, WIN_BONUS: 1.1, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
+                MIXED_WIN_MULTIPLIER: 1.5, MIXED_MMR_MIN: 1400, MIXED_MMR_MAX: 1600, MIXED_LOSS_REDUCTION: 0.3,
+                MALE_LOSS_MULTIPLIER: 1.5, MALE_WIN_REDUCTION: 0.3, HANDICAP_BASE_POINT: 1500, HANDICAP_ZERO_POINT: 1650,
+                HANDICAP_MAX: 150, MMR_LOSS_CAP: 30, 
+                MMR_DIFF_THRESHOLD: 200, 
+                REDUCED_LOSS_REDUCTION: 0.5 
+            };
 
-            const BASE_MMR = 1500;
-            const BASE_K = 45;
-            const WIN_BONUS = 1.1;
-            const LOSS_REDUCTION = 0.9;
-            const FOUR_POINT_MMR_MULTIPLIER = 0.6;
-            const MIXED_WIN_MULTIPLIER = 1.5;
-            const MIXED_MMR_MIN = 1400;
-            const MIXED_MMR_MAX = 1600;
-            const MIXED_LOSS_REDUCTION = 0.3;
-            const MALE_LOSS_MULTIPLIER = 1.5;
-            const MALE_WIN_REDUCTION = 0.3;
-            const HANDICAP_BASE_POINT = 1500;
-            const HANDICAP_ZERO_POINT = 1650;
-            const HANDICAP_MAX = 150;
+            const players = {}, partnerStats = {}, streaks = {};
 
-            const players = {};
-            const partnerStats = {};
-            const streaks = {};
-
-            document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
-                const rawName = row.querySelector('.ranking-player').value.trim();
-                const name = rawName.replace(/\*/g, '');
-                if (name && !players[name]) {
-                    players[name] = {
-                        name,
-                        wins: 0,
-                        losses: 0,
-                        winRate: 0,
-                        gameDiff: 0,
-                        avgGameDiff: 0,
-                        mmr: BASE_MMR,
-                        championships: 0,
-                        closeWins: 0,
-                        closeSets: 0,
-                        closeLosses: 0,
-                        dominantWins: 0,
-                        dominantLosses: 0,
-                        totalSets: 0,
-                        isFemale: rawName.includes('*'),
-                        seasonMMRIncrease: 0,
-                        streakCount: 0,
-                        streakIsWin: false
-                    };
-                    partnerStats[name] = {};
-                    streaks[name] = { count: 0, isWin: false };
-                }
-            });
-
-            const scheduleTables = document.querySelectorAll('.schedule-table');
-            scheduleTables.forEach((table) => {
+            document.querySelectorAll('.schedule-table').forEach(table => {
                 let roundHasMixedMatch = false;
                 const roundId = table.getAttribute('data-round-id');
-                const rows = table.querySelectorAll('tbody tr');
-                let roundWins = {};
-
-                rows.forEach(row => {
-                    const p1Raw = row.querySelector('.player1').value.trim();
-                    const p2Raw = row.querySelector('.player2').value.trim();
-                    const p3Raw = row.querySelector('.player3').value.trim();
-                    const p4Raw = row.querySelector('.player4').value.trim();
+                const roundWins = {};
+                table.querySelectorAll('tbody tr').forEach(row => {
+                    const playersRaw = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
+                    const playerNames = playersRaw.map(p => p.replace(/\*/g, ''));
                     const score = row.querySelector('.score').value.trim();
                     const isFourPoint = row.querySelector('.is-four-point').checked;
+                    if (!playerNames.every(p => p) || !/^\d+-\d+$/.test(score)) return;
 
-                    const p1 = p1Raw.replace(/\*/g, '');
-                    const p2 = p2Raw.replace(/\*/g, '');
-                    const p3 = p3Raw.replace(/\*/g, '');
-                    const p4 = p4Raw.replace(/\*/g, '');
-
-                    if (!p1 || !p2 || !p3 || !p4 || !/^\d+-\d+$/.test(score)) return;
-
-                    [p1, p2, p3, p4].forEach((name, idx) => {
+                    playerNames.forEach((name, idx) => {
                         if (name && !players[name]) {
                             players[name] = {
-                                name,
-                                wins: 0,
-                                losses: 0,
-                                winRate: 0,
-                                gameDiff: 0,
-                                avgGameDiff: 0,
-                                mmr: BASE_MMR,
-                                championships: 0,
-                                closeWins: 0,
-                                closeSets: 0,
-                                closeLosses: 0,
-                                dominantWins: 0,
-                                dominantLosses: 0,
-                                totalSets: 0,
-                                isFemale: [p1Raw, p2Raw, p3Raw, p4Raw][idx].includes('*'),
-                                seasonMMRIncrease: 0,
-                                streakCount: 0,
-                                streakIsWin: false
+                                name, wins: 0, losses: 0, winRate: 0, gameDiff: 0, avgGameDiff: 0, mmr: constants.BASE_MMR,
+                                championships: 0, closeWins: 0, closeSets: 0, closeLosses: 0, dominantWins: 0, dominantLosses: 0,
+                                totalSets: 0, isFemale: playersRaw[idx].includes('*'), seasonMMRIncrease: 0, streakCount: 0, streakIsWin: false
                             };
                             partnerStats[name] = {};
                             streaks[name] = { count: 0, isWin: false };
                         }
                     });
 
-                    const team1IsMixed = p1Raw.includes('*') || p2Raw.includes('*');
-                    const team2IsMixed = p3Raw.includes('*') || p4Raw.includes('*');
-                    const team1IsMale = !team1IsMixed;
-                    const team2IsMale = !team2IsMixed;
-
+                    const team1IsMixed = playersRaw[0].includes('*') || playersRaw[1].includes('*');
+                    const team2IsMixed = playersRaw[2].includes('*') || playersRaw[3].includes('*');
+                    const team1IsMale = !team1IsMixed, team2IsMale = !team2IsMixed;
                     if (team1IsMixed || team2IsMixed) roundHasMixedMatch = true;
 
                     const getDynamicHandicap = (mmr) => {
-                        if (isNaN(mmr) || mmr <= 0) mmr = BASE_MMR;
-                        if (mmr >= HANDICAP_ZERO_POINT) return 0;
-                        if (mmr <= HANDICAP_BASE_POINT) return HANDICAP_MAX;
-                        const progress = (mmr - HANDICAP_BASE_POINT) / (HANDICAP_ZERO_POINT - HANDICAP_BASE_POINT);
-                        return Math.max(0, HANDICAP_MAX * (1 - progress));
+                        mmr = isNaN(mmr) ? constants.BASE_MMR : mmr;
+                        if (mmr >= constants.HANDICAP_ZERO_POINT) return 0;
+                        if (mmr <= constants.HANDICAP_BASE_POINT) return constants.HANDICAP_MAX;
+                        const progress = (mmr - constants.HANDICAP_BASE_POINT) / (constants.HANDICAP_ZERO_POINT - constants.HANDICAP_BASE_POINT);
+                        return Math.max(0, constants.HANDICAP_MAX * (1 - progress));
                     };
 
                     const getMixedWinMultiplier = (teamMMR) => {
-                        if (isNaN(teamMMR) || teamMMR <= 0) teamMMR = BASE_MMR;
-                        if (teamMMR >= MIXED_MMR_MIN && teamMMR <= MIXED_MMR_MAX) return MIXED_WIN_MULTIPLIER;
-                        return 1.0;
+                        teamMMR = isNaN(teamMMR) ? constants.BASE_MMR : teamMMR;
+                        return (teamMMR >= constants.MIXED_MMR_MIN && teamMMR <= constants.MIXED_MMR_MAX) ? constants.MIXED_WIN_MULTIPLIER : 1.0;
                     };
 
-                    let team1MMR = ((players[p1]?.mmr || BASE_MMR) + (players[p2]?.mmr || BASE_MMR)) / 2;
-                    let team2MMR = ((players[p3]?.mmr || BASE_MMR) + (players[p4]?.mmr || BASE_MMR)) / 2;
-                    let effectiveTeam1MMR = team1MMR;
-                    let effectiveTeam2MMR = team2MMR;
+                    let team1MMR = ((players[playerNames[0]]?.mmr || constants.BASE_MMR) + (players[playerNames[1]]?.mmr || constants.BASE_MMR)) / 2;
+                    let team2MMR = ((players[playerNames[2]]?.mmr || constants.BASE_MMR) + (players[playerNames[3]]?.mmr || constants.BASE_MMR)) / 2;
+                    let effectiveTeam1MMR = team1MMR, effectiveTeam2MMR = team2MMR;
 
                     if (team1IsMixed) {
-                        let handicap = 0;
-                        if (p1Raw.includes('*')) handicap += getDynamicHandicap(players[p1]?.mmr || BASE_MMR);
-                        if (p2Raw.includes('*')) handicap += getDynamicHandicap(players[p2]?.mmr || BASE_MMR);
-                        effectiveTeam1MMR += handicap / (p1Raw.includes('*') && p2Raw.includes('*') ? 2 : 1);
+                        let handicap = (playersRaw[0].includes('*') ? getDynamicHandicap(players[playerNames[0]]?.mmr) : 0) + (playersRaw[1].includes('*') ? getDynamicHandicap(players[playerNames[1]]?.mmr) : 0);
+                        effectiveTeam1MMR += handicap / (playersRaw[0].includes('*') && playersRaw[1].includes('*') ? 2 : 1);
                         effectiveTeam1MMR *= 1.5;
                     }
                     if (team2IsMixed) {
-                        let handicap = 0;
-                        if (p3Raw.includes('*')) handicap += getDynamicHandicap(players[p3]?.mmr || BASE_MMR);
-                        if (p4Raw.includes('*')) handicap += getDynamicHandicap(players[p4]?.mmr || BASE_MMR);
-                        effectiveTeam2MMR += handicap / (p3Raw.includes('*') && p4Raw.includes('*') ? 2 : 1);
+                        let handicap = (playersRaw[2].includes('*') ? getDynamicHandicap(players[playerNames[2]]?.mmr) : 0) + (playersRaw[3].includes('*') ? getDynamicHandicap(players[playerNames[3]]?.mmr) : 0);
+                        effectiveTeam2MMR += handicap / (playersRaw[2].includes('*') && playersRaw[3].includes('*') ? 2 : 1);
                         effectiveTeam2MMR *= 1.5;
                     }
 
                     const expected1 = 1 / (1 + Math.pow(10, (effectiveTeam2MMR - effectiveTeam1MMR) / 400));
                     const [score1, score2] = score.split('-').map(Number);
-                    const actual1 = score1 > score2 ? 1 : 0;
-                    const actual2 = score1 < score2 ? 1 : 0;
+                    const actual1 = score1 > score2 ? 1 : 0, actual2 = score1 < score2 ? 1 : 0;
                     const gameDiff = Math.abs(score1 - score2);
                     const scoreWeight = isNaN(gameDiff) ? 1.0 : 0.8 + (gameDiff / 6) * 0.7;
 
-                    const updatePlayerMMR = (player, opponentTeamMMR, isWinner) => {
+                    const updatePlayerMMR = (player, opponentTeamMMR, isWinner, partnerMMR) => {
                         if (!player) return 0;
-                        let K = BASE_K;
-                        let playerMMR = player.mmr || BASE_MMR;
-                        if (isNaN(playerMMR)) playerMMR = BASE_MMR;
-                        if (playerMMR > 1800) {
-                            K *= Math.max(0.3, 1 - (playerMMR - 1800) / 1000);
-                        }
-                        if (isNaN(opponentTeamMMR)) opponentTeamMMR = BASE_MMR;
+                        let K = constants.BASE_K, playerMMR = player.mmr || constants.BASE_MMR;
+                        if (isNaN(playerMMR)) playerMMR = constants.BASE_MMR;
+                        if (playerMMR > 1800) K *= Math.max(0.3, 1 - (playerMMR - 1800) / 1000);
+                        opponentTeamMMR = isNaN(opponentTeamMMR) ? constants.BASE_MMR : opponentTeamMMR;
                         const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
                         let opponentWeight = Math.min(1, opponentTeamMMR / playerMMR);
-                        if (playerMMR > 1800) {
-                            opponentWeight *= Math.max(0.5, 1 - (playerMMR - 1800) / 2000);
-                        }
+                        if (playerMMR > 1800) opponentWeight *= Math.max(0.5, 1 - (playerMMR - 1800) / 2000);
                         let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * opponentWeight * scoreWeight;
-                        if (isFourPoint) {
-                            mmrChange *= FOUR_POINT_MMR_MULTIPLIER;
-                        }
+                        if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
+                        
                         if (isWinner) {
-                            mmrChange *= WIN_BONUS;
+                            mmrChange *= constants.WIN_BONUS;
                         } else {
-                            mmrChange *= LOSS_REDUCTION;
+                            const mmrDiff = Math.abs(playerMMR - (partnerMMR || constants.BASE_MMR));
+                            const lossReduction = mmrDiff >= constants.MMR_DIFF_THRESHOLD ? constants.REDUCED_LOSS_REDUCTION : constants.LOSS_REDUCTION;
+                            mmrChange *= lossReduction;
+                            
+                            if (Math.abs(mmrChange) > constants.MMR_LOSS_CAP) mmrChange = -constants.MMR_LOSS_CAP;
                         }
-                        const finalMMRChange = isNaN(mmrChange) ? 0 : Math.round(isWinner ? mmrChange : -Math.abs(mmrChange));
-                        return finalMMRChange;
+                        return isNaN(mmrChange) ? 0 : Math.round(isWinner ? mmrChange : -Math.abs(mmrChange));
                     };
 
-                    let mmrChange1 = updatePlayerMMR(players[p1], team2MMR, actual1);
-                    let mmrChange2 = updatePlayerMMR(players[p2], team2MMR, actual1);
-                    let mmrChange3 = updatePlayerMMR(players[p3], team1MMR, actual2);
-                    let mmrChange4 = updatePlayerMMR(players[p4], team1MMR, actual2);
+                    const mmrChanges = [
+                        updatePlayerMMR(players[playerNames[0]], team2MMR, actual1, players[playerNames[1]]?.mmr),
+                        updatePlayerMMR(players[playerNames[1]], team2MMR, actual1, players[playerNames[0]]?.mmr),
+                        updatePlayerMMR(players[playerNames[2]], team1MMR, actual2, players[playerNames[3]]?.mmr),
+                        updatePlayerMMR(players[playerNames[3]], team1MMR, actual2, players[playerNames[2]]?.mmr)
+                    ];
 
                     if (team1IsMixed && team2IsMale) {
                         const mixedWinMultiplier = getMixedWinMultiplier(team1MMR);
                         if (actual1 === 1) {
-                            mmrChange1 *= mixedWinMultiplier;
-                            mmrChange2 *= mixedWinMultiplier;
-                            mmrChange3 *= MALE_LOSS_MULTIPLIER;
-                            mmrChange4 *= MALE_LOSS_MULTIPLIER;
+                            mmrChanges[0] *= mixedWinMultiplier;
+                            mmrChanges[1] *= mixedWinMultiplier;
+                            mmrChanges[2] *= constants.MALE_LOSS_MULTIPLIER;
+                            mmrChanges[3] *= constants.MALE_LOSS_MULTIPLIER;
                         } else {
-                            mmrChange1 *= MIXED_LOSS_REDUCTION;
-                            mmrChange2 *= MIXED_LOSS_REDUCTION;
-                            mmrChange3 *= MALE_WIN_REDUCTION;
-                            mmrChange4 *= MALE_WIN_REDUCTION;
+                            mmrChanges[0] *= constants.MIXED_LOSS_REDUCTION;
+                            mmrChanges[1] *= constants.MIXED_LOSS_REDUCTION;
+                            mmrChanges[2] *= constants.MALE_WIN_REDUCTION;
+                            mmrChanges[3] *= constants.MALE_WIN_REDUCTION;
                         }
                     } else if (team2IsMixed && team1IsMale) {
                         const mixedWinMultiplier = getMixedWinMultiplier(team2MMR);
                         if (actual2 === 1) {
-                            mmrChange3 *= mixedWinMultiplier;
-                            mmrChange4 *= mixedWinMultiplier;
-                            mmrChange1 *= MALE_LOSS_MULTIPLIER;
-                            mmrChange2 *= MALE_LOSS_MULTIPLIER;
+                            mmrChanges[2] *= mixedWinMultiplier;
+                            mmrChanges[3] *= mixedWinMultiplier;
+                            mmrChanges[0] *= constants.MALE_LOSS_MULTIPLIER;
+                            mmrChanges[1] *= constants.MALE_LOSS_MULTIPLIER;
                         } else {
-                            mmrChange3 *= MIXED_LOSS_REDUCTION;
-                            mmrChange4 *= MIXED_LOSS_REDUCTION;
-                            mmrChange1 *= MALE_WIN_REDUCTION;
-                            mmrChange2 *= MALE_WIN_REDUCTION;
+                            mmrChanges[2] *= constants.MIXED_LOSS_REDUCTION;
+                            mmrChanges[3] *= constants.MIXED_LOSS_REDUCTION;
+                            mmrChanges[0] *= constants.MALE_WIN_REDUCTION;
+                            mmrChanges[1] *= constants.MALE_WIN_REDUCTION;
                         }
                     }
 
-                    const isClose = score1 - score2 === 1 || score2 - score1 === 1 || score1 - score2 === 2 || score2 - score1 === 2;
-
-                    const updatePlayer = (name, isWinner, gameDiff, mmrChangeVal, isCloseGame, isDominantWin, isDominantLoss) => {
+                    const isClose = Math.abs(score1 - score2) <= 2;
+                    const updatePlayer = (name, isWinner, gameDiff, mmrChange, isCloseGame, isDominant) => {
                         if (!players[name]) return;
                         players[name].totalSets++;
                         players[name].gameDiff += isNaN(gameDiff) ? 0 : gameDiff;
-                        players[name].mmr += isNaN(mmrChangeVal) ? 0 : mmrChangeVal;
-                        players[name].seasonMMRIncrease += isNaN(mmrChangeVal) ? 0 : mmrChangeVal;
+                        players[name].mmr += isNaN(mmrChange) ? 0 : mmrChange;
+                        players[name].seasonMMRIncrease += isNaN(mmrChange) ? 0 : mmrChange;
                         if (isWinner) {
                             players[name].wins++;
                             if (!isFourPoint) {
-                                if (!roundWins[name]) roundWins[name] = 0;
-                                roundWins[name]++;
+                                roundWins[name] = (roundWins[name] || 0) + 1;
                             }
                             if (isCloseGame) players[name].closeWins++;
-                            if (streaks[name].isWin) {
-                                streaks[name].count++;
-                            } else {
-                                streaks[name].count = 1;
-                                streaks[name].isWin = true;
-                            }
-                            players[name].streakCount = streaks[name].count;
-                            players[name].streakIsWin = streaks[name].isWin;
+                            streaks[name].count = streaks[name].isWin ? streaks[name].count + 1 : 1;
+                            streaks[name].isWin = true;
                         } else {
                             players[name].losses++;
                             if (isCloseGame) players[name].closeLosses++;
-                            if (!streaks[name].isWin && streaks[name].count > 0) {
-                                streaks[name].count++;
-                            } else {
-                                streaks[name].count = 1;
-                                streaks[name].isWin = false;
-                            }
-                            players[name].streakCount = streaks[name].count;
-                            players[name].streakIsWin = streaks[name].isWin;
+                            streaks[name].count = !streaks[name].isWin ? streaks[name].count + 1 : 1;
+                            streaks[name].isWin = false;
                         }
                         if (isCloseGame) players[name].closeSets++;
-                        if (isDominantWin) players[name].dominantWins++;
-                        if (isDominantLoss) players[name].dominantLosses++;
+                        if (isDominant) players[name][isWinner ? 'dominantWins' : 'dominantLosses']++;
+                        players[name].streakCount = streaks[name].count;
+                        players[name].streakIsWin = streaks[name].isWin;
                     };
 
-                    updatePlayer(p1, actual1, score1 - score2, mmrChange1, isClose, actual1 === 1 && gameDiff >= 5, actual1 === 0 && gameDiff >= 5);
-                    updatePlayer(p2, actual1, score1 - score2, mmrChange2, isClose, actual1 === 1 && gameDiff >= 5, actual1 === 0 && gameDiff >= 5);
-                    updatePlayer(p3, actual2, score2 - score1, mmrChange3, isClose, actual2 === 1 && gameDiff >= 5, actual2 === 0 && gameDiff >= 5);
-                    updatePlayer(p4, actual2, score2 - score1, mmrChange4, isClose, actual2 === 1 && gameDiff >= 5, actual2 === 0 && gameDiff >= 5);
+                    updatePlayer(playerNames[0], actual1, score1 - score2, mmrChanges[0], isClose, gameDiff >= 5);
+                    updatePlayer(playerNames[1], actual1, score1 - score2, mmrChanges[1], isClose, gameDiff >= 5);
+                    updatePlayer(playerNames[2], actual2, score2 - score1, mmrChanges[2], isClose, gameDiff >= 5);
+                    updatePlayer(playerNames[3], actual2, score2 - score1, mmrChanges[3], isClose, gameDiff >= 5);
 
                     const updatePartnerStats = (player, partner, isWin, gameDiff) => {
                         if (!players[player] || !players[partner]) return;
-                        if (!partnerStats[player]) partnerStats[player] = {};
-                        if (!partnerStats[player][partner]) {
-                            partnerStats[player][partner] = { wins: 0, losses: 0, gameDiffSum: 0, matches: 0 };
-                        }
+                        partnerStats[player][partner] = partnerStats[player][partner] || { wins: 0, losses: 0, gameDiffSum: 0, matches: 0 };
                         const stats = partnerStats[player][partner];
                         stats.matches++;
                         stats.gameDiffSum += isNaN(gameDiff) ? 0 : gameDiff;
@@ -963,111 +594,99 @@ async function loadData() {
                     };
 
                     if (actual1 > 0) {
-                        updatePartnerStats(p1, p2, true, score1 - score2);
-                        updatePartnerStats(p2, p1, true, score1 - score2);
-                        updatePartnerStats(p3, p4, false, score2 - score1);
-                        updatePartnerStats(p4, p3, false, score2 - score1);
+                        updatePartnerStats(playerNames[0], playerNames[1], true, score1 - score2);
+                        updatePartnerStats(playerNames[1], playerNames[0], true, score1 - score2);
+                        updatePartnerStats(playerNames[2], playerNames[3], false, score2 - score1);
+                        updatePartnerStats(playerNames[3], playerNames[2], false, score2 - score1);
                     } else {
-                        updatePartnerStats(p1, p2, false, score1 - score2);
-                        updatePartnerStats(p2, p1, false, score1 - score2);
-                        updatePartnerStats(p3, p4, true, score2 - score1);
-                        updatePartnerStats(p4, p3, true, score2 - score1);
+                        updatePartnerStats(playerNames[0], playerNames[1], false, score1 - score2);
+                        updatePartnerStats(playerNames[1], playerNames[0], false, score1 - score2);
+                        updatePartnerStats(playerNames[2], playerNames[3], true, score2 - score1);
+                        updatePartnerStats(playerNames[3], playerNames[2], true, score2 - score1);
                     }
                 });
 
                 Object.keys(roundWins).forEach(pName => {
-                    if (roundWins[pName] === 3 && players[pName]) {
-                        const isMalePlayer = !players[pName].isFemale;
-                        if (isMalePlayer && roundHasMixedMatch) {
-                        } else {
-                            players[pName].championships++;
-                        }
+                    if (roundWins[pName] === 3 && players[pName] && !(players[pName].isFemale && roundHasMixedMatch)) {
+                        players[pName].championships++;
                     }
                 });
             });
 
-            let sortedPlayers = Object.values(players);
-            if (currentFilter === 'male') sortedPlayers = sortedPlayers.filter(p => !p.isFemale);
-            else if (currentFilter === 'female') sortedPlayers = sortedPlayers.filter(p => p.isFemale);
+            Object.values(players).forEach(player => {
+                const totalGames = player.wins + player.losses;
+                player.winRate = totalGames > 0 ? Math.round((player.wins / totalGames) * 100) : 0;
+                player.avgGameDiff = player.totalSets > 0 ? (player.gameDiff / player.totalSets).toFixed(2) : '0.00';
+                player.closeRate = player.totalSets >= 2 ? (player.closeSets === 0 ? '0' : Math.round(player.closeSets / player.totalSets * 100)) : '0';
+                
+                player.dominantWins = player.totalSets > 0 ? `${Math.round((player.dominantWins / player.totalSets) * 100)}%(${player.dominantWins}승)` : '0%';
+                player.dominantLosses = player.totalSets > 0 ? `${Math.round((player.dominantLosses / player.totalSets) * 100)}%(${player.dominantLosses}패)` : '0%';
 
-            try {
-                const historyDocRef = doc(db, 'league', 'data', 'mmrHistory', 'v1');
-                const historyDocSnap = await getDoc(historyDocRef);
-                const existingHistory = historyDocSnap.exists() ? historyDocSnap.data().snapshots || [] : [];
-                const newSnapshot = { 
-                    game: existingHistory.length + 1,
-                    createdAt: new Date().toISOString()
-                };
-                sortedPlayers.forEach(p => {
-                    if (p.wins > 0 || p.losses > 0) {
-                        const cleanName = p.name.replace(/[@.*]+/g, '_').replace(/_+/g, '_').trim();
-                        newSnapshot[cleanName] = isNaN(p.mmr) ? BASE_MMR : Math.round(p.mmr);
-                    }
-                });
-                if (Object.keys(newSnapshot).length > 1) {
-                    existingHistory.push(newSnapshot);
-                    await setDoc(historyDocRef, { snapshots: existingHistory });
-                    console.log("MMR 히스토리 저장 완료!");
-                } else {
-                    console.warn("MMR 히스토리 데이터 부족!");
-                    showToast("MMR 히스토리 데이터 부족!");
-                }
-            } catch (e) {
-                console.error("MMR 히스토리 저장 실패:", e.name, e.code, e.message, e.stack);
-                showToast(`MMR 히스토리 저장 실패: ${e.message || '알 수 없는 오류'}`);
-            }
-
-            const rankingRows = document.querySelectorAll('#ranking-table tbody tr');
-            rankingRows.forEach((row, index) => {
-                const player = sortedPlayers[index];
-                if (player) {
-                    const totalGames = player.wins + player.losses;
-                    player.avgGameDiff = player.totalSets > 0 ? (player.gameDiff / player.totalSets).toFixed(2) : '0.00';
-                    player.winRate = totalGames > 0 ? Math.round((player.wins / totalGames) * 100) : 0;
-
-                    row.cells[0].innerHTML = `${index + 1}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span>`;
-                    row.querySelector('.ranking-player').value = player.isFemale ? `${player.name}*` : player.name;
-                    row.querySelector('.mmr').value = isNaN(player.mmr) ? '1500' : Math.round(player.mmr);
-                    row.querySelector('.mmr').dataset.seasonMMRIncrease = isNaN(player.seasonMMRIncrease) ? '0.00' : player.seasonMMRIncrease.toFixed(2);
-                    const champStar = row.querySelector('.championship-star');
-                    champStar.dataset.count = player.championships;
-                    champStar.textContent = player.championships == 1 ? '⭐' : player.championships > 1 ? `⭐(${player.championships})` : '';
-                    row.querySelector('.wins').value = player.wins;
-                    row.querySelector('.losses').value = player.losses;
-                    row.querySelector('.win-rate').value = player.winRate;
-                    row.querySelector('.avg-game-diff').value = player.avgGameDiff;
-                    row.querySelector('.close-rate').value = player.totalSets >= 2 ? (player.closeSets === 0 ? '0' : Math.round(player.closeSets / player.totalSets * 100)) : '0';
-                    row.querySelector('.dominant-wins').value = player.totalSets > 0 ? `${Math.round((player.dominantWins / player.totalSets) * 100)}%(${player.dominantWins}승)` : '0%';
-                    row.querySelector('.dominant-losses').value = player.totalSets > 0 ? `${Math.round((player.dominantLosses / player.totalSets) * 100)}%(${player.dominantLosses}패)` : '0%';
-
-                    let bestPartner = { name: '-', wins: 0, losses: 0, score: -Infinity };
-                    if (partnerStats[player.name]) {
-                        for (const partnerName in partnerStats[player.name]) {
-                            const stats = partnerStats[player.name][partnerName];
-                            if (stats.matches > 0) {
-                                const winPriority = stats.wins;
-                                const diffPriority = stats.matches > 0 ? stats.gameDiffSum / stats.matches : 0;
-                                const partnerScore = (winPriority * 100) + (diffPriority * 10);
-                                if (partnerScore > bestPartner.score) {
-                                    bestPartner = { name: partnerName, wins: stats.wins, losses: stats.losses, score: partnerScore };
-                                }
+                let bestPartner = { name: '-', wins: 0, losses: 0, score: -Infinity };
+                if (partnerStats[player.name]) {
+                    for (const partnerName in partnerStats[player.name]) {
+                        const stats = partnerStats[player.name][partnerName];
+                        if (stats.matches > 0) {
+                            const partnerScore = (stats.wins * 100) + (stats.matches > 0 ? stats.gameDiffSum / stats.matches * 10 : 0);
+                            if (partnerScore > bestPartner.score) {
+                                bestPartner = { name: partnerName, wins: stats.wins, losses: stats.losses, score: partnerScore };
                             }
                         }
                     }
-                    row.querySelector('.best-partner').value = bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name.replace(/\*/g, '')} (${bestPartner.wins}승${bestPartner.losses}패)`;
-                } else {
-                    row.cells[0].innerHTML = `${index + 1}<span class="streak-cell streak-none">–</span>`;
-                    row.querySelectorAll('input:not([type=button])').forEach(input => input.value = '');
-                    row.querySelector('.championship-star').textContent = '';
                 }
+                player.bestPartner = bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name.replace(/\*/g, '')} (${bestPartner.wins}승${bestPartner.losses}패)`;
             });
 
-            await saveAllData();
-            showToast('순위 업데이트 완료!');
-            updateRankingBtn.disabled = false;
-        }
+            const allPlayers = Object.values(players);
 
-        function downloadCSV() {
+            // BUG FIX: 순위 업데이트 시 계산된 데이터를 기반으로 모든 관련 데이터를 저장합니다.
+            try {
+                const batch = writeBatch(db);
+
+                // 1. 순위 데이터 저장
+                batch.set(doc(db, 'league', 'data', 'rankings', 'v1'), { players: allPlayers, lastUpdated: serverTimestamp() }, { merge: true });
+
+                // 2. 순위 히스토리 저장
+                const rankingHistoryDocRef = doc(db, 'league', 'data', 'rankingHistory', 'v1');
+                const rankingHistorySnap = await getDoc(rankingHistoryDocRef);
+                const existingHistory = rankingHistorySnap.data()?.snapshots || [];
+                existingHistory.push({
+                    snapshotId: existingHistory.length + 1,
+                    createdAt: new Date().toISOString(),
+                    rankings: allPlayers.map((player, index) => ({ name: player.name, rank: index + 1 }))
+                });
+                batch.set(rankingHistoryDocRef, { snapshots: existingHistory }, { merge: true });
+
+                // 3. 백업 저장
+                const scheduleDataForBackup = [];
+                 document.querySelectorAll('.schedule-table').forEach(table => {
+                    const roundId = parseInt(table.getAttribute('data-round-id'));
+                    table.querySelectorAll('tbody tr').forEach(row => {
+                        const players = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
+                        const score = row.querySelector('.score').value.trim();
+                        const isFourPoint = row.querySelector('.is-four-point').checked;
+                        if (players.every(p => p)) {
+                            scheduleDataForBackup.push({ round: roundId, players, score, isFourPoint });
+                        }
+                    });
+                });
+                batch.set(doc(collection(db, 'league', 'backups', 'data'), `backup_${new Date().toISOString().replace(/[:.]/g, '-')}`), {
+                    schedule: scheduleDataForBackup,
+                    rankings: allPlayers,
+                    timestamp: serverTimestamp()
+                });
+
+                await batch.commit();
+                showToast('순위 업데이트 및 저장 완료!');
+            } catch (e) {
+                showToast(`랭킹 저장 실패: ${e.message || '알 수 없는 오류'}`);
+            }
+
+            updateRankingTable(allPlayers);
+            updateRankingBtn.disabled = false;
+        };
+
+        const downloadCSV = () => {
             let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,승률(%),평균 게임 득실,접전률(%),압도승률(%),압도패률(%),최고 파트너\n';
             document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
                 const rawName = row.querySelector('.ranking-player').value.trim();
@@ -1087,7 +706,6 @@ async function loadData() {
                     rankingCSV += `${rank},"${player}",${mmr},${championships},${wins},${losses},${winRate},${avgGameDiff},${closeRate},${dominantWins},${dominantLosses},"${bestPartner}"\n`;
                 }
             });
-
             const blob = new Blob([rankingCSV], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -1095,149 +713,100 @@ async function loadData() {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        }
+        };
 
-        function waitForElements(selector, callback, retries = 20, delay = 200) {
-            let attempts = 0;
-            function check() {
-                const elements = document.querySelectorAll(selector);
-                const scheduleContainer = document.getElementById('schedule-container');
-                const rankingBody = document.querySelector('#ranking-table tbody');
-                console.log(`waitForElements 시도 ${attempts + 1}: 요소 상태 - schedule-container: ${!!scheduleContainer}, ranking-table tbody: ${!!rankingBody}, selector: ${elements.length}`);
-                if (elements.length > 0 && scheduleContainer && rankingBody) {
-                    console.log("DOM 요소 모두 준비됨!");
-                    callback();
-                } else if (attempts < retries) {
-                    attempts++;
-                    console.log(`DOM 요소 대기 중 (${attempts}/${retries})...`);
-                    setTimeout(check, delay);
-                } else {
-                    console.error("DOM 요소 로드 실패:", selector);
-                    showToast("페이지 로드 오류! 요소를 찾을 수 없습니다.");
+        const scheduleDailyBackup = () => {
+            const now = new Date();
+            const nextBackup = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (now.getHours() >= 6 ? 1 : 0), 6);
+            setTimeout(async () => {
+                if (!db) return;
+                try {
+                    const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
+                    const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
+                    await setDoc(doc(collection(db, 'league', 'backups', 'data'), `daily_backup_${new Date().toISOString().replace(/[:.]/g, '-')}`), {
+                        schedule: scheduleDoc.data()?.matches || [],
+                        rankings: rankingDoc.data()?.players || [],
+                        timestamp: serverTimestamp()
+                    });
+                    showToast("일일 백업 완료!");
+                } catch (e) {
+                    showToast(`일일 백업 실패: ${e.message || '알 수 없는 오류'}`);
                 }
-            }
-            check();
-        }
+                scheduleDailyBackup();
+            }, nextBackup - now);
+        };
 
-        function setupInputListeners() {
-            const saveAllBtn = document.getElementById('save-all');
-            const updateRankingBtn = document.getElementById('update-ranking');
-            const toggleRankingsBtn = document.getElementById('toggle-rankings');
-            const h2hPageBtn = document.getElementById('h2h-page-btn');
-            const partnerPageBtn = document.getElementById('partner-page-btn');
-            const howToUseBtn = document.getElementById('how-to-use-btn');
-
-            console.log("setupInputListeners - 버튼 상태:");
-            console.log("save-all:", !!saveAllBtn);
-            console.log("update-ranking:", !!updateRankingBtn);
-            console.log("toggle-rankings:", !!toggleRankingsBtn);
-            console.log("h2h-page-btn:", !!h2hPageBtn);
-            console.log("partner-page-btn:", !!partnerPageBtn);
-            console.log("how-to-use-btn:", !!howToUseBtn);
-
-            saveAllBtn?.addEventListener('click', saveAllData);
-            updateRankingBtn?.addEventListener('click', updateRanking);
-            toggleRankingsBtn?.addEventListener('click', () => {
+        const setupInputListeners = () => {
+            document.getElementById('save-all')?.addEventListener('click', saveAllData);
+            document.getElementById('update-ranking')?.addEventListener('click', updateRanking);
+            document.getElementById('download-csv')?.addEventListener('click', downloadCSV);
+            document.getElementById('toggle-rankings')?.addEventListener('click', () => {
                 const lowerRanks = document.querySelectorAll('.lower-rank');
                 const isVisible = lowerRanks[0]?.classList.contains('show');
                 lowerRanks.forEach(row => row.classList.toggle('show'));
-                toggleRankingsBtn.textContent = isVisible ? '더보기' : '접기';
+                document.getElementById('toggle-rankings').textContent = isVisible ? '더보기' : '접기';
             });
-            h2hPageBtn?.addEventListener('click', () => {
-                window.location.href = 'h2h.html';
-            });
-            partnerPageBtn?.addEventListener('click', () => {
-                window.location.href = 'partner.html';
-            });
-            howToUseBtn?.addEventListener('click', () => {
+            document.getElementById('h2h-page-btn')?.addEventListener('click', () => window.location.href = 'h2h.html');
+            document.getElementById('partner-page-btn')?.addEventListener('click', () => window.location.href = 'partner.html');
+            document.getElementById('how-to-use-btn')?.addEventListener('click', () => {
                 document.getElementById('popup').classList.add('show');
                 document.getElementById('overlay').classList.add('show');
             });
-
             document.getElementById('close-popup')?.addEventListener('click', () => {
                 document.getElementById('popup').classList.remove('show');
                 document.getElementById('overlay').classList.remove('show');
             });
 
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentFilter = btn.dataset.filter;
-                    const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-                    if (rankingDoc.exists()) {
-                        updateRankingTable(rankingDoc.data().players || []);
-                    }
-                });
-            });
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', async () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
+                if (rankingDoc.exists()) updateRankingTable(rankingDoc.data().players || []);
+            }));
 
-            document.querySelectorAll('#ranking-table thead th[data-sort]').forEach(th => {
-                th.addEventListener('click', async () => {
-                    const newSortKey = th.dataset.sort;
-                    if (newSortKey === sortKey) {
-                        sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-                    } else {
-                        sortKey = newSortKey;
-                        sortOrder = 'desc';
-                    }
-                    const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-                    if (rankingDoc.exists()) {
-                        updateRankingTable(rankingDoc.data().players || []);
-                    }
-                });
-            });
+            document.querySelectorAll('#ranking-table thead th[data-sort]').forEach(th => th.addEventListener('click', async () => {
+                sortKey = th.dataset.sort;
+                sortOrder = sortKey === sortKey ? (sortOrder === 'asc' ? 'desc' : 'asc') : 'desc';
+                const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
+                if (rankingDoc.exists()) updateRankingTable(rankingDoc.data().players || []);
+            }));
 
-            // 선수 이름 클릭 시 h2h 페이지로 이동
-            document.querySelectorAll('.ranking-player').forEach(input => {
-                input.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const playerName = encodeURIComponent(input.value.trim().replace(/\*/g, ''));
-                    if (playerName) {
-                        window.location.href = `h2h.html?player=${playerName}`;
-                    }
-                });
-            });
-        }
+            document.querySelectorAll('.ranking-player').forEach(input => input.addEventListener('click', () => {
+                const playerName = encodeURIComponent(input.value.trim().replace(/\*/g, ''));
+                if (playerName) window.location.href = `h2h.html?player=${playerName}`;
+            }));
+        };
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("DOMContentLoaded 이벤트 시작");
+            const waitForElements = (selector, callback, retries = 20, delay = 200) => {
+                let attempts = 0;
+                const check = () => {
+                    if (document.querySelectorAll(selector).length && document.getElementById('schedule-container') && document.querySelector('#ranking-table tbody')) {
+                        callback();
+                    } else if (attempts < retries) {
+                        attempts++;
+                        setTimeout(check, delay);
+                    } else {
+                        showToast("페이지 로드 오류! 요소를 찾을 수 없습니다.");
+                    }
+                };
+                check();
+            };
+
             waitForElements('#schedule-container, #ranking-table tbody', () => {
-                console.log("waitForElements 콜백 실행");
-                try {
-                    applyTheme(localStorage.getItem('theme') || 'dark');
-                    console.log("applyTheme 호출 성공");
-                } catch (e) {
-                    console.error("applyTheme 호출 실패:", e.message, e.stack);
-                    showToast("테마 적용 오류!");
-                }
+                applyTheme(localStorage.getItem('theme') || 'dark');
                 createRankingRows();
                 if (db) {
                     loadData();
-                    scheduleDailyBackup(); // 일일 백업 스케줄링 시작
+                    scheduleDailyBackup();
                 } else {
-                    console.warn("DB 연결 없음!");
-                    createScheduleRounds();
-                    showToast("DB 연결 실패!");
+                    showToast("DB 연결 없음!");
                 }
                 setupInputListeners();
-                const themeToggle = document.getElementById('theme-toggle');
-                if (themeToggle) {
-                    themeToggle.addEventListener('click', () => {
-                        console.log("themeToggle 클릭");
-                        try {
-                            applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-                        } catch (e) {
-                            console.error("themeToggle applyTheme 호출 실패:", e.message, e.stack);
-                            showToast("테마 전환 오류!");
-                        }
-                    });
-                }
-                const downloadCsvBtn = document.getElementById('download-csv');
-                if (downloadCsvBtn) {
-                    downloadCsvBtn.addEventListener('click', downloadCSV);
-                }
             });
         });
     </script>
 </body>
 </html>
+�
