@@ -375,6 +375,9 @@
                 const players = {}, partnerStats = {}, streaks = {};
 
                 document.querySelectorAll('.schedule-table').forEach(table => {
+                    let roundHasMixedMatch = false;
+                    const roundId = table.getAttribute('data-round-id');
+                    const roundWins = {};
                     table.querySelectorAll('tbody tr').forEach(row => {
                         const playersRaw = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
                         const playerNames = playersRaw.map(p => p.replace(/\*/g, ''));
@@ -431,6 +434,9 @@
                             players[name].mmr += mmrChange;
                             if (isWinner) {
                                 players[name].wins++;
+                                if (!isFourPoint) {
+                                    roundWins[name] = (roundWins[name] || 0) + 1;
+                                }
                                 if (isCloseGame) players[name].closeWins++;
                                 streaks[name].count = streaks[name].isWin ? streaks[name].count + 1 : 1;
                                 streaks[name].isWin = true;
@@ -449,6 +455,34 @@
                         updatePlayer(playerNames[1], actual1, gameDiff, mmrChanges[1], isClose, gameDiff >= 5);
                         updatePlayer(playerNames[2], 1 - actual1, gameDiff, mmrChanges[2], isClose, gameDiff >= 5);
                         updatePlayer(playerNames[3], 1 - actual1, gameDiff, mmrChanges[3], isClose, gameDiff >= 5);
+
+                        const updatePartnerStats = (player, partner, isWin, gameDiffVal) => {
+                            if (!players[player] || !players[partner]) return;
+                            if (!partnerStats[player]) partnerStats[player] = {};
+                            partnerStats[player][partner] = partnerStats[player][partner] || { wins: 0, losses: 0, gameDiffSum: 0, matches: 0 };
+                            const stats = partnerStats[player][partner];
+                            stats.matches++;
+                            stats.gameDiffSum += isWin ? gameDiffVal : -gameDiffVal;
+                            if (isWin) stats.wins++; else stats.losses++;
+                        };
+
+                        if (actual1 > 0) {
+                            updatePartnerStats(playerNames[0], playerNames[1], true, gameDiff);
+                            updatePartnerStats(playerNames[1], playerNames[0], true, gameDiff);
+                            updatePartnerStats(playerNames[2], playerNames[3], false, gameDiff);
+                            updatePartnerStats(playerNames[3], playerNames[2], false, gameDiff);
+                        } else {
+                            updatePartnerStats(playerNames[0], playerNames[1], false, gameDiff);
+                            updatePartnerStats(playerNames[1], playerNames[0], false, gameDiff);
+                            updatePartnerStats(playerNames[2], playerNames[3], true, gameDiff);
+                            updatePartnerStats(playerNames[3], playerNames[2], true, gameDiff);
+                        }
+                    });
+
+                    Object.keys(roundWins).forEach(pName => {
+                        if (roundWins[pName] === 3 && players[pName]) {
+                            players[pName].championships++;
+                        }
                     });
                 });
 
@@ -459,6 +493,20 @@
                     player.closeRate = player.totalSets > 0 ? Math.round((player.closeSets / player.totalSets) * 100) : 0;
                     player.dominantWins = player.totalSets > 0 ? `${Math.round((player.dominantWins / player.totalSets) * 100)}%(${player.dominantWins}승)` : '0%';
                     player.dominantLosses = player.totalSets > 0 ? `${Math.round((player.dominantLosses / player.totalSets) * 100)}%(${player.dominantLosses}패)` : '0%';
+
+                    let bestPartner = { name: '-', wins: 0, losses: 0, score: -Infinity };
+                    if (partnerStats[player.name]) {
+                        for (const partnerName in partnerStats[player.name]) {
+                            const stats = partnerStats[player.name][partnerName];
+                            if (stats.matches > 0) {
+                                const partnerScore = (stats.wins * 100) + (stats.matches > 0 ? stats.gameDiffSum / stats.matches * 10 : 0);
+                                if (partnerScore > bestPartner.score) {
+                                    bestPartner = { name: partnerName, wins: stats.wins, losses: stats.losses, score: partnerScore };
+                                }
+                            }
+                        }
+                    }
+                    player.bestPartner = bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name.replace(/\*/g, '')} (${bestPartner.wins}승${bestPartner.losses}패)`;
                 });
 
                 const allCalculatedPlayers = Object.values(players);
