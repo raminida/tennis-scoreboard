@@ -394,8 +394,31 @@
 
                 const players = {}, partnerStats = {}, streaks = {};
 
+                const updatePlayerMMR = (player, opponentTeamMMR, isWinner, partnerMMR, isFourPoint, scoreWeight, isPlayerTeamMixed, isOpponentTeamAllMale) => {
+                    if (!player) return 0;
+                    let K = constants.BASE_K, playerMMR = player.mmr || constants.BASE_MMR;
+                    const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
+                    let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
+                    if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
+                    
+                    if (isPlayerTeamMixed && isOpponentTeamAllMale) {
+                        if (isWinner) {
+                            mmrChange *= 1.5;
+                        } else {
+                            mmrChange *= 0.3; // 70% 감면
+                        }
+                    } else {
+                        if (isWinner) {
+                            mmrChange *= constants.WIN_BONUS;
+                        } else {
+                            mmrChange *= Math.abs(playerMMR - (partnerMMR || constants.BASE_MMR)) >= constants.MMR_DIFF_THRESHOLD ? constants.REDUCED_LOSS_REDUCTION : constants.LOSS_REDUCTION;
+                        }
+                    }
+                    
+                    return Math.round(mmrChange);
+                };
+
                 document.querySelectorAll('.schedule-table').forEach(table => {
-                    let roundHasMixedMatch = false;
                     const roundId = table.getAttribute('data-round-id');
                     const roundWins = {};
                     table.querySelectorAll('tbody tr').forEach(row => {
@@ -418,6 +441,13 @@
                             }
                         });
 
+                        const team1IsFemale = [players[playerNames[0]].isFemale, players[playerNames[1]].isFemale];
+                        const team2IsFemale = [players[playerNames[2]].isFemale, players[playerNames[3]].isFemale];
+                        const isTeam1Mixed = team1IsFemale.filter(Boolean).length === 1;
+                        const isTeam2Mixed = team2IsFemale.filter(Boolean).length === 1;
+                        const isTeam1AllMale = team1IsFemale.filter(Boolean).length === 0;
+                        const isTeam2AllMale = team2IsFemale.filter(Boolean).length === 0;
+
                         let team1MMR = ((players[playerNames[0]]?.mmr || constants.BASE_MMR) + (players[playerNames[1]]?.mmr || constants.BASE_MMR)) / 2;
                         let team2MMR = ((players[playerNames[2]]?.mmr || constants.BASE_MMR) + (players[playerNames[3]]?.mmr || constants.BASE_MMR)) / 2;
                         
@@ -426,24 +456,11 @@
                         const gameDiff = Math.abs(s1 - s2);
                         const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
 
-                        const updatePlayerMMR = (player, opponentTeamMMR, isWinner, partnerMMR) => {
-                            if (!player) return 0;
-                            let K = constants.BASE_K, playerMMR = player.mmr || constants.BASE_MMR;
-                            const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
-                            let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
-                            if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
-                            
-                            if (isWinner) mmrChange *= constants.WIN_BONUS;
-                            else mmrChange *= Math.abs(playerMMR - (partnerMMR || constants.BASE_MMR)) >= constants.MMR_DIFF_THRESHOLD ? constants.REDUCED_LOSS_REDUCTION : constants.LOSS_REDUCTION;
-                            
-                            return Math.round(mmrChange);
-                        };
-
                         const mmrChanges = [
-                            updatePlayerMMR(players[playerNames[0]], team2MMR, actual1, players[playerNames[1]]?.mmr),
-                            updatePlayerMMR(players[playerNames[1]], team2MMR, actual1, players[playerNames[0]]?.mmr),
-                            updatePlayerMMR(players[playerNames[2]], team1MMR, 1 - actual1, players[playerNames[3]]?.mmr),
-                            updatePlayerMMR(players[playerNames[3]], team1MMR, 1 - actual1, players[playerNames[2]]?.mmr)
+                            updatePlayerMMR(players[playerNames[0]], team2MMR, actual1, players[playerNames[1]]?.mmr, isFourPoint, scoreWeight, isTeam1Mixed, isTeam2AllMale),
+                            updatePlayerMMR(players[playerNames[1]], team2MMR, actual1, players[playerNames[0]]?.mmr, isFourPoint, scoreWeight, isTeam1Mixed, isTeam2AllMale),
+                            updatePlayerMMR(players[playerNames[2]], team1MMR, 1 - actual1, players[playerNames[3]]?.mmr, isFourPoint, scoreWeight, isTeam2Mixed, isTeam1AllMale),
+                            updatePlayerMMR(players[playerNames[3]], team1MMR, 1 - actual1, players[playerNames[2]]?.mmr, isFourPoint, scoreWeight, isTeam2Mixed, isTeam1AllMale)
                         ];
 
                         const isClose = Math.abs(s1 - s2) <= 2;
@@ -597,8 +614,14 @@
         };
 
         const setupInputListeners = () => {
-            document.getElementById('save-all')?.addEventListener('click', saveAllData);
-            document.getElementById('update-ranking')?.addEventListener('click', updateRanking);
+            document.getElementById('save-all')?.addEventListener('click', (e) => { 
+                e.preventDefault();
+                saveAllData(); 
+            });
+            document.getElementById('update-ranking')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                updateRanking();
+            });
             document.getElementById('download-csv')?.addEventListener('click', downloadCSV);
             document.getElementById('download-html')?.addEventListener('click', downloadHTML);
             document.getElementById('h2h-page-btn')?.addEventListener('click', () => window.location.href = 'h2h.html');
@@ -665,7 +688,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             setupInputListeners();
-            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const savedTheme = localStorage.getItem('theme') || 'light';
             applyTheme(savedTheme);
 
             if (db) {
