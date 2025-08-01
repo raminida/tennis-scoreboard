@@ -301,10 +301,22 @@
                         }
                     });
                 });
+                
+                // 1. 메인 스케줄 데이터 저장
                 batch.set(doc(db, 'league', 'data', 'schedule', 'v1'), { matches: scheduleData, lastUpdated: serverTimestamp() }, { merge: true });
 
+                // 🔥 [수정된 부분] 2. 백업 데이터 저장
+                if (scheduleData.length > 0) {
+                    const backupTimestamp = new Date().toISOString();
+                    const backupDocRef = doc(db, 'league', 'backups', 'data', backupTimestamp);
+                    batch.set(backupDocRef, {
+                        schedule: scheduleData,
+                        timestamp: serverTimestamp()
+                    });
+                }
+
                 await batch.commit();
-                showToast("경기 일정 저장 완료!");
+                showToast("경기 일정 저장 및 백업 완료!");
             } catch (e) {
                 showToast(`일정 저장 실패: ${e.message || '알 수 없는 오류'}`);
             } finally {
