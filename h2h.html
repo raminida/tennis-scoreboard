@@ -128,6 +128,9 @@
             const allMatches = scheduleSnap.exists() ? scheduleSnap.data().matches || [] : [];
             const mmrHistory = historySnap.exists() ? historySnap.data().snapshots || [] : [];
             
+            // 🔥[수정된 부분] MMR 기록을 시간순으로 정렬해서 정확도를 높임
+            mmrHistory.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
             const playerData = allPlayers.find(p => p.name === playerName);
             if (!playerData) {
                 document.getElementById('player-name').textContent = `${playerName} 선수 정보 없음`;
