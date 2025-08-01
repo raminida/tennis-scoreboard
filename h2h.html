@@ -128,7 +128,6 @@
             const allMatches = scheduleSnap.exists() ? scheduleSnap.data().matches || [] : [];
             const mmrHistory = historySnap.exists() ? historySnap.data().snapshots || [] : [];
             
-            // 🔥[수정된 부분] MMR 기록을 시간순으로 정렬해서 정확도를 높임
             mmrHistory.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
             const playerData = allPlayers.find(p => p.name === playerName);
@@ -229,7 +228,8 @@
         const renderRecentMatches = (allMatches, playerName, mmrHistory) => {
             const tbody = document.getElementById('recent-matches-body');
             tbody.innerHTML = '';
-            const playerMatches = allMatches.filter(m => m.players && m.players.includes(playerName)).slice(-10).reverse();
+            // 🔥 [수정된 부분] 선수 이름에서 *를 제거하고 비교하여 경기 목록을 필터링
+            const playerMatches = allMatches.filter(m => m.players && m.players.some(p => p.replace(/\*/g, '') === playerName)).slice(-10).reverse();
 
             if(playerMatches.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5">최근 경기 기록이 없습니다.</td></tr>';
@@ -238,7 +238,9 @@
 
             playerMatches.forEach(match => {
                 const [s1, s2] = match.score.split('-').map(Number);
-                const playerIndexInMatch = match.players.findIndex(p => p === playerName);
+                // 🔥 [수정된 부분] 선수 이름에서 *를 제거하고 비교하여 플레이어의 인덱스를 찾음
+                const playerIndexInMatch = match.players.findIndex(p => p.replace(/\*/g, '') === playerName);
+                
                 const playerTeamIndex = playerIndexInMatch < 2 ? 0 : 1;
                 const isWinner = (playerTeamIndex === 0 && s1 > s2) || (playerTeamIndex === 1 && s2 > s1);
                 
@@ -305,8 +307,12 @@
 
                 allMatches.forEach(match => {
                     if (!match.players || match.players.length < 4) return;
-                    const playerTeam = match.players.slice(0, 2);
-                    const opponentTeam = match.players.slice(2, 4);
+                    
+                    // H2H 계산 시에도 *를 제거하고 비교
+                    const cleanPlayers = match.players.map(p => p.replace(/\*/g, ''));
+                    
+                    const playerTeam = cleanPlayers.slice(0, 2);
+                    const opponentTeam = cleanPlayers.slice(2, 4);
 
                     const mainPlayerInTeam1 = playerTeam.includes(mainPlayerName);
                     const mainPlayerInTeam2 = opponentTeam.includes(mainPlayerName);
