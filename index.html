@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
@@ -305,7 +306,7 @@
                 // 1. 메인 스케줄 데이터 저장
                 batch.set(doc(db, 'league', 'data', 'schedule', 'v1'), { matches: scheduleData, lastUpdated: serverTimestamp() }, { merge: true });
 
-                // 🔥 [수정된 부분] 2. 백업 데이터 저장
+                // 2. 백업 데이터 저장
                 if (scheduleData.length > 0) {
                     const backupTimestamp = new Date().toISOString();
                     const backupDocRef = doc(db, 'league', 'backups', 'data', backupTimestamp);
@@ -628,12 +629,15 @@
         const setupInputListeners = () => {
             document.getElementById('save-all')?.addEventListener('click', (e) => { 
                 e.preventDefault();
+                e.currentTarget.blur();
                 saveAllData(); 
             });
             document.getElementById('update-ranking')?.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.currentTarget.blur();
                 updateRanking();
             });
+
             document.getElementById('download-csv')?.addEventListener('click', downloadCSV);
             document.getElementById('download-html')?.addEventListener('click', downloadHTML);
             document.getElementById('h2h-page-btn')?.addEventListener('click', () => window.location.href = 'h2h.html');
@@ -710,8 +714,29 @@
                     updateRankingTable(players);
                 });
 
+                // --- 💡 수정된 부분: 스크롤 및 열린 회차 상태 복원 로직 추가 ---
                 onSnapshot(doc(db, 'league', 'data', 'schedule', 'v1'), async (docSnap) => {
                     console.log("실시간 스케줄 업데이트 수신");
+
+                    // 1. 현재 스크롤 위치와 열려있는 <details> 요소들의 상태를 저장합니다.
+                    const scrollY = window.scrollY;
+                    const openDetailsState = {
+                        groups: [], // 그룹 회차 (e.g., 1-30)
+                        rounds: []  // 개별 회차 (e.g., 1회)
+                    };
+                    document.querySelectorAll('.round-group').forEach((group, index) => {
+                        if (group.open) {
+                            openDetailsState.groups.push(index);
+                        }
+                    });
+                    document.querySelectorAll('.round-group-content > details').forEach(detail => {
+                        if (detail.open) {
+                            const roundId = detail.querySelector('.schedule-table')?.dataset.roundId;
+                            if(roundId) openDetailsState.rounds.push(parseInt(roundId));
+                        }
+                    });
+
+                    // 2. 데이터를 기반으로 화면을 다시 그립니다.
                     let scheduleData = [];
                     if (docSnap.exists() && docSnap.data().matches && docSnap.data().matches.length > 0) {
                         scheduleData = docSnap.data().matches;
@@ -724,7 +749,27 @@
                              showToast("경기 기록이 없습니다.");
                         }
                     }
+
+                    // 3. 화면이 다시 그려진 후, 저장해둔 상태를 복원합니다.
+                    openDetailsState.groups.forEach(index => {
+                        const group = document.querySelectorAll('.round-group')[index];
+                        if (group) group.open = true;
+                    });
+                    openDetailsState.rounds.forEach(roundId => {
+                        const table = document.querySelector(`.schedule-table[data-round-id='${roundId}']`);
+                        const detailElement = table?.closest('details');
+                        if (detailElement) {
+                            detailElement.open = true;
+                        }
+                    });
+                    
+                    // 4. 마지막으로 저장했던 스크롤 위치로 이동합니다.
+                    setTimeout(() => {
+                        window.scrollTo({ top: scrollY, behavior: 'auto' });
+                    }, 0);
                 });
+                // --- 수정 끝 ---
+
             } else {
                 showToast("DB 연결 없음!");
             }
