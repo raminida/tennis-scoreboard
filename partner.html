@@ -1,48 +1,9 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 호수 오픈 - 파트너 전적</title>
+    <title>2025 호수 오픈 - 파트너 전적 & 랭킹</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=stylesheet" rel="stylesheet">
@@ -59,38 +20,38 @@
         h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; color: var(--secondary-color); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: var(--spacing-lg); margin-bottom: 2rem; letter-spacing: -2px; text-shadow: 2px 2px 10px var(--shadow-color); }
         .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
         h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--border-color); }
-        .input-group { display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg); flex-wrap: wrap; }
-        input[type="text"] { width: 100%; min-width: 200px; max-width: 300px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: left; }
-        input[list] { position: relative; }
-        datalist { display: none; }
         .btn { display: inline-block; padding: var(--spacing-md) var(--spacing-lg); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; }
         html[data-theme="dark"] .btn { color: var(--bg-color); }
-        .btn:hover { transform: scale(1.05); transition: transform 0.2s; }
-        .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; max-width: 100%; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; min-width: 100%; border-collapse: collapse; }
-        th, td { padding: var(--spacing-md) 4px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; }
+        .btn.secondary { background: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); }
+        .table-wrapper { overflow-x: auto; max-width: 100%; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: var(--spacing-md); text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
+        thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; cursor: pointer; }
         th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
         html[data-theme="light"] th { background-color: #F9FAFB; }
-        td.matchup { white-space: normal; min-width: 200px; }
-        td.score-diff { color: var(--accent-gold); }
-        td.score-diff.positive { color: #4CAF50; }
-        td.score-diff.negative { color: #F44336; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--spacing-sm); margin-bottom: var(--spacing-lg); }
+        .rank-cell { font-weight: 900; color: var(--accent-gold); }
+        .win-rate { font-weight: bold; }
+        .positive { color: #4CAF50; }
+        .negative { color: #F44336; }
+        .toast { position: fixed; bottom: var(--spacing-lg); left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #333, #111); color: #fff; padding: var(--spacing-md) 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 1000; }
+        .toast.show { opacity: 1; }
+        .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .ranking-filter { display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg); flex-wrap: wrap; }
+        .filter-btn { padding: var(--spacing-sm) var(--spacing-md); background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer; color: var(--text-color); font-weight: 700; }
+        .filter-btn.active { background: var(--primary-color); color: var(--bg-color); }
+        .input-group { display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg); flex-wrap: wrap; align-items: center; }
+        input[type="text"] { width: 100%; min-width: 150px; max-width: 250px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--spacing-sm); margin: var(--spacing-lg) 0; }
         .stat-box { background: rgba(0, 0, 0, 0.2); padding: var(--spacing-md); border-radius: var(--radius); text-align: center; }
         html[data-theme="light"] .stat-box { background: rgba(0, 0, 0, 0.05); }
-        .stat-box h3 { font-size: 1.2rem; margin: 0 0 var(--spacing-sm); color: var(--primary-color); }
+        .stat-box h3 { font-size: 1rem; margin: 0 0 var(--spacing-sm); color: var(--primary-color); }
         .stat-box p { font-size: 1.5rem; font-weight: 700; margin: 0; color: var(--accent-gold); }
+        #chemistry-table tbody tr { cursor: pointer; transition: background-color 0.2s; }
+        #chemistry-table tbody tr:hover { background-color: rgba(255,255,255,0.05); }
         @media screen and (max-width: 600px) {
-            input[type="text"] { min-width: 150px; max-width: 100%; font-size: 0.9rem; }
-            th, td { padding: 4px 2px; font-size: 0.7rem; }
-            td.matchup { min-width: 120px; }
-            .btn { padding: 8px 12px; font-size: 0.9rem; }
             h1 { font-size: 2rem; }
-            h2 { font-size: 1.5rem; }
-            .input-group { flex-direction: column; }
-            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: var(--spacing-sm); }
-            .stat-box { padding: 8px; }
-            .stat-box h3 { font-size: 0.9rem; }
+            th, td { font-size: 0.75rem; padding: var(--spacing-sm) 4px; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
             .stat-box p { font-size: 1.1rem; }
         }
     </style>
@@ -98,37 +59,65 @@
 <body>
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
-        <h1>2025 호수 오픈 - 파트너 전적</h1>
+        <h1>파트너 전적 & 랭킹</h1>
+        
         <div class="section">
-            <h2>파트너 선택</h2>
+            <h2>파트너 전적 검색</h2>
             <div class="input-group">
-                <input type="text" id="player1" list="player-list" placeholder="선수 1">
-                <input type="text" id="player2" list="player-list" placeholder="선수 2">
+                <input type="text" id="player1" list="player-list" placeholder="선수 1 이름">
+                <input type="text" id="player2" list="player-list" placeholder="선수 2 이름">
                 <datalist id="player-list"></datalist>
                 <button id="search-btn" class="btn">전적 검색</button>
+                <button id="reset-btn" class="btn secondary">초기화</button>
             </div>
-            <div class="stats-grid" id="stats-grid"></div>
+            <div id="search-results-container" style="display: none;">
+                <div class="stats-grid" id="stats-grid"></div>
+                <div class="table-wrapper">
+                    <table id="partner-table">
+                        <thead>
+                            <tr><th>회차</th><th>결과</th><th>상대팀</th><th>스코어</th><th>득실차</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>최고의 케미 랭킹 (최소 5경기)</h2>
+            <div class="ranking-filter">
+                <button class="filter-btn active" data-filter="all">통합</button>
+                <button class="filter-btn" data-filter="male">남자복식</button>
+                <button class="filter-btn" data-filter="female">여자복식</button>
+                <button class="filter-btn" data-filter="mixed">혼합복식</button>
+            </div>
             <div class="table-wrapper">
-                <table id="partner-table">
+                <table id="chemistry-table">
                     <thead>
                         <tr>
-                            <th>회차</th>
-                            <th>결과</th>
-                            <th>대진</th>
-                            <th>스코어</th>
-                            <th>스코어차</th>
+                            <th data-sort="rank">순위</th>
+                            <th data-sort="pair">파트너</th>
+                            <th data-sort="chemistryScore">케미 점수</th>
+                            <th data-sort="matches">경기수</th>
+                            <th data-sort="wins">승</th>
+                            <th data-sort="losses">패</th>
+                            <th data-sort="winRate">승률(%)</th>
+                            <th data-sort="avgGameDiff">평균 득실</th>
                         </tr>
                     </thead>
-                    <tbody></tbody>
+                    <tbody>
+                        <tr><td colspan="8">데이터를 불러오는 중입니다...</td></tr>
+                    </tbody>
                 </table>
             </div>
+             <a href="index.html" class="btn" style="margin-top: 20px;">메인으로 돌아가기</a>
         </div>
     </div>
     <div id="toast" class="toast"></div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
@@ -139,155 +128,208 @@
         appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd"
     };
 
-    let db;
-    try {
-        db = getFirestore(initializeApp(firebaseConfig));
-        console.log("Firebase 초기화 성공!");
-    } catch (e) {
-        console.error("Firebase 초기화 실패:", e);
-        showToast(`Firebase 초기화 실패: ${e.message || '알 수 없는 오류'}`);
-    }
+    const db = getFirestore(initializeApp(firebaseConfig));
+    let sortKey = 'chemistryScore', sortOrder = 'desc';
+    let currentFilter = 'all';
+    let allPairStats = [];
+    let allMatches = [];
+    const playerGenderMap = new Map();
 
     function showToast(message) {
         const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3000);
-    }
-
-    async function loadPlayerNames() {
-        if (!db) {
-            showToast("DB 연결 실패!");
-            return;
-        }
-        try {
-            const rankingDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-            const playerList = document.getElementById('player-list');
-            if (rankingDoc.exists()) {
-                const players = rankingDoc.data().players || [];
-                playerList.innerHTML = players.map(player => 
-                    `<option value="${player.isFemale ? `${player.name}*` : player.name}"></option>`
-                ).join('');
-                console.log("선수 목록 로드 완료:", players.length);
-            } else {
-                console.warn("랭킹 데이터 없음!");
-                showToast("선수 목록이 없습니다!");
-            }
-        } catch (e) {
-            console.error("선수 목록 로드 실패:", e);
-            showToast(`선수 목록 로드 실패: ${e.message || '알 수 없는 오류'}`);
-        }
-    }
-
-    async function loadMatches() {
-        if (!db) {
-            showToast("DB 연결 실패!");
-            return;
-        }
-        try {
-            const scheduleDoc = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
-            if (scheduleDoc.exists()) {
-                return scheduleDoc.data().matches || [];
-            } else {
-                console.warn("스케줄 데이터 없음!");
-                showToast("스케줄 데이터가 없습니다!");
-                return [];
-            }
-        } catch (e) {
-            console.error("스케줄 로드 실패:", e);
-            showToast(`스케줄 로드 실패: ${e.message || '알 수 없는 오류'}`);
-            return [];
+        if(toast) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
     }
 
     function normalizeName(name) {
         return name ? name.replace(/[@.*\s]+/g, '').toLowerCase() : '';
     }
+    
+    function cleanName(name) {
+        return name ? name.replace(/\*/g, '').trim() : '';
+    }
 
-    async function filterMatches() {
-        const player1Input = document.getElementById('player1').value.trim();
-        const player2Input = document.getElementById('player2').value.trim();
-        if (!player1Input || !player2Input) {
-            showToast("두 선수를 모두 선택하세요!");
+    async function loadAllData() {
+        try {
+            const [scheduleDoc, rankingDoc] = await Promise.all([
+                getDoc(doc(db, 'league', 'data', 'schedule', 'v1')),
+                getDoc(doc(db, 'league', 'data', 'rankings', 'v1'))
+            ]);
+
+            if (!scheduleDoc.exists() || !rankingDoc.exists()) {
+                showToast("경기 또는 랭킹 데이터를 찾을 수 없습니다.");
+                return;
+            }
+
+            const players = rankingDoc.data().players || [];
+            const playerList = document.getElementById('player-list');
+            playerList.innerHTML = '';
+            players.forEach(p => {
+                const cleanPlayerName = cleanName(p.name);
+                playerGenderMap.set(normalizeName(p.name), p.isFemale);
+                const option = document.createElement('option');
+                option.value = cleanPlayerName;
+                playerList.appendChild(option);
+            });
+
+            allMatches = scheduleDoc.data().matches || [];
+        } catch (e) {
+            console.error("데이터 로드 실패:", e);
+            showToast("데이터 로드에 실패했습니다.");
+        }
+    }
+
+    function calculateAllPairStats() {
+        const partnerStats = {};
+
+        function getPairType(pair) {
+            const isFemale1 = playerGenderMap.get(normalizeName(pair[0])) || false;
+            const isFemale2 = playerGenderMap.get(normalizeName(pair[1])) || false;
+            if (isFemale1 && isFemale2) return 'female';
+            if (!isFemale1 && !isFemale2) return 'male';
+            return 'mixed';
+        }
+
+        function updatePairStats(pair, isWinner, gameDiff) {
+            if (pair.some(p => !p)) return;
+            const pairKey = pair.sort().join(' & ');
+            if (!partnerStats[pairKey]) {
+                partnerStats[pairKey] = { 
+                    wins: 0, losses: 0, matches: 0, totalGameDiff: 0, 
+                    pair: pair.join(' & '),
+                    type: getPairType(pair)
+                };
+            }
+            const stats = partnerStats[pairKey];
+            stats.matches++;
+            stats.totalGameDiff += gameDiff;
+            if (isWinner) stats.wins++;
+            else stats.losses++;
+        }
+
+        allMatches.forEach(match => {
+            if (!match.score || !/^\d+-\d+$/.test(match.score)) return;
+            const [score1, score2] = match.score.split('-').map(Number);
+            const team1 = [cleanName(match.players[0]), cleanName(match.players[1])];
+            const team2 = [cleanName(match.players[2]), cleanName(match.players[3])];
+            const gameDiff = score1 - score2;
+            updatePairStats(team1, score1 > score2, gameDiff);
+            updatePairStats(team2, score2 > score1, -gameDiff);
+        });
+
+        allPairStats = Object.values(partnerStats)
+            .filter(stats => stats.matches >= 5) // 최소 5경기로 변경
+            .map(stats => {
+                const winRate = stats.matches > 0 ? (stats.wins / stats.matches) * 100 : 0;
+                const avgGameDiff = stats.matches > 0 ? stats.totalGameDiff / stats.matches : 0;
+                const chemistryScore = (winRate * 10) + avgGameDiff;
+                return { ...stats, winRate, avgGameDiff, chemistryScore };
+            });
+    }
+    
+    function displayRankings() {
+        let filteredRankings = allPairStats;
+        if (currentFilter !== 'all') {
+            filteredRankings = allPairStats.filter(stats => stats.type === currentFilter);
+        }
+        renderRankingTable(filteredRankings);
+    }
+
+    function renderRankingTable(rankings) {
+        rankings.sort((a, b) => {
+            let compare;
+            if (sortKey === 'pair') {
+                compare = a.pair.localeCompare(b.pair);
+            } else {
+                compare = (b[sortKey] || 0) - (a[sortKey] || 0);
+            }
+            return sortOrder === 'asc' ? -compare : compare;
+        });
+
+        const tableBody = document.querySelector('#chemistry-table tbody');
+        tableBody.innerHTML = '';
+
+        if (rankings.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="8">조건에 맞는 파트너 조합이 없습니다. (최소 5경기)</td></tr>`;
             return;
         }
 
-        const player1 = normalizeName(player1Input);
-        const player2 = normalizeName(player2Input);
-        if (player1 === player2) {
+        rankings.forEach((stats, index) => {
+            const row = tableBody.insertRow();
+            row.dataset.pair = stats.pair; // 클릭 이벤트를 위해 데이터 속성 추가
+            row.innerHTML = `
+                <td class="rank-cell">${index + 1}</td>
+                <td>${stats.pair}</td>
+                <td>${stats.chemistryScore.toFixed(2)}</td>
+                <td>${stats.matches}</td>
+                <td>${stats.wins}</td>
+                <td>${stats.losses}</td>
+                <td class="win-rate">${stats.winRate.toFixed(1)}%</td>
+                <td class="${stats.avgGameDiff > 0 ? 'positive' : 'negative'}">${stats.avgGameDiff > 0 ? '+' : ''}${stats.avgGameDiff.toFixed(2)}</td>
+            `;
+        });
+    }
+
+    function handleSearch() {
+        const player1Input = document.getElementById('player1').value.trim();
+        const player2Input = document.getElementById('player2').value.trim();
+        if (!player1Input || !player2Input) {
+            showToast("두 선수를 모두 입력하세요!");
+            return;
+        }
+
+        const normP1 = normalizeName(player1Input);
+        const normP2 = normalizeName(player2Input);
+        if (normP1 === normP2) {
             showToast("동일한 선수를 선택할 수 없습니다!");
             return;
         }
 
-        const matches = await loadMatches();
-        const filteredMatches = matches.filter(match => {
-            const normalizedPlayers = match.players.map(normalizeName);
-            const player1Index = normalizedPlayers.indexOf(player1);
-            const player2Index = normalizedPlayers.indexOf(player2);
-            if (player1Index === -1 || player2Index === -1) return false;
-            const isPlayer1Team1 = player1Index < 2;
-            const isPlayer2Team1 = player2Index < 2;
-            return isPlayer1Team1 === isPlayer2Team1;
+        const filteredMatches = allMatches.filter(match => {
+            const normalizedPlayers = match.players.map(p => normalizeName(p));
+            const p1Index = normalizedPlayers.indexOf(normP1);
+            const p2Index = normalizedPlayers.indexOf(normP2);
+            if (p1Index === -1 || p2Index === -1) return false;
+            return Math.floor(p1Index / 2) === Math.floor(p2Index / 2);
         });
-
-        console.log("필터링된 매치:", filteredMatches);
-
+        
+        const resultsContainer = document.getElementById('search-results-container');
         const statsGrid = document.getElementById('stats-grid');
         const tableBody = document.querySelector('#partner-table tbody');
+        
         tableBody.innerHTML = '';
         statsGrid.innerHTML = '';
 
         if (filteredMatches.length === 0) {
             showToast("선택한 파트너 간의 전적이 없습니다!");
+            resultsContainer.style.display = 'none';
             return;
         }
 
         let wins = 0, losses = 0, totalGameDiff = 0;
         filteredMatches.forEach(match => {
-            const player1Index = match.players.findIndex(p => normalizeName(p) === player1);
-            const isTeam1 = player1Index < 2;
-            let matchup = isTeam1 
-                ? `${match.players[2].replace(/\*/g, '')}+${match.players[3].replace(/\*/g, '')}`
-                : `${match.players[0].replace(/\*/g, '')}+${match.players[1].replace(/\*/g, '')}`;
-            let result = '-';
-            let gameDiff = 0;
-            let scoreDiffDisplay = '-';
+            const p1Index = match.players.findIndex(p => normalizeName(p) === normP1);
+            const isTeam1 = p1Index < 2;
+            const [score1, score2] = match.score.split('-').map(Number);
+            const isWinner = isTeam1 ? score1 > score2 : score2 > score1;
+            const gameDiff = isTeam1 ? score1 - score2 : score2 - score1;
+            
+            if (isWinner) wins++; else losses++;
+            totalGameDiff += gameDiff;
 
-            if (match.score && /^\d+-\d+$/.test(match.score)) {
-                const [score1, score2] = match.score.split('-').map(Number);
-                if (isTeam1) {
-                    gameDiff = score1 - score2;
-                    scoreDiffDisplay = gameDiff > 0 ? `+${gameDiff}` : `${gameDiff}`;
-                    if (score1 > score2) {
-                        wins++;
-                        result = '✅';
-                    } else {
-                        losses++;
-                        result = '❌';
-                    }
-                } else {
-                    gameDiff = score2 - score1;
-                    scoreDiffDisplay = gameDiff > 0 ? `+${gameDiff}` : `${gameDiff}`;
-                    if (score2 > score1) {
-                        wins++;
-                        result = '✅';
-                    } else {
-                        losses++;
-                        result = '❌';
-                    }
-                }
-                totalGameDiff += gameDiff;
-            }
-
-            const row = document.createElement('tr');
+            const opponentTeam = isTeam1 ? `${cleanName(match.players[2])} & ${cleanName(match.players[3])}` : `${cleanName(match.players[0])} & ${cleanName(match.players[1])}`;
+            
+            const row = tableBody.insertRow();
             row.innerHTML = `
                 <td>${match.round}</td>
-                <td>${result}</td>
-                <td class="matchup">${matchup}</td>
-                <td>${match.score || '-'}</td>
-                <td class="score-diff ${gameDiff > 0 ? 'positive' : gameDiff < 0 ? 'negative' : ''}">${scoreDiffDisplay}</td>
+                <td>${isWinner ? '✅' : '❌'}</td>
+                <td>${opponentTeam}</td>
+                <td>${match.score}</td>
+                <td class="${gameDiff > 0 ? 'positive' : 'negative'}">${gameDiff > 0 ? '+' : ''}${gameDiff}</td>
             `;
-            tableBody.appendChild(row);
         });
 
         const totalMatches = wins + losses;
@@ -298,8 +340,9 @@
             <div class="stat-box"><h3>승</h3><p>${wins}</p></div>
             <div class="stat-box"><h3>패</h3><p>${losses}</p></div>
             <div class="stat-box"><h3>승률(%)</h3><p>${winRate}</p></div>
-            <div class="stat-box"><h3>평균 점수차</h3><p>${avgGameDiff > 0 ? '+' : ''}${avgGameDiff}</p></div>
+            <div class="stat-box"><h3>평균 득실</h3><p>${avgGameDiff > 0 ? '+' : ''}${avgGameDiff}</p></div>
         `;
+        resultsContainer.style.display = 'block';
         showToast("파트너 전적 검색 완료!");
     }
 
@@ -310,28 +353,56 @@
         localStorage.setItem('theme', theme);
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log("DOMContentLoaded 이벤트 실행");
+    document.addEventListener('DOMContentLoaded', async () => {
         applyTheme(localStorage.getItem('theme') || 'dark');
-        loadPlayerNames();
-        const searchBtn = document.getElementById('search-btn');
-        searchBtn.addEventListener('click', filterMatches);
+        
+        await loadAllData();
+        calculateAllPairStats();
+        displayRankings();
+
+        // --- Event Listeners ---
+        document.getElementById('search-btn').addEventListener('click', handleSearch);
+        
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            document.getElementById('player1').value = '';
+            document.getElementById('player2').value = '';
+            document.getElementById('search-results-container').style.display = 'none';
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelector('.filter-btn.active').classList.remove('active');
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                displayRankings();
+            });
+        });
+
+        document.querySelectorAll('#chemistry-table thead th').forEach(th => {
+            th.addEventListener('click', () => {
+                const newSortKey = th.dataset.sort;
+                if (!newSortKey) return;
+                sortOrder = (sortKey === newSortKey && sortOrder === 'desc') ? 'asc' : 'desc';
+                sortKey = newSortKey;
+                displayRankings();
+            });
+        });
+
+        // 랭킹 테이블 행 클릭 이벤트 (이벤트 위임)
+        document.querySelector('#chemistry-table tbody').addEventListener('click', (e) => {
+            const row = e.target.closest('tr');
+            if (!row || !row.dataset.pair) return;
+
+            const [p1, p2] = row.dataset.pair.split(' & ');
+            document.getElementById('player1').value = p1.trim();
+            document.getElementById('player2').value = p2.trim();
+            handleSearch();
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // 검색 후 맨 위로 스크롤
+        });
+
         document.getElementById('theme-toggle').addEventListener('click', () => 
             applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark')
         );
-        document.querySelectorAll('#player1, #player2').forEach(input => {
-            input.addEventListener('change', () => {
-                const datalist = document.getElementById('player-list');
-                const options = Array.from(datalist.options).map(opt => opt.value);
-                if (input.value && !options.includes(input.value)) {
-                    input.value = '';
-                    showToast("유효한 선수 이름을 선택하세요!");
-                }
-            });
-            input.addEventListener('keypress', e => {
-                if (e.key === 'Enter') filterMatches();
-            });
-        });
     });
 </script>
 </body>
