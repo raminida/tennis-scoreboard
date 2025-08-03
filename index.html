@@ -79,6 +79,14 @@
         .potw-player { font-size: 2rem; font-weight: 900; }
         .potw-reason { font-size: 1rem; opacity: 0.9; }
 
+        /* Tier Styles */
+        #ranking-table tbody tr { border-left: 5px solid transparent; }
+        #ranking-table tbody tr.tier-diamond { border-left-color: #00bfff; }
+        #ranking-table tbody tr.tier-platinum { border-left-color: #4de6a1; }
+        #ranking-table tbody tr.tier-gold { border-left-color: #ffd700; }
+        #ranking-table tbody tr.tier-silver { border-left-color: #c0c0c0; }
+        #ranking-table tbody tr.tier-bronze { border-left-color: #cd7f32; }
+
         @media screen and (max-width: 600px) {
             body { padding: 4px; }
             .section { padding: var(--spacing-md); }
@@ -315,6 +323,19 @@
             const playerList = document.getElementById('player-name-list');
             playerList.innerHTML = allPlayersData.map(p => `<option value="${p.name}"></option>`).join('');
 
+            const totalPlayers = rankingData.length;
+            rankingData.sort((a, b) => b.mmr - a.mmr);
+            rankingData.forEach((p, index) => p.trueRank = index + 1);
+
+            const getTier = (rank) => {
+                if (!totalPlayers) return { name: 'Unranked', class: 'tier-none' };
+                const percentile = (rank / totalPlayers) * 100;
+                if (percentile <= 10) return { name: '💎', class: 'tier-diamond' };
+                if (percentile <= 30) return { name: '💍', class: 'tier-platinum' };
+                if (percentile <= 60) return { name: '🥇', class: 'tier-gold' };
+                if (percentile <= 90) return { name: '🥈', class: 'tier-silver' };
+                return { name: '🥉', class: 'tier-bronze' };
+            };
 
             let genderFilteredData;
             if (currentFilter === 'male') {
@@ -360,7 +381,9 @@
             }
 
             finalFilteredData.forEach((player) => {
+                const playerTier = getTier(player.trueRank);
                 const row = rankingBody.insertRow();
+                row.className = playerTier.class;
                 row.innerHTML = `
                     <td class="rank-cell">${player.rank}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span></td>
                     <td><input type="text" value="${player.isFemale ? `${player.name}*` : player.name}" class="ranking-player readonly" readonly></td>
