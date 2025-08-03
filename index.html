@@ -148,7 +148,7 @@
             <div class="btn-group">
                 <a href="dash.html" class="btn" id="dashboard-link">통계 대시보드</a>
                 <button id="download-csv" class="btn">CSV 다운로드</button>
-                <a href="h2h.html" class="btn" id="h2h-page-btn">개인 프로필 & 상대전적</a>
+                <a href="hall_of_fame.html" class="btn">명예의 전당</a>
                 <a href="partner.html" class="btn">파트너 전적 & 랭킹</a> 
             </div>
         </div>
@@ -403,32 +403,29 @@
                     let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
                     if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
                     
-                    if (isPlayerTeamMixed && isOpponentTeamAllMale) {
-                        if (isWinner) {
+                    if (isWinner) {
+                        if (isPlayerTeamMixed && isOpponentTeamAllMale) {
                             mmrChange *= 1.5;
-                        } else { 
-                            mmrChange *= 0.3;
-                        }
-                    } 
-                    else if (isPlayerTeamAllMale && isOpponentTeamMixed) {
-                        if (isWinner) {
+                        } else if (isPlayerTeamAllMale && isOpponentTeamMixed) {
                             mmrChange *= 0.5;
                         } else {
-                            mmrChange *= 1.5;
-                        }
-                    }
-                    else {
-                        if (isWinner) {
                             mmrChange *= constants.WIN_BONUS;
+                        }
+                        if (mmrChange < constants.MIN_WIN_POINTS) {
+                            mmrChange = constants.MIN_WIN_POINTS;
+                        }
+                    } else { // Player Lost
+                        if (isPlayerTeamMixed && isOpponentTeamAllMale) {
+                            mmrChange *= 0.3;
                         } else {
-                            mmrChange *= Math.abs(playerMMR - (partnerMMR || constants.BASE_MMR)) >= constants.MMR_DIFF_THRESHOLD ? constants.REDUCED_LOSS_REDUCTION : constants.LOSS_REDUCTION;
+                            let lossMultiplier = (isPlayerTeamAllMale && isOpponentTeamMixed) ? 1.5 : constants.LOSS_REDUCTION;
+                            if (player.mmr > partnerMMR && Math.abs(player.mmr - partnerMMR) >= constants.MMR_DIFF_THRESHOLD) {
+                                lossMultiplier = constants.REDUCED_LOSS_REDUCTION;
+                            }
+                            mmrChange *= lossMultiplier;
                         }
                     }
                     
-                    if (isWinner && mmrChange < constants.MIN_WIN_POINTS) {
-                        mmrChange = constants.MIN_WIN_POINTS;
-                    }
-
                     return Math.round(mmrChange);
                 };
 
