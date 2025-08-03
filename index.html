@@ -390,8 +390,8 @@
 
             setTimeout(async () => {
                 const constants = {
-                    BASE_MMR: 1500, BASE_K: 45, WIN_BONUS: 1.15, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
-                    MMR_DIFF_THRESHOLD: 200, REDUCED_LOSS_REDUCTION: 0.5 
+                    BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
+                    MMR_DIFF_THRESHOLD: 200, REDUCED_LOSS_REDUCTION: 0.5, MIN_WIN_POINTS: 5
                 };
 
                 const players = {}, partnerStats = {}, streaks = {};
@@ -425,6 +425,10 @@
                         }
                     }
                     
+                    if (isWinner && mmrChange < constants.MIN_WIN_POINTS) {
+                        mmrChange = constants.MIN_WIN_POINTS;
+                    }
+
                     return Math.round(mmrChange);
                 };
 
