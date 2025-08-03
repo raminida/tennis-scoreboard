@@ -390,7 +390,7 @@
 
             setTimeout(async () => {
                 const constants = {
-                    BASE_MMR: 1500, BASE_K: 45, WIN_BONUS: 1.1, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
+                    BASE_MMR: 1500, BASE_K: 45, WIN_BONUS: 1.15, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
                     MMR_DIFF_THRESHOLD: 200, REDUCED_LOSS_REDUCTION: 0.5 
                 };
 
@@ -558,7 +558,6 @@
 
                 const allCalculatedPlayers = Object.values(players);
                 
-                // 이주의 선수 선정 (최근 7일 기준)
                 const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
                 const recentMatches = allMatchesData.filter(m => new Date(m.timestamp) >= sevenDaysAgo);
                 const weeklyStats = {};
@@ -576,10 +575,10 @@
                         }
                         const stats = weeklyStats[playerName];
                         stats.games++;
-                        if (i < 2) { // Team 1
+                        if (i < 2) {
                             if (team1Won) stats.wins++; else stats.losses++;
                             stats.gameDiff += gameDiff;
-                        } else { // Team 2
+                        } else {
                             if (!team1Won) stats.wins++; else stats.losses++;
                             stats.gameDiff -= gameDiff;
                         }
