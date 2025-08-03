@@ -24,11 +24,12 @@
         .stat-title { font-size: 0.9rem; color: var(--text-secondary-color); margin-bottom: 8px; }
         .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--text-color); }
         .section { background: var(--surface-color); padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 3rem; border: 1px solid var(--border-color); }
-        h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; color: var(--primary-color); margin-bottom: 20px; border-bottom: 2px solid var(--border-color); }
+        h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; color: var(--primary-color); margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
         #mmr-chart-container { height: 400px; }
         .h2h-controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
         #opponent-select { flex-grow: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--surface-color); color: var(--text-color); }
         .h2h-result { font-size: 1.2rem; font-weight: bold; }
+        .table-wrapper { overflow-x: auto; }
         .recent-matches-table { width: 100%; border-collapse: collapse; }
         .recent-matches-table th, .recent-matches-table td { padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
         .win { color: #4CAF50; }
@@ -79,10 +80,12 @@
 
         <div class="section">
             <h2>최근 10경기</h2>
-            <table class="recent-matches-table">
-                <thead><tr><th>결과</th><th>파트너</th><th>상대팀</th><th>스코어</th><th>MMR 변동</th></tr></thead>
-                <tbody id="recent-matches-body"></tbody>
-            </table>
+            <div class="table-wrapper">
+                <table class="recent-matches-table">
+                    <thead><tr><th>결과</th><th>파트너</th><th>우리 팀 MMR</th><th>상대팀</th><th>상대 팀 MMR</th><th>스코어</th><th>MMR 변동</th></tr></thead>
+                    <tbody id="recent-matches-body"></tbody>
+                </table>
+            </div>
         </div>
         <div style="text-align:center;">
              <a href="index.html" class="btn">메인으로 돌아가기</a>
@@ -205,22 +208,34 @@
         };
 
         const constants = {
-            BASE_MMR: 1500, BASE_K: 45, WIN_BONUS: 1.1, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
-            MMR_DIFF_THRESHOLD: 200, REDUCED_LOSS_REDUCTION: 0.5, MMR_LOSS_CAP: 30
+            BASE_MMR: 1500, BASE_K: 45, WIN_BONUS: 1.15, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
+            MMR_DIFF_THRESHOLD: 200, REDUCED_LOSS_REDUCTION: 0.5
         };
 
-        const calculateMMRChangeForMatch = (playerMMR, partnerMMR, opponentTeamMMR, isWinner, isFourPoint, scoreWeight) => {
+        const calculateMMRChangeForMatch = (playerMMR, partnerMMR, opponentTeamMMR, isWinner, isFourPoint, scoreWeight, isPlayerTeamAllMale, isPlayerTeamMixed, isOpponentTeamAllMale, isOpponentTeamMixed) => {
             let K = constants.BASE_K;
             const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
             let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
             if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
-            
-            if (isWinner) {
-                mmrChange *= constants.WIN_BONUS;
+
+            if (isPlayerTeamMixed && isOpponentTeamAllMale) {
+                if (isWinner) {
+                    mmrChange *= 1.5;
+                } else {
+                    mmrChange *= 0.3;
+                }
+            } else if (isPlayerTeamAllMale && isOpponentTeamMixed) {
+                if (isWinner) {
+                    mmrChange *= 0.5;
+                } else {
+                    mmrChange *= 1.5;
+                }
             } else {
-                const mmrDiff = Math.abs(playerMMR - (partnerMMR || constants.BASE_MMR));
-                mmrChange *= mmrDiff >= constants.MMR_DIFF_THRESHOLD ? constants.REDUCED_LOSS_REDUCTION : constants.LOSS_REDUCTION;
-                if (Math.abs(mmrChange) > constants.MMR_LOSS_CAP) mmrChange = -constants.MMR_LOSS_CAP;
+                if (isWinner) {
+                    mmrChange *= constants.WIN_BONUS;
+                } else {
+                    mmrChange *= Math.abs(playerMMR - (partnerMMR || constants.BASE_MMR)) >= constants.MMR_DIFF_THRESHOLD ? constants.REDUCED_LOSS_REDUCTION : constants.LOSS_REDUCTION;
+                }
             }
             return Math.round(mmrChange);
         };
@@ -228,17 +243,15 @@
         const renderRecentMatches = (allMatches, playerName, mmrHistory) => {
             const tbody = document.getElementById('recent-matches-body');
             tbody.innerHTML = '';
-            // 🔥 [수정된 부분] 선수 이름에서 *를 제거하고 비교하여 경기 목록을 필터링
             const playerMatches = allMatches.filter(m => m.players && m.players.some(p => p.replace(/\*/g, '') === playerName)).slice(-10).reverse();
 
             if(playerMatches.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5">최근 경기 기록이 없습니다.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7">최근 경기 기록이 없습니다.</td></tr>';
                 return;
             }
 
             playerMatches.forEach(match => {
                 const [s1, s2] = match.score.split('-').map(Number);
-                // 🔥 [수정된 부분] 선수 이름에서 *를 제거하고 비교하여 플레이어의 인덱스를 찾음
                 const playerIndexInMatch = match.players.findIndex(p => p.replace(/\*/g, '') === playerName);
                 
                 const playerTeamIndex = playerIndexInMatch < 2 ? 0 : 1;
@@ -254,6 +267,9 @@
                 const opponentNames = playerTeamIndex === 0 ? [match.players[2], match.players[3]] : [match.players[0], match.players[1]];
 
                 let mmrChange = 0;
+                let myTeamAvgMMR = '-';
+                let opponentTeamAvgMMR = '-';
+                
                 const matchTime = new Date(match.timestamp || 0).getTime();
                 const snapshotBefore = mmrHistory.filter(h => new Date(h.createdAt).getTime() <= matchTime).pop();
 
@@ -264,12 +280,19 @@
                     const partnerMMR = getMmr(partnerName);
                     const opponent1MMR = getMmr(opponentNames[0]);
                     const opponent2MMR = getMmr(opponentNames[1]);
-                    const opponentTeamMMR = (opponent1MMR + opponent2MMR) / 2;
+
+                    myTeamAvgMMR = Math.round((mainPlayerMMR + partnerMMR) / 2);
+                    opponentTeamAvgMMR = Math.round((opponent1MMR + opponent2MMR) / 2);
 
                     const gameDiff = Math.abs(s1 - s2);
                     const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
 
-                    mmrChange = calculateMMRChangeForMatch(mainPlayerMMR, partnerMMR, opponentTeamMMR, isWinner, match.isFourPoint, scoreWeight);
+                    const isPlayerTeamMixed = (playerName.includes('*') && !partnerName.includes('*')) || (!playerName.includes('*') && partnerName.includes('*'));
+                    const isOpponentTeamMixed = (opponentNames[0].includes('*') && !opponentNames[1].includes('*')) || (!opponentNames[0].includes('*') && opponentNames[1].includes('*'));
+                    const isPlayerTeamAllMale = !playerName.includes('*') && !partnerName.includes('*');
+                    const isOpponentTeamAllMale = !opponentNames[0].includes('*') && !opponentNames[1].includes('*');
+
+                    mmrChange = calculateMMRChangeForMatch(mainPlayerMMR, partnerMMR, opponentTeamAvgMMR, isWinner, match.isFourPoint, scoreWeight, isPlayerTeamAllMale, isPlayerTeamMixed, isOpponentTeamAllMale, isOpponentTeamMixed);
                 }
                 
                 const mmrChangeString = mmrChange > 0 ? `+${mmrChange}` : (mmrChange < 0 ? `${mmrChange}` : '0');
@@ -278,8 +301,10 @@
                 const row = `
                     <tr>
                         <td class="${isWinner ? 'win' : 'loss'}">${isWinner ? '승' : '패'}</td>
-                        <td>${partnerName}</td>
-                        <td>${opponentNames[0]} & ${opponentNames[1]}</td>
+                        <td>${partnerName.replace(/\*/g, '')}</td>
+                        <td>${myTeamAvgMMR}</td>
+                        <td>${opponentNames[0].replace(/\*/g, '')} & ${opponentNames[1].replace(/\*/g, '')}</td>
+                        <td>${opponentTeamAvgMMR}</td>
                         <td>${match.score}</td>
                         <td class="${mmrChangeClass}">${mmrChangeString}</td>
                     </tr>
@@ -308,7 +333,6 @@
                 allMatches.forEach(match => {
                     if (!match.players || match.players.length < 4) return;
                     
-                    // H2H 계산 시에도 *를 제거하고 비교
                     const cleanPlayers = match.players.map(p => p.replace(/\*/g, ''));
                     
                     const playerTeam = cleanPlayers.slice(0, 2);
