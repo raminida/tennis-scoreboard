@@ -391,7 +391,7 @@
             setTimeout(async () => {
                 const constants = {
                     BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
-                    MMR_DIFF_THRESHOLD: 200, REDUCED_LOSS_REDUCTION: 0.5, MIN_WIN_POINTS: 15, TOP_TIER_THRESHOLD: 1850
+                    MIN_WIN_POINTS: 10
                 };
 
                 const players = {}, partnerStats = {}, streaks = {};
@@ -416,10 +416,7 @@
                         }
                     } else { // Player Lost
                         let lossMultiplier = constants.LOSS_REDUCTION;
-                        if (player.mmr < constants.TOP_TIER_THRESHOLD && Math.abs(player.mmr - (partnerMMR || constants.BASE_MMR)) >= constants.MMR_DIFF_THRESHOLD) {
-                            lossMultiplier = constants.REDUCED_LOSS_REDUCTION;
-                        }
-                        if (isPlayerTeamMixed && isOpponentTeamAllMale) {
+                         if (isPlayerTeamMixed && isOpponentTeamAllMale) {
                             lossMultiplier = 0.3;
                         } else if (isPlayerTeamAllMale && isOpponentTeamMixed) {
                             lossMultiplier = 1.5;
@@ -453,12 +450,21 @@
                             }
                         });
 
-                        const team1IsFemale = [players[playerNames[0]].isFemale, players[playerNames[1]].isFemale];
-                        const team2IsFemale = [players[playerNames[2]].isFemale, players[playerNames[3]].isFemale];
-                        const isTeam1Mixed = team1IsFemale.filter(Boolean).length === 1;
-                        const isTeam2Mixed = team2IsFemale.filter(Boolean).length === 1;
-                        const isTeam1AllMale = team1IsFemale.every(isFemale => !isFemale);
-                        const isTeam2AllMale = team2IsFemale.every(isFemale => !isFemale);
+                        const isPlayerEffectivelyFemale = (player) => player.isFemale && player.mmr < 1850;
+
+                        const team1IsEffectivelyFemale = [
+                            isPlayerEffectivelyFemale(players[playerNames[0]]),
+                            isPlayerEffectivelyFemale(players[playerNames[1]])
+                        ];
+                        const team2IsEffectivelyFemale = [
+                            isPlayerEffectivelyFemale(players[playerNames[2]]),
+                            isPlayerEffectivelyFemale(players[playerNames[3]])
+                        ];
+
+                        const isTeam1Mixed = team1IsEffectivelyFemale.filter(Boolean).length === 1;
+                        const isTeam2Mixed = team2IsEffectivelyFemale.filter(Boolean).length === 1;
+                        const isTeam1AllMale = team1IsEffectivelyFemale.every(isFemale => !isFemale);
+                        const isTeam2AllMale = team2IsEffectivelyFemale.every(isFemale => !isFemale);
 
                         let team1MMR = ((players[playerNames[0]]?.mmr || constants.BASE_MMR) + (players[playerNames[1]]?.mmr || constants.BASE_MMR)) / 2;
                         let team2MMR = ((players[playerNames[2]]?.mmr || constants.BASE_MMR) + (players[playerNames[3]]?.mmr || constants.BASE_MMR)) / 2;
