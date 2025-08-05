@@ -390,36 +390,35 @@
 
             setTimeout(async () => {
                 const constants = {
-                    BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
-                    MIN_WIN_POINTS: 10
+                    BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6
                 };
 
                 const players = {}, partnerStats = {}, streaks = {};
                 
-                const updatePlayerMMR = (player, opponentTeamMMR, isWinner, partnerMMR, isFourPoint, scoreWeight, isPlayerTeamAllMale, isPlayerTeamMixed, isOpponentTeamAllMale, isOpponentTeamMixed) => {
+                const updatePlayerMMR = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight) => {
                     if (!player) return 0;
-                    let K = constants.BASE_K, playerMMR = player.mmr || constants.BASE_MMR;
+                    let K = constants.BASE_K;
+                    let playerMMR = player.mmr || constants.BASE_MMR;
                     const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
                     let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
+
                     if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
+
+                    const isPlayerEffectivelyFemale = player.isFemale && player.mmr < 1850;
+                    const isPartnerEffectivelyFemale = partner.isFemale && partner.mmr < 1850;
+                    
+                    const isPlayerTeamMixed = (isPlayerEffectivelyFemale && !isPartnerEffectivelyFemale) || (!isPlayerEffectivelyFemale && isPartnerEffectivelyFemale);
                     
                     if (isWinner) {
-                        if (isPlayerTeamMixed && isOpponentTeamAllMale) {
+                        if (isPlayerTeamMixed) { 
                             mmrChange *= 1.5;
-                        } else if (isPlayerTeamAllMale && isOpponentTeamMixed) {
-                            mmrChange *= 0.5;
                         } else {
                             mmrChange *= constants.WIN_BONUS;
                         }
-                        if (mmrChange < constants.MIN_WIN_POINTS) {
-                            mmrChange = constants.MIN_WIN_POINTS;
-                        }
                     } else { // Player Lost
                         let lossMultiplier = constants.LOSS_REDUCTION;
-                         if (isPlayerTeamMixed && isOpponentTeamAllMale) {
+                        if (isPlayerTeamMixed) {
                             lossMultiplier = 0.3;
-                        } else if (isPlayerTeamAllMale && isOpponentTeamMixed) {
-                            lossMultiplier = 1.5;
                         }
                         mmrChange *= lossMultiplier;
                     }
@@ -449,25 +448,12 @@
                                 streaks[name] = { count: 0, isWin: false };
                             }
                         });
+                        
+                        const team1Players = [players[playerNames[0]], players[playerNames[1]]];
+                        const team2Players = [players[playerNames[2]], players[playerNames[3]]];
 
-                        const isPlayerEffectivelyFemale = (player) => player.isFemale && player.mmr < 1850;
-
-                        const team1IsEffectivelyFemale = [
-                            isPlayerEffectivelyFemale(players[playerNames[0]]),
-                            isPlayerEffectivelyFemale(players[playerNames[1]])
-                        ];
-                        const team2IsEffectivelyFemale = [
-                            isPlayerEffectivelyFemale(players[playerNames[2]]),
-                            isPlayerEffectivelyFemale(players[playerNames[3]])
-                        ];
-
-                        const isTeam1Mixed = team1IsEffectivelyFemale.filter(Boolean).length === 1;
-                        const isTeam2Mixed = team2IsEffectivelyFemale.filter(Boolean).length === 1;
-                        const isTeam1AllMale = team1IsEffectivelyFemale.every(isFemale => !isFemale);
-                        const isTeam2AllMale = team2IsEffectivelyFemale.every(isFemale => !isFemale);
-
-                        let team1MMR = ((players[playerNames[0]]?.mmr || constants.BASE_MMR) + (players[playerNames[1]]?.mmr || constants.BASE_MMR)) / 2;
-                        let team2MMR = ((players[playerNames[2]]?.mmr || constants.BASE_MMR) + (players[playerNames[3]]?.mmr || constants.BASE_MMR)) / 2;
+                        let team1MMR = (team1Players[0].mmr + team1Players[1].mmr) / 2;
+                        let team2MMR = (team2Players[0].mmr + team2Players[1].mmr) / 2;
                         
                         const [s1, s2] = score.split('-').map(Number);
                         const actual1 = s1 > s2 ? 1 : 0;
@@ -475,10 +461,10 @@
                         const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
 
                         const mmrChanges = [
-                            updatePlayerMMR(players[playerNames[0]], team2MMR, actual1, players[playerNames[1]]?.mmr, isFourPoint, scoreWeight, isTeam1AllMale, isTeam1Mixed, isTeam2AllMale, isTeam2Mixed),
-                            updatePlayerMMR(players[playerNames[1]], team2MMR, actual1, players[playerNames[0]]?.mmr, isFourPoint, scoreWeight, isTeam1AllMale, isTeam1Mixed, isTeam2AllMale, isTeam2Mixed),
-                            updatePlayerMMR(players[playerNames[2]], team1MMR, 1 - actual1, players[playerNames[3]]?.mmr, isFourPoint, scoreWeight, isTeam2AllMale, isTeam2Mixed, isTeam1AllMale, isTeam1Mixed),
-                            updatePlayerMMR(players[playerNames[3]], team1MMR, 1 - actual1, players[playerNames[2]]?.mmr, isFourPoint, scoreWeight, isTeam2AllMale, isTeam2Mixed, isTeam1AllMale, isTeam1Mixed)
+                            updatePlayerMMR(team1Players[0], team2MMR, actual1, team1Players[1], isFourPoint, scoreWeight),
+                            updatePlayerMMR(team1Players[1], team2MMR, actual1, team1Players[0], isFourPoint, scoreWeight),
+                            updatePlayerMMR(team2Players[0], team1MMR, 1 - actual1, team2Players[1], isFourPoint, scoreWeight),
+                            updatePlayerMMR(team2Players[1], team1MMR, 1 - actual1, team2Players[0], isFourPoint, scoreWeight)
                         ];
 
                         const isClose = Math.abs(s1 - s2) <= 2;
@@ -570,39 +556,95 @@
                 const recentMatches = allMatchesData.filter(m => new Date(m.timestamp) >= sevenDaysAgo);
                 const weeklyStats = {};
 
+                const historySnap = await getDoc(doc(db, 'league', 'data', 'rankingHistory', 'v1'));
+                const mmrHistory = historySnap.exists() ? historySnap.data().snapshots || [] : [];
+                mmrHistory.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                const startSnapshot = mmrHistory.filter(h => new Date(h.createdAt) < sevenDaysAgo).pop() || {};
+
+                recentMatches.forEach(match => {
+                    match.players.forEach(p => {
+                        const playerName = p.replace(/\*/g, '');
+                        if (!weeklyStats[playerName]) {
+                            const startMMRKey = playerName.replace(/\./g, '_');
+                            const startMMR = startSnapshot[startMMRKey] || constants.BASE_MMR;
+                            weeklyStats[playerName] = { 
+                                name: playerName, 
+                                wins: 0, 
+                                losses: 0, 
+                                games: 0, 
+                                currentStreak: 0, 
+                                maxStreak: 0,
+                                startMMR: startMMR,
+                                endMMR: startMMR 
+                            };
+                        }
+                    });
+                });
+
+                recentMatches.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                 recentMatches.forEach(match => {
                     if (!match.score || !/^\d+-\d+$/.test(match.score)) return;
                     const [s1, s2] = match.score.split('-').map(Number);
                     const team1Won = s1 > s2;
-                    const gameDiff = s1 - s2;
 
-                    for (let i = 0; i < 4; i++) {
-                        const playerName = match.players[i].replace(/\*/g, '');
-                        if (!weeklyStats[playerName]) {
-                            weeklyStats[playerName] = { name: playerName, wins: 0, losses: 0, games: 0, gameDiff: 0 };
-                        }
+                    const team1 = match.players.slice(0, 2).map(p => p.replace(/\*/g, ''));
+                    const team2 = match.players.slice(2, 4).map(p => p.replace(/\*/g, ''));
+
+                    team1.forEach(playerName => {
                         const stats = weeklyStats[playerName];
+                        if (!stats) return;
                         stats.games++;
-                        if (i < 2) {
-                            if (team1Won) stats.wins++; else stats.losses++;
-                            stats.gameDiff += gameDiff;
+                        if (team1Won) {
+                            stats.wins++;
+                            stats.currentStreak++;
+                            if (stats.currentStreak > stats.maxStreak) {
+                                stats.maxStreak = stats.currentStreak;
+                            }
                         } else {
-                            if (!team1Won) stats.wins++; else stats.losses++;
-                            stats.gameDiff -= gameDiff;
+                            stats.losses++;
+                            stats.currentStreak = 0;
                         }
+                    });
+
+                    team2.forEach(playerName => {
+                        const stats = weeklyStats[playerName];
+                        if (!stats) return;
+                        stats.games++;
+                        if (!team1Won) {
+                            stats.wins++;
+                            stats.currentStreak++;
+                            if (stats.currentStreak > stats.maxStreak) {
+                                stats.maxStreak = stats.currentStreak;
+                            }
+                        } else {
+                            stats.losses++;
+                            stats.currentStreak = 0;
+                        }
+                    });
+                });
+
+                Object.values(weeklyStats).forEach(stats => {
+                    const finalPlayerData = allCalculatedPlayers.find(p => p.name === stats.name);
+                    if (finalPlayerData) {
+                        stats.endMMR = finalPlayerData.mmr;
                     }
                 });
 
                 const potwCandidates = Object.values(weeklyStats)
                     .filter(s => s.games >= 3)
-                    .map(s => ({...s, winRate: s.wins / s.games}))
-                    .sort((a, b) => b.winRate - a.winRate || b.wins - a.wins || b.gameDiff - a.gameDiff);
+                    .map(s => {
+                        const winRate = s.games > 0 ? s.wins / s.games : 0;
+                        const mmrGain = s.endMMR - s.startMMR;
+                        const score = (s.wins * 0.5) + (s.maxStreak * 0.2) + (winRate * 100 * 0.2) + (mmrGain * 0.1);
+                        return { ...s, winRate, mmrGain, score };
+                    })
+                    .sort((a, b) => b.score - a.score);
 
                 let potw = { players: [], reason: "최근 7일간 데이터 부족" };
                 if (potwCandidates.length > 0) {
                     const topPlayer = potwCandidates[0];
                     potw.players = [topPlayer.name];
-                    potw.reason = `최근 7일간 ${topPlayer.wins}승 ${topPlayer.losses}패 (승률 ${Math.round(topPlayer.winRate * 100)}%)`;
+                    potw.reason = `최근 7일간: ${topPlayer.wins}승, ${topPlayer.maxStreak}연승, 승률 ${Math.round(topPlayer.winRate * 100)}%, MMR +${Math.round(topPlayer.mmrGain)}`;
                 }
 
 
