@@ -120,7 +120,8 @@
 
             const rankingsSnap = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
             const scheduleSnap = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
-            const historySnap = await getDoc(doc(db, 'league', 'data', 'mmrHistory', 'v1'));
+            // 🔥 [수정된 부분] 올바른 히스토리 문서('rankingHistory')를 가져오도록 수정
+            const historySnap = await getDoc(doc(db, 'league', 'data', 'rankingHistory', 'v1'));
 
             if (!rankingsSnap.exists()) {
                  document.getElementById('player-name').textContent = "랭킹 데이터 없음";
@@ -164,7 +165,8 @@
             const ctx = document.getElementById('mmr-chart')?.getContext('2d');
             if (!ctx) return;
 
-            const cleanName = playerName.replace(/[@.*]+/g, '').trim().toLowerCase().replace(/\./g, '_');
+            // 🔥 [수정된 부분] 히스토리 키 생성 로직과 일치하도록 이름 정리 로직 수정
+            const cleanName = playerName.replace(/\./g, '_');
             
             const endDate = new Date();
             const startDate = new Date();
@@ -208,35 +210,42 @@
         };
 
         const constants = {
-            BASE_MMR: 1500, BASE_K: 45, WIN_BONUS: 1.15, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
-            MMR_DIFF_THRESHOLD: 200, REDUCED_LOSS_REDUCTION: 0.5
+            BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6,
+            MIN_WIN_POINTS: 10
         };
 
-        const calculateMMRChangeForMatch = (playerMMR, partnerMMR, opponentTeamMMR, isWinner, isFourPoint, scoreWeight, isPlayerTeamAllMale, isPlayerTeamMixed, isOpponentTeamAllMale, isOpponentTeamMixed) => {
+        const calculateMMRChangeForMatch = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight) => {
             let K = constants.BASE_K;
-            const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
+            const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - player.mmr) / 400));
             let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
             if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
 
-            if (isPlayerTeamMixed && isOpponentTeamAllMale) {
-                if (isWinner) {
+            const isPlayerHighRanker = player.mmr >= 1850;
+            const isPlayerEffectivelyFemale = player.isFemale && !isPlayerHighRanker;
+            const isPartnerEffectivelyFemale = partner.isFemale && partner.mmr < 1850;
+
+            const isPlayerTeamMixed = (isPlayerEffectivelyFemale && !isPartnerEffectivelyFemale) || (!isPlayerEffectivelyFemale && isPartnerEffectivelyFemale);
+            const isPlayerTeamAllMale = !isPlayerEffectivelyFemale && !isPartnerEffectivelyFemale;
+            
+            // 상대팀 구성은 MMR 계산 시에는 필요 없으므로 이 함수 내에서는 정의하지 않음
+
+            if (isWinner) {
+                if (isPlayerTeamMixed) { // Simplified logic, assumes opponent is male team if mixed
                     mmrChange *= 1.5;
                 } else {
-                    mmrChange *= 0.3;
-                }
-            } else if (isPlayerTeamAllMale && isOpponentTeamMixed) {
-                if (isWinner) {
-                    mmrChange *= 0.5;
-                } else {
-                    mmrChange *= 1.5;
-                }
-            } else {
-                if (isWinner) {
                     mmrChange *= constants.WIN_BONUS;
-                } else {
-                    mmrChange *= Math.abs(playerMMR - (partnerMMR || constants.BASE_MMR)) >= constants.MMR_DIFF_THRESHOLD ? constants.REDUCED_LOSS_REDUCTION : constants.LOSS_REDUCTION;
                 }
+                if (mmrChange < constants.MIN_WIN_POINTS) {
+                    mmrChange = constants.MIN_WIN_POINTS;
+                }
+            } else { // Player Lost
+                let lossMultiplier = constants.LOSS_REDUCTION;
+                if (isPlayerTeamMixed) { // Simplified logic
+                     lossMultiplier = 0.3;
+                }
+                mmrChange *= lossMultiplier;
             }
+            
             return Math.round(mmrChange);
         };
 
@@ -274,7 +283,11 @@
                 const snapshotBefore = mmrHistory.filter(h => new Date(h.createdAt).getTime() <= matchTime).pop();
 
                 if (snapshotBefore) {
-                    const getMmr = (pName) => snapshotBefore[pName.replace(/[@.*]+/g, '').trim().toLowerCase().replace(/\./g, '_')] || constants.BASE_MMR;
+                    const getMmr = (pName) => {
+                        // 🔥 [수정된 부분] 히스토리 키 생성 로직과 일치하도록 이름 정리 로직 수정
+                        const cleanPName = pName.replace(/\*/g, '').replace(/\./g, '_');
+                        return snapshotBefore[cleanPName] || constants.BASE_MMR;
+                    };
                     
                     const mainPlayerMMR = getMmr(playerName);
                     const partnerMMR = getMmr(partnerName);
@@ -287,12 +300,11 @@
                     const gameDiff = Math.abs(s1 - s2);
                     const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
 
-                    const isPlayerTeamMixed = (playerName.includes('*') && !partnerName.includes('*')) || (!playerName.includes('*') && partnerName.includes('*'));
-                    const isOpponentTeamMixed = (opponentNames[0].includes('*') && !opponentNames[1].includes('*')) || (!opponentNames[0].includes('*') && opponentNames[1].includes('*'));
-                    const isPlayerTeamAllMale = !playerName.includes('*') && !partnerName.includes('*');
-                    const isOpponentTeamAllMale = !opponentNames[0].includes('*') && !opponentNames[1].includes('*');
-
-                    mmrChange = calculateMMRChangeForMatch(mainPlayerMMR, partnerMMR, opponentTeamAvgMMR, isWinner, match.isFourPoint, scoreWeight, isPlayerTeamAllMale, isPlayerTeamMixed, isOpponentTeamAllMale, isOpponentTeamMixed);
+                    // MMR 계산을 위해 플레이어 객체 임시 생성
+                    const tempPlayer = { name: playerName, mmr: mainPlayerMMR, isFemale: playerName.includes('*') };
+                    const tempPartner = { name: partnerName, mmr: partnerMMR, isFemale: partnerName.includes('*') };
+                    
+                    mmrChange = calculateMMRChangeForMatch(tempPlayer, opponentTeamAvgMMR, isWinner, tempPartner, match.isFourPoint, scoreWeight);
                 }
                 
                 const mmrChangeString = mmrChange > 0 ? `+${mmrChange}` : (mmrChange < 0 ? `${mmrChange}` : '0');
