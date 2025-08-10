@@ -163,7 +163,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch, onSnapshot, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch, onSnapshot, query, orderBy, limit, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
@@ -652,15 +652,13 @@
                     const batch = writeBatch(db);
                     batch.set(doc(db, 'league', 'data', 'rankings', 'v1'), { players: allCalculatedPlayers, potw: potw, lastUpdated: serverTimestamp() });
                     
-                    const rankingHistoryDocRef = doc(db, 'league', 'data', 'rankingHistory', 'v1');
-                    const rankingHistorySnap = await getDoc(rankingHistoryDocRef);
-                    const existingHistory = rankingHistorySnap.data()?.snapshots || [];
-                    existingHistory.push({
-                        snapshotId: existingHistory.length + 1,
-                        createdAt: new Date().toISOString(),
+                    const historyTimestamp = new Date().toISOString();
+                    const newHistoryDocRef = doc(db, 'league', 'data', 'rankingHistory', historyTimestamp);
+                    const newHistoryData = {
+                        createdAt: serverTimestamp(),
                         ...Object.fromEntries(allCalculatedPlayers.map(p => [p.name.replace(/\./g, '_'), p.mmr]))
-                    });
-                    batch.set(rankingHistoryDocRef, { snapshots: existingHistory });
+                    };
+                    batch.set(newHistoryDocRef, newHistoryData);
 
                     await batch.commit();
                     showToast('순위 업데이트 및 저장 완료!');
