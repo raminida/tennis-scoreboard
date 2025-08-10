@@ -52,6 +52,7 @@
         html[data-theme="dark"] .btn { color: var(--bg-color); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .update-btn { width: 100%; margin-top: var(--spacing-lg); padding: 15px; background: linear-gradient(135deg, var(--accent-gold), #F5B02E); color: var(--bg-color); border: none; border-radius: var(--radius); font-size: 1.2rem; font-weight: 900; cursor: pointer; }
+        .btn.danger { background: linear-gradient(135deg, #f44336, #e57373); color: #fff; }
         .toast { position: fixed; bottom: var(--spacing-lg); left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #333, #111); color: #fff; padding: var(--spacing-md) 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 1000; }
         .toast.show { opacity: 1; }
         .championship-star { color: var(--accent-gold); text-shadow: 0 0 5px var(--shadow-color); font-size: 1.1rem; font-weight: 900; }
@@ -72,6 +73,8 @@
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; }
         .overlay.show { display: block; }
         .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .popup-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+        .btn.secondary { background: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); }
         
         .potw-section { background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #fff; padding: var(--spacing-lg); border-radius: var(--radius); margin-bottom: var(--spacing-lg); text-align: center; }
         html[data-theme="dark"] .potw-section { color: var(--bg-color); }
@@ -111,6 +114,7 @@
             <div id="schedule-container"></div>
             <button id="save-all" class="btn">모든 데이터 저장</button>
             <button id="update-ranking" class="btn update-btn">순위 업데이트</button>
+            <button id="reset-ranking" class="btn danger" style="margin-top:10px;">오류 수정용 버튼</button>
         </div>
         <div class="section">
             <h2>시즌 순위표</h2>
@@ -158,6 +162,14 @@
         <button class="close-btn" id="close-popup">×</button>
         <h3>이용 방법</h3>
         <p>게임 끝나면 회차 눌러 빈 회차에 이름 작성 (6게임 또는 4게임만 가능, 4게임은 체크 필수). 여성은 이름 뒤 * 붙이고, 스코어 입력 후 '모든 데이터 저장' 버튼 누르면 끝!</p>
+    </div>
+    <div id="confirm-popup" class="popup">
+        <h3>기록 초기화</h3>
+        <p>정말로 모든 기록을 처음부터 다시 계산하시겠습니까? 현재의 승패 및 MMR이 모두 변경됩니다.</p>
+        <div class="popup-buttons">
+            <button id="confirm-reset-btn" class="btn danger">예, 초기화합니다</button>
+            <button id="cancel-reset-btn" class="btn secondary">아니요</button>
+        </div>
     </div>
     <div id="overlay" class="overlay"></div>
 
@@ -382,7 +394,7 @@
             }));
         };
 
-        const updateRanking = async () => {
+        const updateRanking = async (isReset = false) => {
             const updateRankingBtn = document.getElementById('update-ranking');
             updateRankingBtn.disabled = true;
             updateRankingBtn.textContent = '계산 중...';
@@ -394,13 +406,15 @@
                 };
                 
                 const rankingsDoc = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-                const currentPlayersData = rankingsDoc.exists() ? rankingsDoc.data().players || [] : [];
-                const lastProcessedRound = rankingsDoc.exists() ? rankingsDoc.data().lastProcessedRound || 0 : 0;
+                const currentPlayersData = rankingsDoc.exists() && !isReset ? rankingsDoc.data().players || [] : [];
+                const lastProcessedRound = rankingsDoc.exists() && !isReset ? rankingsDoc.data().lastProcessedRound || 0 : 0;
 
                 const players = {};
-                currentPlayersData.forEach(p => {
-                    players[p.name] = p;
-                });
+                if (!isReset) {
+                    currentPlayersData.forEach(p => {
+                        players[p.name] = { ...p };
+                    });
+                }
 
                 const allMatchesFromHTML = [];
                 document.querySelectorAll('.schedule-table').forEach(table => {
@@ -415,15 +429,16 @@
                     });
                 });
                 
-                const newMatches = allMatchesFromHTML.filter(m => m.round > lastProcessedRound);
-                if (newMatches.length === 0) {
+                const matchesToProcess = isReset ? allMatchesFromHTML : allMatchesFromHTML.filter(m => m.round > lastProcessedRound);
+
+                if (matchesToProcess.length === 0 && !isReset) {
                     showToast("새로운 경기 기록이 없습니다.");
                     updateRankingBtn.disabled = false;
                     updateRankingBtn.textContent = '순위 업데이트';
                     return;
                 }
                 
-                newMatches.sort((a,b) => a.round - b.round);
+                matchesToProcess.sort((a, b) => a.round - b.round);
                 let latestProcessedRound = lastProcessedRound;
 
                 const updatePlayerMMR = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight) => {
@@ -457,14 +472,13 @@
                     return Math.round(mmrChange);
                 };
                 
-                newMatches.forEach(match => {
+                matchesToProcess.forEach(match => {
                     const playerNames = match.players.map(p => p.replace(/\*/g, ''));
                     
                     playerNames.forEach((name, idx) => {
                         if (name && !players[name]) {
                             players[name] = {
                                 name, wins: 0, losses: 0, mmr: constants.BASE_MMR, championships: 0, 
-                                closeWins: 0, closeSets: 0, dominantWins: 0, dominantLosses: 0,
                                 totalSets: 0, gameDiff: 0, isFemale: match.players[idx].includes('*'), 
                                 streakCount: 0, streakIsWin: false
                             };
@@ -492,8 +506,10 @@
                     const updatePlayerStats = (name, isWinner, gameDiffVal, mmrChange) => {
                         if (!players[name]) return;
                         const p = players[name];
-                        p.totalSets = (p.totalSets || 0) + 1;
-                        p.gameDiff = (p.gameDiff || 0) + (isWinner ? gameDiffVal : -gameDiffVal);
+                        if (isReset) {
+                            p.totalSets = (p.totalSets || 0) + 1;
+                            p.gameDiff = (p.gameDiff || 0) + (isWinner ? gameDiffVal : -gameDiffVal);
+                        }
                         p.mmr += mmrChange;
                         if (isWinner) {
                             p.wins = (p.wins || 0) + 1;
@@ -516,12 +532,80 @@
 
                 const allCalculatedPlayers = Object.values(players);
                 
-                // Final stats calculation after all new matches
+                const partnerStats = {};
+                const roundWinsAll = {};
+                const derivedStats = {};
+
+                allMatchesFromHTML.forEach(match => {
+                    const playerNames = match.players.map(p => p.replace(/\*/g, ''));
+                    const [s1, s2] = match.score.split('-').map(Number);
+                    const actual1 = s1 > s2;
+                    const gameDiff = Math.abs(s1 - s2);
+                    const isClose = gameDiff <= 2;
+                    const isDominant = gameDiff >= 5;
+
+                    const updatePartner = (p1, p2, isWin) => {
+                        if (!partnerStats[p1]) partnerStats[p1] = {};
+                        if (!partnerStats[p1][p2]) partnerStats[p1][p2] = { wins: 0, losses: 0, matches: 0 };
+                        partnerStats[p1][p2].matches++;
+                        if(isWin) partnerStats[p1][p2].wins++; else partnerStats[p1][p2].losses++;
+                    };
+                    updatePartner(playerNames[0], playerNames[1], actual1);
+                    updatePartner(playerNames[1], playerNames[0], actual1);
+                    updatePartner(playerNames[2], playerNames[3], !actual1);
+                    updatePartner(playerNames[3], playerNames[2], !actual1);
+
+                    if (!match.isFourPoint) {
+                        const winners = actual1 ? [playerNames[0], playerNames[1]] : [playerNames[2], playerNames[3]];
+                        if (!roundWinsAll[match.round]) roundWinsAll[match.round] = {};
+                        winners.forEach(winner => {
+                            roundWinsAll[match.round][winner] = (roundWinsAll[match.round][winner] || 0) + 1;
+                        });
+                    }
+
+                    playerNames.forEach((name, index) => {
+                        if (!derivedStats[name]) {
+                            derivedStats[name] = { totalSets: 0, closeSets: 0, dominantWins: 0, dominantLosses: 0 };
+                        }
+                        const stats = derivedStats[name];
+                        stats.totalSets++;
+                        if (isClose) stats.closeSets++;
+                        const isWinner = (index < 2 && actual1) || (index >= 2 && !actual1);
+                        if (isDominant) {
+                            if (isWinner) stats.dominantWins++; else stats.dominantLosses++;
+                        }
+                    });
+                });
+
                 allCalculatedPlayers.forEach(p => {
+                    p.championships = 0;
+                    Object.values(roundWinsAll).forEach(round => {
+                        if (round[p.name] && round[p.name] >= 3) {
+                            p.championships++;
+                        }
+                    });
+
+                    let bestPartner = { name: '-', wins: 0, score: -Infinity };
+                    if (partnerStats[p.name]) {
+                        for (const partnerName in partnerStats[p.name]) {
+                            const stats = partnerStats[p.name][partnerName];
+                            if (stats.wins > bestPartner.wins) {
+                                bestPartner = { name: partnerName, wins: stats.wins };
+                            }
+                        }
+                    }
+                    p.bestPartner = bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name} (${bestPartner.wins}승)`;
+                    
                     const totalGames = p.wins + p.losses;
                     p.winRate = totalGames > 0 ? Math.round((p.wins / totalGames) * 100) : 0;
                     p.avgGameDiff = p.totalSets > 0 ? (p.gameDiff / p.totalSets).toFixed(2) : '0.00';
+                    
+                    const dStats = derivedStats[p.name] || { totalSets: 0, closeSets: 0, dominantWins: 0, dominantLosses: 0 };
+                    p.closeRate = dStats.totalSets > 0 ? Math.round((dStats.closeSets / dStats.totalSets) * 100) : 0;
+                    p.dominantWins = dStats.totalSets > 0 ? `${Math.round((dStats.dominantWins / dStats.totalSets) * 100)}%(${dStats.dominantWins}승)` : '0%';
+                    p.dominantLosses = dStats.totalSets > 0 ? `${Math.round((dStats.dominantLosses / dStats.totalSets) * 100)}%(${dStats.dominantLosses}패)` : '0%';
                 });
+
 
                 try {
                     const batch = writeBatch(db);
@@ -588,7 +672,26 @@
             document.getElementById('update-ranking')?.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.currentTarget.blur();
-                updateRanking();
+                updateRanking(false);
+            });
+            document.getElementById('reset-ranking')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.currentTarget.blur();
+                const confirmPopup = document.getElementById('confirm-popup');
+                const overlay = document.getElementById('overlay');
+                confirmPopup.classList.add('show');
+                overlay.classList.add('show');
+            });
+
+            document.getElementById('confirm-reset-btn')?.addEventListener('click', () => {
+                updateRanking(true);
+                document.getElementById('confirm-popup').classList.remove('show');
+                document.getElementById('overlay').classList.remove('show');
+            });
+
+            document.getElementById('cancel-reset-btn')?.addEventListener('click', () => {
+                document.getElementById('confirm-popup').classList.remove('show');
+                document.getElementById('overlay').classList.remove('show');
             });
 
             document.getElementById('download-csv')?.addEventListener('click', downloadCSV);
