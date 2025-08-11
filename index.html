@@ -75,13 +75,11 @@
         .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .popup-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
         .btn.secondary { background: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); }
-        
         .potw-section { background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #fff; padding: var(--spacing-lg); border-radius: var(--radius); margin-bottom: var(--spacing-lg); text-align: center; }
         html[data-theme="dark"] .potw-section { color: var(--bg-color); }
         .potw-section h3 { font-family: 'Poppins', sans-serif; font-size: 1.5rem; margin: 0 0 10px 0; text-shadow: 1px 1px 5px rgba(0,0,0,0.3); }
         .potw-player { font-size: 2rem; font-weight: 900; }
         .potw-reason { font-size: 1rem; opacity: 0.9; }
-
         @media screen and (max-width: 600px) {
             body { padding: 4px; }
             .section { padding: var(--spacing-md); }
@@ -410,7 +408,15 @@
                 const lastProcessedRound = rankingsDoc.exists() && !isReset ? rankingsDoc.data().lastProcessedRound || 0 : 0;
 
                 const players = {};
-                if (!isReset) {
+                if (isReset) {
+                    // 리셋일 경우, 모든 플레이어 정보를 가져와 MMR만 초기화
+                    const allPlayersSnap = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
+                    if (allPlayersSnap.exists()) {
+                        allPlayersSnap.data().players.forEach(p => {
+                            players[p.name] = { ...p, mmr: constants.BASE_MMR, wins: 0, losses: 0, totalSets: 0, gameDiff: 0, streakCount: 0, streakIsWin: false };
+                        });
+                    }
+                } else {
                     currentPlayersData.forEach(p => {
                         players[p.name] = { ...p };
                     });
@@ -441,6 +447,7 @@
                 matchesToProcess.sort((a, b) => a.round - b.round);
                 let latestProcessedRound = lastProcessedRound;
 
+                // ✅ MMR 계산 함수 (최소 승점 10점 적용)
                 const updatePlayerMMR = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight) => {
                     if (!player) return 0;
                     let K = constants.BASE_K;
@@ -469,7 +476,14 @@
                         mmrChange *= lossMultiplier;
                     }
                     
-                    return Math.round(mmrChange);
+                    let finalChange = Math.round(mmrChange);
+
+                    // 승리 시 최소 10점 보장
+                    if (isWinner && finalChange < 10) {
+                        finalChange = 10;
+                    }
+                    
+                    return finalChange;
                 };
                 
                 matchesToProcess.forEach(match => {
@@ -695,7 +709,6 @@
             });
 
             document.getElementById('download-csv')?.addEventListener('click', downloadCSV);
-            document.getElementById('h2h-page-btn')?.addEventListener('click', () => window.location.href = 'h2h.html');
             document.getElementById('how-to-use-btn')?.addEventListener('click', () => {
                 document.getElementById('popup').classList.add('show');
                 document.getElementById('overlay').classList.add('show');
