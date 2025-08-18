@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 호수 오픈 - 명예의 전당</title>
+    <title>시즌별 기록</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=stylesheet" rel="stylesheet">
@@ -17,9 +17,10 @@
         }
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); }
         .container { max-width: 1200px; margin: auto; padding: 20px 0; }
-        h1 { font-family: 'Poppins', sans-serif; font-size: 3rem; text-align: center; color: var(--accent-gold); margin-bottom: 2rem; text-shadow: 2px 2px 10px var(--shadow-color); }
+        h1 { font-family: 'Poppins', sans-serif; font-size: 3rem; text-align: center; color: var(--primary-color); margin-bottom: 2rem; text-shadow: 2px 2px 10px var(--shadow-color); }
         .season-section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
-        h2 { font-family: 'Poppins', sans-serif; font-size: 2rem; color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px; }
+        h2 { font-family: 'Poppins', sans-serif; font-size: 2rem; color: var(--accent-gold); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px; }
+        .season-section > h2 { color: var(--primary-color); }
         .records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
         .record-card { background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; text-align: center; }
         html[data-theme="light"] .record-card { background: rgba(0,0,0,0.05); }
@@ -32,44 +33,38 @@
 </head>
 <body>
     <div class="container">
-        <h1>🏆 명예의 전당 🏆</h1>
+        <h1>📜 시즌별 기록 📜</h1>
 
         <div class="season-section">
-            <h2>2025 시즌 결산</h2>
+            <h2>👑 통산 기록 (All-Time)</h2>
             <div class="records-grid">
                 <div class="record-card">
-                    <div class="record-title">시즌 MVP</div>
-                    <div id="mvp" class="record-player">-</div>
-                    <div id="mvp-reason" class="record-value">-</div>
+                    <div class="record-title">통산 최다 우승</div>
+                    <div id="alltime-mvp" class="record-player">-</div>
+                    <div id="alltime-mvp-reason" class="record-value">-</div>
                 </div>
                 <div class="record-card">
-                    <div class="record-title">최고 MMR</div>
-                    <div id="highest-mmr-player" class="record-player">-</div>
-                    <div id="highest-mmr" class="record-value">-</div>
+                    <div class="record-title">역대 최고 MMR</div>
+                    <div id="alltime-highest-mmr-player" class="record-player">-</div>
+                    <div id="alltime-highest-mmr" class="record-value">-</div>
                 </div>
                 <div class="record-card">
-                    <div class="record-title">최다승</div>
-                    <div id="most-wins-player" class="record-player">-</div>
-                    <div id="most-wins" class="record-value">-</div>
+                    <div class="record-title">통산 최다승</div>
+                    <div id="alltime-most-wins-player" class="record-player">-</div>
+                    <div id="alltime-most-wins" class="record-value">-</div>
                 </div>
                 <div class="record-card">
-                    <div class="record-title">최고 승률 (50G 이상)</div>
-                    <div id="best-winrate-player" class="record-player">-</div>
-                    <div id="best-winrate" class="record-value">-</div>
+                    <div class="record-title">통산 최고 승률 (100G 이상)</div>
+                    <div id="alltime-best-winrate-player" class="record-player">-</div>
+                    <div id="alltime-best-winrate" class="record-value">-</div>
                 </div>
             </div>
         </div>
         
-        <!-- 추후 시즌 추가될 공간 -->
-        <!-- 
-        <div class="season-section">
-            <h2>2026 시즌 결산</h2>
-            ...
-        </div> 
-        -->
+        <div id="past-seasons-container"></div>
 
         <div style="text-align:center;">
-            <a href="index.html" class="btn">메인으로 돌아가기</a>
+            <a id="main-link" href="index.html" class="btn">메인으로 돌아가기</a>
         </div>
     </div>
 
@@ -87,46 +82,151 @@
         };
         const db = getFirestore(initializeApp(firebaseConfig));
 
-        const loadHallOfFame = async () => {
-            const rankingsSnap = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-            if (!rankingsSnap.exists()) {
-                console.error("랭킹 데이터를 찾을 수 없습니다.");
-                return;
-            }
+        // -------------------------------------------------------------
+        // 중요: 여기에 시즌 정보를 추가하면 페이지에 자동으로 반영됩니다.
+        // id는 Firestore에 저장된 이름, name은 화면에 표시될 이름입니다.
+        const seasons = [
+            { id: 'league', name: '2025 여름 시즌' },
+            // { id: '2025-fall', name: '2025 가을 시즌' },
+            // { id: '2025-winter', name: '2025-26 겨울 시즌' },
+            // { id: '2026-spring', name: '2026 봄 시즌' },
+        ];
+        // -------------------------------------------------------------
 
-            const players = rankingsSnap.data().players || [];
+        const getSeasonIdFromURL = () => {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('season') || 'league';
+        };
+
+        const calculateSeasonRecords = (players) => {
+            if (!players || players.length === 0) return null;
+            
+            const mvp = [...players].sort((a, b) => (b.championships || 0) - (a.championships || 0))[0];
+            const highestMmrPlayer = [...players].sort((a, b) => b.mmr - a.mmr)[0];
+            const mostWinsPlayer = [...players].sort((a, b) => (b.wins || 0) - (a.wins || 0))[0];
+            const bestWinRatePlayer = players
+                .filter(p => ((p.wins || 0) + (p.losses || 0)) >= 50)
+                .sort((a, b) => b.winRate - a.winRate)[0];
+
+            return { mvp, highestMmrPlayer, mostWinsPlayer, bestWinRatePlayer };
+        };
+
+        const renderSeasonSection = (season, container) => {
+            const players = season.data.players || [];
             if (players.length === 0) return;
 
-            // MVP (Most Championships)
-            const mvp = players.sort((a, b) => (b.championships || 0) - (a.championships || 0))[0];
-            document.getElementById('mvp').textContent = mvp.name;
-            document.getElementById('mvp-reason').textContent = `${mvp.championships || 0}회 우승`;
+            const records = calculateSeasonRecords(players);
+            if (!records) return;
 
-            // Highest MMR
-            const highestMmrPlayer = players.sort((a, b) => b.mmr - a.mmr)[0];
-            document.getElementById('highest-mmr-player').textContent = highestMmrPlayer.name;
-            document.getElementById('highest-mmr').textContent = Math.round(highestMmrPlayer.mmr);
+            const sectionHTML = `
+                <div class="season-section">
+                    <h2>${season.name} 결산</h2>
+                    <div class="records-grid">
+                        <div class="record-card">
+                            <div class="record-title">시즌 MVP</div>
+                            <div class="record-player">${records.mvp.name}</div>
+                            <div class="record-value">${records.mvp.championships || 0}회 우승</div>
+                        </div>
+                        <div class="record-card">
+                            <div class="record-title">최고 MMR</div>
+                            <div class="record-player">${records.highestMmrPlayer.name}</div>
+                            <div class="record-value">${Math.round(records.highestMmrPlayer.mmr)}</div>
+                        </div>
+                        <div class="record-card">
+                            <div class="record-title">최다승</div>
+                            <div class="record-player">${records.mostWinsPlayer.name}</div>
+                            <div class="record-value">${records.mostWinsPlayer.wins || 0}승</div>
+                        </div>
+                        <div class="record-card">
+                            <div class="record-title">최고 승률 (50G 이상)</div>
+                            <div class="record-player">${records.bestWinRatePlayer ? records.bestWinRatePlayer.name : 'N/A'}</div>
+                            <div class="record-value">${records.bestWinRatePlayer ? `${records.bestWinRatePlayer.winRate}%` : '기록 부족'}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += sectionHTML;
+        };
 
-            // Most Wins
-            const mostWinsPlayer = players.sort((a, b) => (b.wins || 0) - (a.wins || 0))[0];
-            document.getElementById('most-wins-player').textContent = mostWinsPlayer.name;
-            document.getElementById('most-wins').textContent = `${mostWinsPlayer.wins || 0}승`;
+        const renderAllTimeRecords = (allSeasonData) => {
+            const cumulativeStats = {};
+            let allTimeHighestMmr = { player: '-', mmr: 0 };
+
+            allSeasonData.forEach(season => {
+                const players = season.data.players || [];
+                players.forEach(p => {
+                    if (!cumulativeStats[p.name]) {
+                        cumulativeStats[p.name] = { name: p.name, wins: 0, losses: 0, championships: 0, totalGames: 0 };
+                    }
+                    cumulativeStats[p.name].wins += (p.wins || 0);
+                    cumulativeStats[p.name].losses += (p.losses || 0);
+                    cumulativeStats[p.name].championships += (p.championships || 0);
+                    
+                    if(p.mmr > allTimeHighestMmr.mmr) {
+                        allTimeHighestMmr = { player: p.name, mmr: p.mmr };
+                    }
+                });
+            });
+
+            const allTimePlayers = Object.values(cumulativeStats);
+            allTimePlayers.forEach(p => {
+                p.totalGames = p.wins + p.losses;
+                p.winRate = p.totalGames > 0 ? Math.round((p.wins / p.totalGames) * 100) : 0;
+            });
             
-            // Best Win Rate (min 50 games)
-            const bestWinRatePlayer = players
-                .filter(p => (p.wins + p.losses) >= 50)
+            const mvp = [...allTimePlayers].sort((a, b) => b.championships - a.championships)[0];
+            const mostWins = [...allTimePlayers].sort((a, b) => b.wins - a.wins)[0];
+            const bestWinRate = allTimePlayers
+                .filter(p => p.totalGames >= 100) // 통산은 기준을 100경기로
                 .sort((a, b) => b.winRate - a.winRate)[0];
+
+            document.getElementById('alltime-mvp').textContent = mvp ? mvp.name : '-';
+            document.getElementById('alltime-mvp-reason').textContent = mvp ? `${mvp.championships}회 우승` : '-';
+            document.getElementById('alltime-highest-mmr-player').textContent = allTimeHighestMmr.player;
+            document.getElementById('alltime-highest-mmr').textContent = Math.round(allTimeHighestMmr.mmr);
+            document.getElementById('alltime-most-wins-player').textContent = mostWins ? mostWins.name : '-';
+            document.getElementById('alltime-most-wins').textContent = mostWins ? `${mostWins.wins}승` : '-';
+            document.getElementById('alltime-best-winrate-player').textContent = bestWinRate ? bestWinRate.name : 'N/A';
+            document.getElementById('alltime-best-winrate').textContent = bestWinRate ? `${bestWinRate.winRate}%` : '기록 부족';
+        };
+
+        const loadAllSeasonsData = async () => {
+            const seasonDataPromises = seasons.map(season => getDoc(doc(db, season.id, 'data', 'rankings', 'v1')));
             
-            if (bestWinRatePlayer) {
-                document.getElementById('best-winrate-player').textContent = bestWinRatePlayer.name;
-                document.getElementById('best-winrate').textContent = `${bestWinRatePlayer.winRate}%`;
-            } else {
-                 document.getElementById('best-winrate-player').textContent = "N/A";
-                 document.getElementById('best-winrate').textContent = "기록 부족";
+            try {
+                const seasonSnapshots = await Promise.all(seasonDataPromises);
+                const allSeasonData = seasonSnapshots.map((snap, index) => ({
+                    ...seasons[index],
+                    exists: snap.exists(),
+                    data: snap.exists() ? snap.data() : { players: [] }
+                })).filter(s => s.exists);
+                
+                if (allSeasonData.length === 0) {
+                    console.error("어떤 시즌 데이터도 찾을 수 없습니다.");
+                    return;
+                }
+
+                renderAllTimeRecords(allSeasonData);
+
+                const pastSeasonsContainer = document.getElementById('past-seasons-container');
+                allSeasonData.reverse().forEach(season => { // 최신 시즌이 위로 오게
+                    renderSeasonSection(season, pastSeasonsContainer);
+                });
+
+            } catch (error) {
+                console.error("시즌 데이터를 불러오는 중 오류 발생:", error);
             }
         };
         
-        document.addEventListener('DOMContentLoaded', loadHallOfFame);
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentSeasonId = getSeasonIdFromURL();
+            document.getElementById('main-link').href = `index.html?season=${currentSeasonId}`;
+
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            loadAllSeasonsData();
+        });
     </script>
 </body>
 </html>
