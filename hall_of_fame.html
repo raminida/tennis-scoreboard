@@ -29,6 +29,19 @@
         .record-player { font-size: 1.5rem; font-weight: 700; color: var(--text-color); }
         .btn { display: inline-block; padding: 12px 28px; margin-top: 30px; background: linear-gradient(135deg,var(--primary-color),var(--primary-variant-color)); color: #FFF; text-decoration: none; border-radius: 8px; font-weight: 700; }
         [data-theme="dark"] .btn { color: var(--bg-color); }
+
+        /* 모바일 가독성 개선용 CSS 추가 */
+        @media screen and (max-width: 600px) {
+            body { padding: var(--spacing-sm); }
+            h1 { font-size: 2.2rem; }
+            h2 { font-size: 1.6rem; }
+            .season-section { padding: var(--spacing-md); }
+            .record-card { padding: 15px; }
+            .record-player { font-size: 1.2rem; }
+            .record-value { font-size: 1.5rem; }
+            .record-title { font-size: 0.9rem; }
+            .btn { padding: 10px 20px; }
+        }
     </style>
 </head>
 <body>
