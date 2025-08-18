@@ -61,6 +61,26 @@
         </div>
 
         <div class="section">
+            <h2>관계도 (천적 & 맛집)</h2>
+            <div class="stat-grid" id="relationship-grid">
+                <div class="stat-card">
+                    <div class="stat-title">👿 천적 (3경기 이상)</div>
+                    <div id="stat-nemesis" class="stat-value">-</div>
+                    <div id="stat-nemesis-record" class="stat-title">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">😊 맛집 (3경기 이상)</div>
+                    <div id="stat-favorite" class="stat-value">-</div>
+                    <div id="stat-favorite-record" class="stat-title">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">⚔️ 라이벌</div>
+                    <div id="stat-rival" class="stat-value">-</div>
+                    <div id="stat-rival-record" class="stat-title">-</div>
+                </div>
+            </div>
+        </div>
+        <div class="section">
             <h2 id="match-history-title">최근 10경기 기록</h2>
             <div class="table-wrapper">
                 <table class="recent-matches-table">
@@ -71,13 +91,13 @@
             <button id="show-all-matches-btn" class="btn">전체 전적 보기</button>
         </div>
         <div style="text-align:center;">
-             <a href="index.html" class="btn">메인으로 돌아가기</a>
+             <a id="main-link" href="index.html" class="btn">메인으로 돌아가기</a>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
@@ -89,11 +109,18 @@
         };
         const db = getFirestore(initializeApp(firebaseConfig));
 
+        const getParams = () => {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                seasonId: params.get('season') || 'league',
+                playerName: decodeURIComponent(params.get('player'))
+            };
+        };
+
         const constants = {
             BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6
         };
 
-        // ✅ MMR 계산 함수 (최소 승점 10점 적용)
         const calculateMMRChangeForMatch = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight) => {
             if (!player || !partner) return 0;
             let K = constants.BASE_K;
@@ -108,34 +135,17 @@
             const isPlayerTeamMixed = (isPlayerEffectivelyFemale && !isPartnerEffectivelyFemale) || (!isPlayerEffectivelyFemale && isPartnerEffectivelyFemale);
             
             if (isWinner) {
-                if (isPlayerTeamMixed) { 
-                    mmrChange *= 1.5;
-                } else {
-                    mmrChange *= constants.WIN_BONUS;
-                }
+                mmrChange *= isPlayerTeamMixed ? 1.5 : constants.WIN_BONUS;
             } else {
-                let lossMultiplier = constants.LOSS_REDUCTION;
-                if (isPlayerTeamMixed) {
-                    lossMultiplier = 0.3;
-                }
-                mmrChange *= lossMultiplier;
+                mmrChange *= isPlayerTeamMixed ? 0.3 : constants.LOSS_REDUCTION;
             }
 
             let finalChange = Math.round(mmrChange);
-
-            // 승리 시 최소 10점 보장
-            if (isWinner && finalChange < 10) {
-                finalChange = 10;
-            }
+            if (isWinner && finalChange < 10) finalChange = 10;
             
             return finalChange;
         };
 
-        const getPlayerNameFromURL = () => {
-            const params = new URLSearchParams(window.location.search);
-            return decodeURIComponent(params.get('player'));
-        };
-        
         const renderMatchHistory = (allMatches, allPlayersData, mainPlayerName, showAll = false) => {
             const tbody = document.getElementById('recent-matches-body');
             tbody.innerHTML = '';
@@ -161,11 +171,7 @@
                     }
                 });
                 
-                const team1P1 = playersState[playerNames[0]];
-                const team1P2 = playersState[playerNames[1]];
-                const team2P1 = playersState[playerNames[2]];
-                const team2P2 = playersState[playerNames[3]];
-
+                const [team1P1, team1P2, team2P1, team2P2] = playerNames.map(name => playersState[name]);
                 if (!team1P1 || !team1P2 || !team2P1 || !team2P2) return;
 
                 const team1MMR = (team1P1.mmr + team1P2.mmr) / 2;
@@ -210,14 +216,13 @@
             });
 
             const resultsToDisplay = showAll ? playerMatchResults : playerMatchResults.slice(-10);
-
             if (resultsToDisplay.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7">경기 기록이 없습니다.</td></tr>';
                 return;
             }
 
             resultsToDisplay.reverse().forEach(result => {
-                const mmrChangeClass = result.mmrChange > 0 ? 'win' : 'loss';
+                const mmrChangeClass = result.mmrChange >= 0 ? 'win' : 'loss';
                 const mmrChangeString = `${result.mmrChange >= 0 ? '+' : ''}${result.mmrChange} (${Math.round(result.newMMR)}점)`;
 
                 const row = `
@@ -233,51 +238,6 @@
                 `;
                 tbody.innerHTML += row;
             });
-        };
-
-        const loadProfileData = async () => {
-            const playerName = getPlayerNameFromURL();
-            if (!playerName) {
-                document.getElementById('player-name').textContent = "선수를 찾을 수 없음";
-                return;
-            }
-
-            const rankingsSnap = await getDoc(doc(db, 'league', 'data', 'rankings', 'v1'));
-            const scheduleSnap = await getDoc(doc(db, 'league', 'data', 'schedule', 'v1'));
-            
-            if (!rankingsSnap.exists() || !scheduleSnap.exists()) {
-                document.getElementById('player-name').textContent = "데이터 없음";
-                return;
-            }
-
-            const allPlayers = rankingsSnap.data().players || [];
-            const allMatches = scheduleSnap.data().matches || [];
-            const playerData = allPlayers.find(p => p.name === playerName);
-
-            if (!playerData) {
-                document.getElementById('player-name').textContent = `${playerName} 선수 정보 없음`;
-                return;
-            }
-
-            document.getElementById('player-name').textContent = playerData.name;
-            document.getElementById('stat-mmr').textContent = Math.round(playerData.mmr);
-            document.getElementById('stat-rank').textContent = `${allPlayers.sort((a,b) => b.mmr - a.mmr).findIndex(p => p.name === playerName) + 1}위`;
-            document.getElementById('stat-record').textContent = `${playerData.wins}승 ${playerData.losses}패`;
-            const totalGames = (playerData.wins || 0) + (playerData.losses || 0);
-            const winRate = totalGames > 0 ? ((playerData.wins / totalGames) * 100).toFixed(1) : "0.0";
-            document.getElementById('stat-winrate').textContent = `${winRate}%`;
-            document.getElementById('stat-champs').textContent = playerData.championships || 0;
-            document.getElementById('stat-partner').textContent = playerData.bestPartner || '-';
-
-            renderMatchHistory(allMatches, allPlayers, playerName, false);
-
-            const showAllBtn = document.getElementById('show-all-matches-btn');
-            showAllBtn.addEventListener('click', () => {
-                renderMatchHistory(allMatches, allPlayers, playerName, true);
-                showAllBtn.style.display = 'none';
-            }, { once: true });
-
-            setupH2H(allMatches, allPlayers, playerName);
         };
 
         const setupH2H = (allMatches, allPlayers, mainPlayerName) => {
@@ -316,7 +276,115 @@
                 document.getElementById('h2h-result').textContent = `${opponentName} 상대 전적: ${wins}승 ${losses}패`;
             });
         };
-        
+
+        const calculateAndRenderRelationships = (allMatches, mainPlayerName) => {
+            const opponentStats = {};
+            const MIN_MATCHES = 3;
+
+            allMatches.forEach(match => {
+                const cleanPlayers = match.players.map(p => p.replace(/\*/g, ''));
+                if (!cleanPlayers.includes(mainPlayerName)) return;
+
+                const mainPlayerIndex = cleanPlayers.indexOf(mainPlayerName);
+                const mainPlayerTeamIndex = mainPlayerIndex < 2 ? 0 : 1;
+
+                const [s1, s2] = match.score.split('-').map(Number);
+                const mainPlayerWon = (mainPlayerTeamIndex === 0 && s1 > s2) || (mainPlayerTeamIndex === 1 && s2 > s1);
+
+                const opponentTeam = mainPlayerTeamIndex === 0 ? cleanPlayers.slice(2, 4) : cleanPlayers.slice(0, 2);
+                
+                opponentTeam.forEach(opponentName => {
+                    if (!opponentStats[opponentName]) {
+                        opponentStats[opponentName] = { wins: 0, losses: 0, matches: 0 };
+                    }
+                    opponentStats[opponentName].matches++;
+                    if (mainPlayerWon) {
+                        opponentStats[opponentName].wins++;
+                    } else {
+                        opponentStats[opponentName].losses++;
+                    }
+                });
+            });
+
+            let nemesis = { name: '-', winRate: 101, record: '' };
+            let favorite = { name: '-', winRate: -1, record: '' };
+            let rival = { name: '-', matches: 0, record: '' };
+
+            for (const opponentName in opponentStats) {
+                const stats = opponentStats[opponentName];
+                const record = `${stats.wins}승 ${stats.losses}패`;
+
+                if (stats.matches > rival.matches) {
+                    rival = { name: opponentName, matches: stats.matches, record };
+                }
+                
+                if (stats.matches >= MIN_MATCHES) {
+                    const winRate = stats.wins / stats.matches;
+                    if (winRate < nemesis.winRate) {
+                        nemesis = { name: opponentName, winRate, record };
+                    }
+                    if (winRate > favorite.winRate) {
+                        favorite = { name: opponentName, winRate, record };
+                    }
+                }
+            }
+
+            document.getElementById('stat-nemesis').textContent = nemesis.name;
+            document.getElementById('stat-nemesis-record').textContent = nemesis.record;
+            document.getElementById('stat-favorite').textContent = favorite.name;
+            document.getElementById('stat-favorite-record').textContent = favorite.record;
+            document.getElementById('stat-rival').textContent = rival.name;
+            document.getElementById('stat-rival-record').textContent = `${rival.matches}경기 (${rival.record})`;
+        };
+
+        const loadProfileData = async () => {
+            const { seasonId, playerName } = getParams();
+            if (!playerName) {
+                document.getElementById('player-name').textContent = "선수를 찾을 수 없음";
+                return;
+            }
+
+            document.getElementById('main-link').href = `index.html?season=${seasonId}`;
+
+            const rankingsSnap = await getDoc(doc(db, seasonId, 'data', 'rankings', 'v1'));
+            const scheduleSnap = await getDoc(doc(db, seasonId, 'data', 'schedule', 'v1'));
+            
+            if (!rankingsSnap.exists() || !scheduleSnap.exists()) {
+                document.getElementById('player-name').textContent = "데이터 없음";
+                return;
+            }
+
+            const allPlayers = rankingsSnap.data().players || [];
+            const allMatches = scheduleSnap.data().matches || [];
+            const playerData = allPlayers.find(p => p.name === playerName);
+
+            if (!playerData) {
+                document.getElementById('player-name').textContent = `${playerName} 선수 정보 없음`;
+                return;
+            }
+
+            allPlayers.sort((a,b) => b.mmr - a.mmr);
+            const rank = allPlayers.findIndex(p => p.name === playerName) + 1;
+            
+            document.getElementById('player-name').textContent = playerData.name;
+            document.getElementById('stat-mmr').textContent = Math.round(playerData.mmr);
+            document.getElementById('stat-rank').textContent = `${rank}위`;
+            document.getElementById('stat-record').textContent = `${playerData.wins}승 ${playerData.losses}패`;
+            document.getElementById('stat-winrate').textContent = `${playerData.winRate}%`;
+            document.getElementById('stat-champs').textContent = playerData.championships || 0;
+            document.getElementById('stat-partner').textContent = playerData.bestPartner || '-';
+
+            renderMatchHistory(allMatches, allPlayers, playerName, false);
+            const showAllBtn = document.getElementById('show-all-matches-btn');
+            showAllBtn.addEventListener('click', () => {
+                renderMatchHistory(allMatches, allPlayers, playerName, true);
+                showAllBtn.style.display = 'none';
+            }, { once: true });
+
+            setupH2H(allMatches, allPlayers, playerName);
+            calculateAndRenderRelationships(allMatches, playerName);
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
              const savedTheme = localStorage.getItem('theme') || 'light';
              document.documentElement.setAttribute('data-theme', savedTheme);
