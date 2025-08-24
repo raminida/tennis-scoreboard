@@ -112,6 +112,7 @@
             <div id="schedule-container"></div>
             <button class="btn save-all-btn">모든 데이터 저장</button>
             <button id="update-ranking" class="btn update-btn">순위 업데이트</button>
+            <button id="restore-backup-btn" class="btn danger" style="margin-top: 10px;">💾 오류 수정 (백업 복구)</button>
         </div>
         <div class="section">
             <h2>시즌 순위표 <span id="season-countdown" style="font-size: 1rem; color: var(--accent-gold);"></span></h2>
@@ -320,7 +321,6 @@
             } finally {
                 allSaveButtons.forEach(btn => {
                     btn.disabled = false;
-                    // 버튼 원래 텍스트로 복원
                     if (btn.closest('.section > .save-all-btn')) {
                         btn.textContent = '모든 데이터 저장';
                     } else {
@@ -424,207 +424,211 @@
             updateRankingBtn.textContent = '계산 중...';
             showToast('전체 순위를 다시 계산합니다. 잠시만 기다려주세요...');
 
-            setTimeout(async () => {
-                const constants = {
-                    BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6
-                };
-                
-                const players = {};
-                
-                const rankingsDoc = await getDoc(doc(db, seasonId, 'data', 'rankings', 'v1'));
-                if (rankingsDoc.exists()) {
-                    rankingsDoc.data().players.forEach(p => {
-                        players[p.name] = { 
-                            ...p, mmr: constants.BASE_MMR, wins: 0, losses: 0, totalSets: 0, 
-                            gameDiff: 0, streakCount: 0, streakIsWin: false 
-                        };
-                    });
-                }
-
-                const allMatchesFromHTML = [];
-                document.querySelectorAll('.schedule-table').forEach(table => {
-                    const roundId = parseInt(table.getAttribute('data-round-id'));
-                    table.querySelectorAll('tbody tr').forEach(row => {
-                        const playersRaw = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
-                        const score = row.querySelector('.score').value.trim();
-                        const isFourPoint = row.querySelector('.is-four-point').checked;
-                        if (playersRaw.every(p => p) && /^\d+-\d+$/.test(score)) {
-                            allMatchesFromHTML.push({ round: roundId, players: playersRaw, score, isFourPoint });
-                        }
-                    });
-                });
-                
-                if (allMatchesFromHTML.length === 0) {
-                    showToast("계산할 경기 기록이 없습니다.");
-                    updateRankingBtn.disabled = false;
-                    updateRankingBtn.textContent = '순위 업데이트';
-                    return;
-                }
-                
-                allMatchesFromHTML.sort((a, b) => a.round - b.round);
-                let latestProcessedRound = 0;
-
-                const updatePlayerMMR = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight) => {
-                    if (!player) return 0;
-                    let K = constants.BASE_K;
-                    let playerMMR = player.mmr || constants.BASE_MMR;
-                    const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
-                    let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
-
-                    if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
-
-                    const isPlayerEffectivelyFemale = player.isFemale && player.mmr < 1850;
-                    const isPartnerEffectivelyFemale = partner.isFemale && partner.mmr < 1850;
-                    const isPlayerTeamMixed = (isPlayerEffectivelyFemale && !isPartnerEffectivelyFemale) || (!isPlayerEffectivelyFemale && isPartnerEffectivelyFemale);
+            return new Promise(resolve => {
+                setTimeout(async () => {
+                    const constants = {
+                        BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6
+                    };
                     
-                    if (isWinner) {
-                        mmrChange *= isPlayerTeamMixed ? 1.5 : constants.WIN_BONUS;
-                    } else {
-                        mmrChange *= isPlayerTeamMixed ? 0.3 : constants.LOSS_REDUCTION;
-                    }
+                    const players = {};
                     
-                    let finalChange = Math.round(mmrChange);
-                    if (isWinner && finalChange < 10) finalChange = 10;
-                    
-                    return finalChange;
-                };
-                
-                allMatchesFromHTML.forEach(match => {
-                    const playerNames = match.players.map(p => p.replace(/\*/g, ''));
-                    playerNames.forEach((name, idx) => {
-                        if (name && !players[name]) {
-                            players[name] = {
-                                name, wins: 0, losses: 0, mmr: constants.BASE_MMR, championships: 0, 
-                                totalSets: 0, gameDiff: 0, isFemale: match.players[idx].includes('*'), 
-                                streakCount: 0, streakIsWin: false
+                    const rankingsDoc = await getDoc(doc(db, seasonId, 'data', 'rankings', 'v1'));
+                    if (rankingsDoc.exists()) {
+                        rankingsDoc.data().players.forEach(p => {
+                            players[p.name] = { 
+                                ...p, mmr: constants.BASE_MMR, wins: 0, losses: 0, totalSets: 0, 
+                                gameDiff: 0, streakCount: 0, streakIsWin: false 
                             };
-                        }
+                        });
+                    }
+
+                    const allMatchesFromHTML = [];
+                    document.querySelectorAll('.schedule-table').forEach(table => {
+                        const roundId = parseInt(table.getAttribute('data-round-id'));
+                        table.querySelectorAll('tbody tr').forEach(row => {
+                            const playersRaw = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
+                            const score = row.querySelector('.score').value.trim();
+                            const isFourPoint = row.querySelector('.is-four-point').checked;
+                            if (playersRaw.every(p => p) && /^\d+-\d+$/.test(score)) {
+                                allMatchesFromHTML.push({ round: roundId, players: playersRaw, score, isFourPoint });
+                            }
+                        });
                     });
-
-                    const [p1, p2, p3, p4] = playerNames.map(name => players[name]);
-                    let team1MMR = (p1.mmr + p2.mmr) / 2;
-                    let team2MMR = (p3.mmr + p4.mmr) / 2;
                     
-                    const [s1, s2] = match.score.split('-').map(Number);
-                    const isTeam1Winner = s1 > s2;
-                    const gameDiff = Math.abs(s1 - s2);
-                    const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
+                    if (allMatchesFromHTML.length === 0) {
+                        showToast("계산할 경기 기록이 없습니다.");
+                        updateRankingBtn.disabled = false;
+                        updateRankingBtn.textContent = '순위 업데이트';
+                        resolve();
+                        return;
+                    }
+                    
+                    allMatchesFromHTML.sort((a, b) => a.round - b.round);
+                    let latestProcessedRound = 0;
 
-                    const mmrChanges = [
-                        updatePlayerMMR(p1, team2MMR, isTeam1Winner, p2, match.isFourPoint, scoreWeight),
-                        updatePlayerMMR(p2, team2MMR, isTeam1Winner, p1, match.isFourPoint, scoreWeight),
-                        updatePlayerMMR(p3, team1MMR, !isTeam1Winner, p4, match.isFourPoint, scoreWeight),
-                        updatePlayerMMR(p4, team1MMR, !isTeam1Winner, p3, match.isFourPoint, scoreWeight)
-                    ];
+                    const updatePlayerMMR = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight) => {
+                        if (!player) return 0;
+                        let K = constants.BASE_K;
+                        let playerMMR = player.mmr || constants.BASE_MMR;
+                        const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
+                        let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
 
-                    const updatePlayerStats = (name, isWinner, gameDiffVal, mmrChange) => {
-                        const p = players[name];
-                        if (!p) return;
-                        p.totalSets = (p.totalSets || 0) + 1;
-                        p.gameDiff = (p.gameDiff || 0) + (isWinner ? gameDiffVal : -gameDiffVal);
-                        p.mmr += mmrChange;
+                        if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
+
+                        const isPlayerEffectivelyFemale = player.isFemale && player.mmr < 1850;
+                        const isPartnerEffectivelyFemale = partner.isFemale && partner.mmr < 1850;
+                        const isPlayerTeamMixed = (isPlayerEffectivelyFemale && !isPartnerEffectivelyFemale) || (!isPlayerEffectivelyFemale && isPartnerEffectivelyFemale);
+                        
                         if (isWinner) {
-                            p.wins = (p.wins || 0) + 1;
-                            p.streakCount = p.streakIsWin ? (p.streakCount || 0) + 1 : 1;
-                            p.streakIsWin = true;
+                            mmrChange *= isPlayerTeamMixed ? 1.5 : constants.WIN_BONUS;
                         } else {
-                            p.losses = (p.losses || 0) + 1;
-                            p.streakCount = !p.streakIsWin ? (p.streakCount || 0) + 1 : 1;
-                            p.streakIsWin = false;
+                            mmrChange *= isPlayerTeamMixed ? 0.3 : constants.LOSS_REDUCTION;
                         }
+                        
+                        let finalChange = Math.round(mmrChange);
+                        if (isWinner && finalChange < 10) finalChange = 10;
+                        
+                        return finalChange;
                     };
-
-                    updatePlayerStats(playerNames[0], isTeam1Winner, gameDiff, mmrChanges[0]);
-                    updatePlayerStats(playerNames[1], isTeam1Winner, gameDiff, mmrChanges[1]);
-                    updatePlayerStats(playerNames[2], !isTeam1Winner, gameDiff, mmrChanges[2]);
-                    updatePlayerStats(playerNames[3], !isTeam1Winner, gameDiff, mmrChanges[3]);
                     
-                    latestProcessedRound = Math.max(latestProcessedRound, match.round);
-                });
+                    allMatchesFromHTML.forEach(match => {
+                        const playerNames = match.players.map(p => p.replace(/\*/g, ''));
+                        playerNames.forEach((name, idx) => {
+                            if (name && !players[name]) {
+                                players[name] = {
+                                    name, wins: 0, losses: 0, mmr: constants.BASE_MMR, championships: 0, 
+                                    totalSets: 0, gameDiff: 0, isFemale: match.players[idx].includes('*'), 
+                                    streakCount: 0, streakIsWin: false
+                                };
+                            }
+                        });
 
-                const allCalculatedPlayers = Object.values(players);
-                const partnerStats = {}, roundWinsAll = {}, derivedStats = {};
+                        const [p1, p2, p3, p4] = playerNames.map(name => players[name]);
+                        let team1MMR = (p1.mmr + p2.mmr) / 2;
+                        let team2MMR = (p3.mmr + p4.mmr) / 2;
+                        
+                        const [s1, s2] = match.score.split('-').map(Number);
+                        const isTeam1Winner = s1 > s2;
+                        const gameDiff = Math.abs(s1 - s2);
+                        const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
 
-                allMatchesFromHTML.forEach(match => {
-                    const playerNames = match.players.map(p => p.replace(/\*/g, ''));
-                    const [s1, s2] = match.score.split('-').map(Number);
-                    const actual1 = s1 > s2;
-                    const gameDiff = Math.abs(s1 - s2);
+                        const mmrChanges = [
+                            updatePlayerMMR(p1, team2MMR, isTeam1Winner, p2, match.isFourPoint, scoreWeight),
+                            updatePlayerMMR(p2, team2MMR, isTeam1Winner, p1, match.isFourPoint, scoreWeight),
+                            updatePlayerMMR(p3, team1MMR, !isTeam1Winner, p4, match.isFourPoint, scoreWeight),
+                            updatePlayerMMR(p4, team1MMR, !isTeam1Winner, p3, match.isFourPoint, scoreWeight)
+                        ];
 
-                    const updatePartner = (p1, p2, isWin) => {
-                        if (!partnerStats[p1]) partnerStats[p1] = {};
-                        if (!partnerStats[p1][p2]) partnerStats[p1][p2] = { wins: 0, losses: 0, matches: 0 };
-                        partnerStats[p1][p2].matches++;
-                        if(isWin) partnerStats[p1][p2].wins++; else partnerStats[p1][p2].losses++;
-                    };
-                    updatePartner(playerNames[0], playerNames[1], actual1);
-                    updatePartner(playerNames[1], playerNames[0], actual1);
-                    updatePartner(playerNames[2], playerNames[3], !actual1);
-                    updatePartner(playerNames[3], playerNames[2], !actual1);
+                        const updatePlayerStats = (name, isWinner, gameDiffVal, mmrChange) => {
+                            const p = players[name];
+                            if (!p) return;
+                            p.totalSets = (p.totalSets || 0) + 1;
+                            p.gameDiff = (p.gameDiff || 0) + (isWinner ? gameDiffVal : -gameDiffVal);
+                            p.mmr += mmrChange;
+                            if (isWinner) {
+                                p.wins = (p.wins || 0) + 1;
+                                p.streakCount = p.streakIsWin ? (p.streakCount || 0) + 1 : 1;
+                                p.streakIsWin = true;
+                            } else {
+                                p.losses = (p.losses || 0) + 1;
+                                p.streakCount = !p.streakIsWin ? (p.streakCount || 0) + 1 : 1;
+                                p.streakIsWin = false;
+                            }
+                        };
 
-                    if (!match.isFourPoint) {
-                        const winners = actual1 ? [playerNames[0], playerNames[1]] : [playerNames[2], playerNames[3]];
-                        if (!roundWinsAll[match.round]) roundWinsAll[match.round] = {};
-                        winners.forEach(winner => roundWinsAll[match.round][winner] = (roundWinsAll[match.round][winner] || 0) + 1);
-                    }
-
-                    playerNames.forEach((name, index) => {
-                        if (!derivedStats[name]) derivedStats[name] = { totalSets: 0, closeSets: 0, dominantWins: 0, dominantLosses: 0 };
-                        const stats = derivedStats[name];
-                        stats.totalSets++;
-                        if (gameDiff <= 2) stats.closeSets++;
-                        const isWinner = (index < 2 && actual1) || (index >= 2 && !actual1);
-                        if (gameDiff >= 5) {
-                            if (isWinner) stats.dominantWins++; else stats.dominantLosses++;
-                        }
+                        updatePlayerStats(playerNames[0], isTeam1Winner, gameDiff, mmrChanges[0]);
+                        updatePlayerStats(playerNames[1], isTeam1Winner, gameDiff, mmrChanges[1]);
+                        updatePlayerStats(playerNames[2], !isTeam1Winner, gameDiff, mmrChanges[2]);
+                        updatePlayerStats(playerNames[3], !isTeam1Winner, gameDiff, mmrChanges[3]);
+                        
+                        latestProcessedRound = Math.max(latestProcessedRound, match.round);
                     });
-                });
 
-                allCalculatedPlayers.forEach(p => {
-                    p.championships = Object.values(roundWinsAll).filter(round => round[p.name] && round[p.name] >= 3).length;
-                    
-                    let bestPartner = { name: '-', wins: 0 };
-                    if (partnerStats[p.name]) {
-                        for (const partnerName in partnerStats[p.name]) {
-                            const stats = partnerStats[p.name][partnerName];
-                            if (stats.wins > bestPartner.wins) bestPartner = { name: partnerName, wins: stats.wins };
+                    const allCalculatedPlayers = Object.values(players);
+                    const partnerStats = {}, roundWinsAll = {}, derivedStats = {};
+
+                    allMatchesFromHTML.forEach(match => {
+                        const playerNames = match.players.map(p => p.replace(/\*/g, ''));
+                        const [s1, s2] = match.score.split('-').map(Number);
+                        const actual1 = s1 > s2;
+                        const gameDiff = Math.abs(s1 - s2);
+
+                        const updatePartner = (p1, p2, isWin) => {
+                            if (!partnerStats[p1]) partnerStats[p1] = {};
+                            if (!partnerStats[p1][p2]) partnerStats[p1][p2] = { wins: 0, losses: 0, matches: 0 };
+                            partnerStats[p1][p2].matches++;
+                            if(isWin) partnerStats[p1][p2].wins++; else partnerStats[p1][p2].losses++;
+                        };
+                        updatePartner(playerNames[0], playerNames[1], actual1);
+                        updatePartner(playerNames[1], playerNames[0], actual1);
+                        updatePartner(playerNames[2], playerNames[3], !actual1);
+                        updatePartner(playerNames[3], playerNames[2], !actual1);
+
+                        if (!match.isFourPoint) {
+                            const winners = actual1 ? [playerNames[0], playerNames[1]] : [playerNames[2], playerNames[3]];
+                            if (!roundWinsAll[match.round]) roundWinsAll[match.round] = {};
+                            winners.forEach(winner => roundWinsAll[match.round][winner] = (roundWinsAll[match.round][winner] || 0) + 1);
                         }
-                    }
-                    p.bestPartner = bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name} (${bestPartner.wins}승)`;
-                    
-                    const totalGames = p.wins + p.losses;
-                    p.winRate = totalGames > 0 ? Math.round((p.wins / totalGames) * 100) : 0;
-                    p.avgGameDiff = p.totalSets > 0 ? (p.gameDiff / p.totalSets).toFixed(2) : '0.00';
-                    
-                    const dStats = derivedStats[p.name] || { totalSets: 0, closeSets: 0, dominantWins: 0, dominantLosses: 0 };
-                    p.closeRate = dStats.totalSets > 0 ? Math.round((dStats.closeSets / dStats.totalSets) * 100) : 0;
-                    p.dominantWins = dStats.totalSets > 0 ? `${Math.round((dStats.dominantWins / dStats.totalSets) * 100)}%(${dStats.dominantWins}승)` : '0%';
-                    p.dominantLosses = dStats.totalSets > 0 ? `${Math.round((dStats.dominantLosses / dStats.totalSets) * 100)}%(${dStats.dominantLosses}패)` : '0%';
-                });
 
-                try {
-                    const batch = writeBatch(db);
-                    batch.set(doc(db, seasonId, 'data', 'rankings', 'v1'), { 
-                        players: allCalculatedPlayers, lastProcessedRound: latestProcessedRound, lastUpdated: serverTimestamp() 
+                        playerNames.forEach((name, index) => {
+                            if (!derivedStats[name]) derivedStats[name] = { totalSets: 0, closeSets: 0, dominantWins: 0, dominantLosses: 0 };
+                            const stats = derivedStats[name];
+                            stats.totalSets++;
+                            if (gameDiff <= 2) stats.closeSets++;
+                            const isWinner = (index < 2 && actual1) || (index >= 2 && !actual1);
+                            if (gameDiff >= 5) {
+                                if (isWinner) stats.dominantWins++; else stats.dominantLosses++;
+                            }
+                        });
                     });
-                    
-                    const historyTimestamp = new Date().toISOString();
-                    const newHistoryDocRef = doc(db, seasonId, 'data', 'rankingHistory', historyTimestamp);
-                    const newHistoryData = {
-                        createdAt: serverTimestamp(),
-                        ...Object.fromEntries(allCalculatedPlayers.map(p => [p.name.replace(/\./g, '_'), p.mmr]))
-                    };
-                    batch.set(newHistoryDocRef, newHistoryData);
 
-                    await batch.commit();
-                    showToast('순위 업데이트 및 저장 완료!');
-                } catch (e) {
-                    showToast(`랭킹 저장 실패: ${e.message || '알 수 없는 오류'}`);
-                } finally {
-                    updateRankingBtn.disabled = false;
-                    updateRankingBtn.textContent = '순위 업데이트';
-                }
-            }, 10);
+                    allCalculatedPlayers.forEach(p => {
+                        p.championships = Object.values(roundWinsAll).filter(round => round[p.name] && round[p.name] >= 3).length;
+                        
+                        let bestPartner = { name: '-', wins: 0 };
+                        if (partnerStats[p.name]) {
+                            for (const partnerName in partnerStats[p.name]) {
+                                const stats = partnerStats[p.name][partnerName];
+                                if (stats.wins > bestPartner.wins) bestPartner = { name: partnerName, wins: stats.wins };
+                            }
+                        }
+                        p.bestPartner = bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name} (${bestPartner.wins}승)`;
+                        
+                        const totalGames = p.wins + p.losses;
+                        p.winRate = totalGames > 0 ? Math.round((p.wins / totalGames) * 100) : 0;
+                        p.avgGameDiff = p.totalSets > 0 ? (p.gameDiff / p.totalSets).toFixed(2) : '0.00';
+                        
+                        const dStats = derivedStats[p.name] || { totalSets: 0, closeSets: 0, dominantWins: 0, dominantLosses: 0 };
+                        p.closeRate = dStats.totalSets > 0 ? Math.round((dStats.closeSets / dStats.totalSets) * 100) : 0;
+                        p.dominantWins = dStats.totalSets > 0 ? `${Math.round((dStats.dominantWins / dStats.totalSets) * 100)}%(${dStats.dominantWins}승)` : '0%';
+                        p.dominantLosses = dStats.totalSets > 0 ? `${Math.round((dStats.dominantLosses / dStats.totalSets) * 100)}%(${dStats.dominantLosses}패)` : '0%';
+                    });
+
+                    try {
+                        const batch = writeBatch(db);
+                        batch.set(doc(db, seasonId, 'data', 'rankings', 'v1'), { 
+                            players: allCalculatedPlayers, lastProcessedRound: latestProcessedRound, lastUpdated: serverTimestamp() 
+                        });
+                        
+                        const historyTimestamp = new Date().toISOString();
+                        const newHistoryDocRef = doc(db, seasonId, 'data', 'rankingHistory', historyTimestamp);
+                        const newHistoryData = {
+                            createdAt: serverTimestamp(),
+                            ...Object.fromEntries(allCalculatedPlayers.map(p => [p.name.replace(/\./g, '_'), p.mmr]))
+                        };
+                        batch.set(newHistoryDocRef, newHistoryData);
+
+                        await batch.commit();
+                        showToast('순위 업데이트 및 저장 완료!');
+                    } catch (e) {
+                        showToast(`랭킹 저장 실패: ${e.message || '알 수 없는 오류'}`);
+                    } finally {
+                        updateRankingBtn.disabled = false;
+                        updateRankingBtn.textContent = '순위 업데이트';
+                        resolve();
+                    }
+                }, 10);
+            });
         };
 
         const downloadCSV = () => {
@@ -657,7 +661,6 @@
         };
 
         const setupInputListeners = () => {
-            // Event Delegation for all save buttons
             document.addEventListener('click', function(e) {
                 if (e.target.classList.contains('save-all-btn')) {
                     e.preventDefault();
@@ -695,28 +698,55 @@
                 applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
             });
             document.getElementById('ranking-search')?.addEventListener('input', () => updateRankingTable(allPlayersData, currentPotw));
+            
+            document.getElementById('restore-backup-btn')?.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const btn = e.target;
+                btn.disabled = true;
+                btn.textContent = '복구 중...';
+                showToast("최신 백업 데이터 복구를 시도합니다...");
+                try {
+                    const restoredData = await restoreScheduleFromBackup();
+                    if (restoredData) {
+                        showToast("백업 복구 완료! 이제 순위를 다시 계산합니다.");
+                        await updateRanking();
+                    } else {
+                        showToast("백업 데이터가 없거나 복구에 실패했습니다.");
+                    }
+                } catch (error) {
+                    showToast(`복구 프로세스 전체 실패: ${error.message}`);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = '💾 오류 수정 (백업 복구)';
+                }
+            });
         };
 
-        async function restoreScheduleFromBackup() {
+        async function restoreScheduleFromBackup(isInitialLoad = false) {
             try {
                 const backupCol = collection(db, seasonId, 'backups', 'data');
                 const q = query(backupCol, orderBy('timestamp', 'desc'), limit(1));
                 const backupSnap = await getDocs(q);
 
-                if (backupSnap.empty) return null;
+                if (backupSnap.empty) {
+                    if (!isInitialLoad) showToast("복구할 백업 데이터가 없습니다.");
+                    console.log("복구할 백업 데이터가 없습니다.");
+                    return null;
+                }
 
                 const latestBackup = backupSnap.docs[0].data();
                 const scheduleData = latestBackup.schedule;
 
                 if (scheduleData && scheduleData.length > 0) {
                     await setDoc(doc(db, seasonId, 'data', 'schedule', 'v1'), { matches: scheduleData, lastUpdated: serverTimestamp() });
-                    showToast("최신 백업에서 경기 기록을 복구했습니다.");
+                    if (!isInitialLoad) showToast("최신 백업에서 경기 기록을 복구했습니다.");
+                    console.log("최신 백업에서 경기 기록을 복구했습니다.");
                     return scheduleData;
                 }
                 return null;
             } catch (error) {
                 console.error("백업 복구 실패:", error);
-                showToast(`백업 복구 실패: ${error.message}`);
+                if (!isInitialLoad) showToast(`백업 데이터베이스 읽기 실패: ${error.message}`);
                 return null;
             }
         }
@@ -754,7 +784,7 @@
                         scheduleData = docSnap.data().matches;
                     } else {
                         console.log("기본 경기 기록이 비어있습니다. 백업에서 복구를 시도합니다.");
-                        scheduleData = await restoreScheduleFromBackup() || [];
+                        scheduleData = await restoreScheduleFromBackup(true) || [];
                     }
                     allMatchesData = scheduleData;
                     processAndRenderSchedule(scheduleData);
