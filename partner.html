@@ -48,18 +48,27 @@
         .stat-box p { font-size: 1.5rem; font-weight: 700; margin: 0; color: var(--accent-gold); }
         #chemistry-table tbody tr { cursor: pointer; transition: background-color 0.2s; }
         #chemistry-table tbody tr:hover { background-color: rgba(255,255,255,0.05); }
+        .season-tabs{display:flex;gap:10px;margin-bottom:20px;border-bottom:2px solid var(--border-color);padding-bottom:10px}
+        .tab-btn{padding:10px 20px;font-size:1rem;font-weight:700;background:none;border:none;color:var(--text-secondary-color);cursor:pointer;border-bottom:3px solid transparent;transition:color .3s,border-color .3s}
+        .tab-btn.active{color:var(--primary-color);border-bottom:3px solid var(--primary-color)}
         @media screen and (max-width: 600px) {
             h1 { font-size: 2rem; }
             th, td { font-size: 0.75rem; padding: var(--spacing-sm) 4px; }
             .stats-grid { grid-template-columns: repeat(3, 1fr); }
             .stat-box p { font-size: 1.1rem; }
+            .tab-btn{padding:8px 10px;font-size:.9rem}
         }
     </style>
 </head>
 <body>
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
-        <h1>파트너 전적 & 랭킹</h1>
+        <h1 id="main-title">파트너 전적 & 랭킹</h1>
+        <div class="season-tabs">
+            <button class="tab-btn active" data-view="current">2025 가을시즌</button>
+            <button class="tab-btn" data-view="previous">2025 여름시즌</button>
+            <button class="tab-btn" data-view="alltime">통산 기록</button>
+        </div>
         
         <div class="section">
             <h2>파트너 전적 검색</h2>
@@ -110,13 +119,14 @@
                     </tbody>
                 </table>
             </div>
-             <a href="index.html" class="btn" style="margin-top: 20px;">메인으로 돌아가기</a>
+             <a href="index.html" class="btn" id="main-link" style="margin-top: 20px;">메인으로 돌아가기</a>
         </div>
     </div>
     <div id="toast" class="toast"></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -128,9 +138,21 @@
         appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd"
     };
 
-    const db = getFirestore(initializeApp(firebaseConfig));
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const BASE_COLLECTION = 'league';
+    const SEASONS = {
+        'v2': { name: '2025 가을시즌' },
+        'v1': { name: '2025 여름시즌' },
+    };
+    const CURRENT_SEASON_VERSION = 'v2';
+    const PREVIOUS_SEASON_VERSION = 'v1';
+
     let sortKey = 'chemistryScore', sortOrder = 'desc';
     let currentFilter = 'all';
+    let activeView = 'current';
     let allPairStats = [];
     let allMatches = [];
     const playerGenderMap = new Map();
@@ -152,22 +174,43 @@
         return name ? name.replace(/\*/g, '').trim() : '';
     }
 
-    async function loadAllData() {
+    async function loadDataForView() {
+        showToast('데이터를 불러오는 중입니다...');
+        let scheduleDocs = [];
+        let rankingDocs = [];
+
+        if (activeView === 'current') {
+            scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION)));
+            rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION)));
+        } else if (activeView === 'previous') {
+            scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION)));
+            rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION)));
+        } else { // alltime
+            scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION)));
+            scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION)));
+            rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION)));
+            rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION)));
+        }
+
         try {
-            const [scheduleDoc, rankingDoc] = await Promise.all([
-                getDoc(doc(db, 'league', 'data', 'schedule', 'v1')),
-                getDoc(doc(db, 'league', 'data', 'rankings', 'v1'))
-            ]);
+            const scheduleSnaps = await Promise.all(scheduleDocs);
+            const rankingSnaps = await Promise.all(rankingDocs);
+            
+            allMatches = scheduleSnaps.flatMap(snap => snap.exists() ? snap.data().matches : []);
+            
+            playerGenderMap.clear();
+            const allPlayers = new Map();
+            rankingSnaps.forEach(snap => {
+                if (snap.exists()) {
+                    (snap.data().players || []).forEach(p => {
+                        allPlayers.set(cleanName(p.name), p);
+                    });
+                }
+            });
 
-            if (!scheduleDoc.exists() || !rankingDoc.exists()) {
-                showToast("경기 또는 랭킹 데이터를 찾을 수 없습니다.");
-                return;
-            }
-
-            const players = rankingDoc.data().players || [];
             const playerList = document.getElementById('player-list');
             playerList.innerHTML = '';
-            players.forEach(p => {
+            [...allPlayers.values()].sort((a,b) => a.name.localeCompare(b.name, 'ko')).forEach(p => {
                 const cleanPlayerName = cleanName(p.name);
                 playerGenderMap.set(normalizeName(p.name), p.isFemale);
                 const option = document.createElement('option');
@@ -175,7 +218,9 @@
                 playerList.appendChild(option);
             });
 
-            allMatches = scheduleDoc.data().matches || [];
+            calculateAllPairStats();
+            displayRankings();
+
         } catch (e) {
             console.error("데이터 로드 실패:", e);
             showToast("데이터 로드에 실패했습니다.");
@@ -221,7 +266,7 @@
         });
 
         allPairStats = Object.values(partnerStats)
-            .filter(stats => stats.matches >= 5) // 최소 5경기로 변경
+            .filter(stats => stats.matches >= 5)
             .map(stats => {
                 const winRate = stats.matches > 0 ? (stats.wins / stats.matches) * 100 : 0;
                 const avgGameDiff = stats.matches > 0 ? stats.totalGameDiff / stats.matches : 0;
@@ -259,7 +304,7 @@
 
         rankings.forEach((stats, index) => {
             const row = tableBody.insertRow();
-            row.dataset.pair = stats.pair; // 클릭 이벤트를 위해 데이터 속성 추가
+            row.dataset.pair = stats.pair;
             row.innerHTML = `
                 <td class="rank-cell">${index + 1}</td>
                 <td>${stats.pair}</td>
@@ -356,9 +401,13 @@
     document.addEventListener('DOMContentLoaded', async () => {
         applyTheme(localStorage.getItem('theme') || 'dark');
         
-        await loadAllData();
-        calculateAllPairStats();
-        displayRankings();
+        try {
+            await signInAnonymously(auth);
+            await loadDataForView();
+        } catch(e) {
+            console.error("Auth or data load failed", e);
+            showToast("데이터 로딩 중 오류 발생");
+        }
 
         // --- Event Listeners ---
         document.getElementById('search-btn').addEventListener('click', handleSearch);
@@ -388,7 +437,6 @@
             });
         });
 
-        // 랭킹 테이블 행 클릭 이벤트 (이벤트 위임)
         document.querySelector('#chemistry-table tbody').addEventListener('click', (e) => {
             const row = e.target.closest('tr');
             if (!row || !row.dataset.pair) return;
@@ -397,12 +445,21 @@
             document.getElementById('player1').value = p1.trim();
             document.getElementById('player2').value = p2.trim();
             handleSearch();
-            window.scrollTo({ top: 0, behavior: 'smooth' }); // 검색 후 맨 위로 스크롤
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
         document.getElementById('theme-toggle').addEventListener('click', () => 
             applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark')
         );
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelector('.tab-btn.active').classList.remove('active');
+                btn.classList.add('active');
+                activeView = btn.dataset.view;
+                loadDataForView();
+            });
+        });
     });
 </script>
 </body>

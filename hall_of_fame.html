@@ -30,7 +30,6 @@
         .btn { display: inline-block; padding: 12px 28px; margin-top: 30px; background: linear-gradient(135deg,var(--primary-color),var(--primary-variant-color)); color: #FFF; text-decoration: none; border-radius: 8px; font-weight: 700; }
         [data-theme="dark"] .btn { color: var(--bg-color); }
 
-        /* 모바일 가독성 개선용 CSS 추가 */
         @media screen and (max-width: 600px) {
             body { padding: var(--spacing-sm); }
             h1 { font-size: 2.2rem; }
@@ -83,6 +82,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -93,22 +93,20 @@
             messagingSenderId: "491083537160",
             appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd"
         };
-        const db = getFirestore(initializeApp(firebaseConfig));
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
-        // -------------------------------------------------------------
-        // 중요: 여기에 시즌 정보를 추가하면 페이지에 자동으로 반영됩니다.
-        // id는 Firestore에 저장된 이름, name은 화면에 표시될 이름입니다.
-        const seasons = [
-            { id: 'league', name: '2025 여름 시즌' },
-            // { id: '2025-fall', name: '2025 가을 시즌' },
-            // { id: '2025-winter', name: '2025-26 겨울 시즌' },
-            // { id: '2026-spring', name: '2026 봄 시즌' },
-        ];
-        // -------------------------------------------------------------
+        const BASE_COLLECTION = 'league';
+        const SEASONS = {
+            'v2': { name: '2025 가을시즌' },
+            'v1': { name: '2025 여름시즌' },
+        };
+        const SEASON_VERSIONS = ['v2', 'v1']; // 최신순으로 정렬
 
         const getSeasonIdFromURL = () => {
             const params = new URLSearchParams(window.location.search);
-            return params.get('season') || 'league';
+            return params.get('season') || 'v2'; // 기본값을 현재 시즌으로
         };
 
         const calculateSeasonRecords = (players) => {
@@ -204,12 +202,15 @@
         };
 
         const loadAllSeasonsData = async () => {
-            const seasonDataPromises = seasons.map(season => getDoc(doc(db, season.id, 'data', 'rankings', 'v1')));
+            const seasonDataPromises = SEASON_VERSIONS.map(version => 
+                getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', version))
+            );
             
             try {
                 const seasonSnapshots = await Promise.all(seasonDataPromises);
                 const allSeasonData = seasonSnapshots.map((snap, index) => ({
-                    ...seasons[index],
+                    version: SEASON_VERSIONS[index],
+                    name: SEASONS[SEASON_VERSIONS[index]].name,
                     exists: snap.exists(),
                     data: snap.exists() ? snap.data() : { players: [] }
                 })).filter(s => s.exists);
@@ -222,7 +223,7 @@
                 renderAllTimeRecords(allSeasonData);
 
                 const pastSeasonsContainer = document.getElementById('past-seasons-container');
-                allSeasonData.reverse().forEach(season => { // 최신 시즌이 위로 오게
+                allSeasonData.forEach(season => { // 최신 시즌부터 순서대로
                     renderSeasonSection(season, pastSeasonsContainer);
                 });
 
@@ -231,14 +232,19 @@
             }
         };
         
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const currentSeasonId = getSeasonIdFromURL();
             document.getElementById('main-link').href = `index.html?season=${currentSeasonId}`;
 
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
             
-            loadAllSeasonsData();
+            try {
+                await signInAnonymously(auth);
+                loadAllSeasonsData();
+            } catch(e) {
+                console.error("Authentication failed", e);
+            }
         });
     </script>
 </body>

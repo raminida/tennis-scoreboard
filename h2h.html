@@ -34,6 +34,9 @@
         .loss { color: #F44336; }
         .btn { display: inline-block; padding: 12px 28px; margin-top: 20px; background: linear-gradient(135deg,var(--primary-color),var(--primary-variant-color)); color: #FFF; text-decoration: none; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; }
         [data-theme="dark"] .btn { color: var(--bg-color); }
+        .season-tabs{display:flex;gap:10px;margin-bottom:20px;border-bottom:2px solid var(--border-color);padding-bottom:10px}
+        .tab-btn{padding:10px 20px;font-size:1rem;font-weight:700;background:none;border:none;color:var(--text-secondary-color);cursor:pointer;border-bottom:3px solid transparent;transition:color .3s,border-color .3s}
+        .tab-btn.active{color:var(--primary-color);border-bottom:3px solid var(--primary-color)}
     </style>
 </head>
 <body>
@@ -41,10 +44,15 @@
         <div class="profile-header">
             <h1 id="player-name" class="player-name">선수 로딩 중...</h1>
         </div>
+        <div class="season-tabs">
+            <button class="tab-btn active" data-view="current">2025 가을시즌</button>
+            <button class="tab-btn" data-view="previous">2025 여름시즌</button>
+            <button class="tab-btn" data-view="alltime">통산 기록</button>
+        </div>
 
         <div class="stat-grid">
             <div class="stat-card"><div class="stat-title">현재 MMR</div><div id="stat-mmr" class="stat-value">-</div></div>
-            <div class="stat-card"><div class="stat-title">통합 순위</div><div id="stat-rank" class="stat-value">-</div></div>
+            <div class="stat-card"><div class="stat-title">시즌 순위</div><div id="stat-rank" class="stat-value">-</div></div>
             <div class="stat-card"><div class="stat-title">승/패</div><div id="stat-record" class="stat-value">-</div></div>
             <div class="stat-card"><div class="stat-title">승률</div><div id="stat-winrate" class="stat-value">-</div></div>
             <div class="stat-card"><div class="stat-title">우승</div><div id="stat-champs" class="stat-value">-</div></div>
@@ -97,6 +105,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -107,13 +116,19 @@
             messagingSenderId: "491083537160",
             appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd"
         };
-        const db = getFirestore(initializeApp(firebaseConfig));
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const BASE_COLLECTION = 'league';
+        const CURRENT_SEASON_VERSION = 'v2';
+        const PREVIOUS_SEASON_VERSION = 'v1';
+        let activeView = 'current';
 
         const getParams = () => {
             const params = new URLSearchParams(window.location.search);
             return {
-                seasonId: params.get('season') || 'league',
-                playerName: decodeURIComponent(params.get('player'))
+                mainPlayerName: decodeURIComponent(params.get('player'))
             };
         };
 
@@ -338,57 +353,120 @@
         };
 
         const loadProfileData = async () => {
-            const { seasonId, playerName } = getParams();
-            if (!playerName) {
+            const { mainPlayerName } = getParams();
+            if (!mainPlayerName) {
                 document.getElementById('player-name').textContent = "선수를 찾을 수 없음";
                 return;
             }
-
-            document.getElementById('main-link').href = `index.html?season=${seasonId}`;
-
-            const rankingsSnap = await getDoc(doc(db, seasonId, 'data', 'rankings', 'v1'));
-            const scheduleSnap = await getDoc(doc(db, seasonId, 'data', 'schedule', 'v1'));
             
-            if (!rankingsSnap.exists() || !scheduleSnap.exists()) {
-                document.getElementById('player-name').textContent = "데이터 없음";
-                return;
+            document.getElementById('player-name').textContent = mainPlayerName;
+            
+            let rankingDocs = [];
+            let scheduleDocs = [];
+
+            if (activeView === 'current') {
+                rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION)));
+                scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION)));
+            } else if (activeView === 'previous') {
+                rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION)));
+                scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION)));
+            } else { // alltime
+                rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION)));
+                rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION)));
+                scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION)));
+                scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION)));
             }
 
-            const allPlayers = rankingsSnap.data().players || [];
-            const allMatches = scheduleSnap.data().matches || [];
-            const playerData = allPlayers.find(p => p.name === playerName);
+            try {
+                const rankingSnaps = await Promise.all(rankingDocs);
+                const scheduleSnaps = await Promise.all(scheduleDocs);
 
-            if (!playerData) {
-                document.getElementById('player-name').textContent = `${playerName} 선수 정보 없음`;
-                return;
+                const allPlayers = rankingSnaps.flatMap(snap => snap.exists() ? snap.data().players : []);
+                const allMatches = scheduleSnaps.flatMap(snap => snap.exists() ? snap.data().matches : []);
+                
+                let playerData;
+                if (activeView === 'alltime') {
+                    const cumulativeStats = {};
+                    allMatches.forEach(match => {
+                        match.players.forEach((p, i) => {
+                            const name = p.replace(/\*/g, '');
+                            if (!cumulativeStats[name]) {
+                                cumulativeStats[name] = { name, wins: 0, losses: 0, championships: 0, isFemale: p.includes('*') };
+                            }
+                        });
+                        const [s1, s2] = match.score.split('-').map(Number);
+                        const winners = (s1 > s2 ? match.players.slice(0, 2) : match.players.slice(2, 4)).map(p => p.replace(/\*/g, ''));
+                        const losers = (s1 > s2 ? match.players.slice(2, 4) : match.players.slice(0, 2)).map(p => p.replace(/\*/g, ''));
+                        winners.forEach(w => cumulativeStats[w].wins++);
+                        losers.forEach(l => cumulativeStats[l].losses++);
+                    });
+                    
+                    Object.values(cumulativeStats).forEach(p => {
+                        const total = p.wins + p.losses;
+                        p.winRate = total > 0 ? Math.round((p.wins / total) * 100) : 0;
+                    });
+                    playerData = cumulativeStats[mainPlayerName];
+                    if (playerData) {
+                        playerData.mmr = allPlayers.find(p => p.name === mainPlayerName)?.mmr || 'N/A';
+                        playerData.bestPartner = allPlayers.find(p => p.name === mainPlayerName)?.bestPartner || '-';
+                    }
+
+                } else {
+                    playerData = allPlayers.find(p => p.name === mainPlayerName);
+                }
+
+                if (!playerData) {
+                    ['stat-mmr', 'stat-rank', 'stat-record', 'stat-winrate', 'stat-champs', 'stat-partner'].forEach(id => document.getElementById(id).textContent = '-');
+                    return;
+                }
+                
+                const sortedPlayers = [...allPlayers].sort((a,b) => b.mmr - a.mmr);
+                const rank = sortedPlayers.findIndex(p => p.name === mainPlayerName) + 1;
+                
+                document.getElementById('stat-mmr').textContent = Math.round(playerData.mmr) || 'N/A';
+                document.getElementById('stat-rank').textContent = rank > 0 ? `${rank}위` : '-';
+                document.getElementById('stat-record').textContent = `${playerData.wins || 0}승 ${playerData.losses || 0}패`;
+                document.getElementById('stat-winrate').textContent = `${playerData.winRate || 0}%`;
+                document.getElementById('stat-champs').textContent = playerData.championships || 0;
+                document.getElementById('stat-partner').textContent = playerData.bestPartner || '-';
+                
+                renderMatchHistory(allMatches, allPlayers, mainPlayerName, false);
+                const showAllBtn = document.getElementById('show-all-matches-btn');
+                const newBtn = showAllBtn.cloneNode(true);
+                showAllBtn.parentNode.replaceChild(newBtn, showAllBtn);
+                newBtn.style.display = 'inline-block';
+                newBtn.addEventListener('click', () => {
+                    renderMatchHistory(allMatches, allPlayers, mainPlayerName, true);
+                    newBtn.style.display = 'none';
+                }, { once: true });
+
+                setupH2H(allMatches, allPlayers, mainPlayerName);
+                calculateAndRenderRelationships(allMatches, mainPlayerName);
+
+            } catch (e) {
+                console.error("Profile data load failed:", e);
             }
-
-            allPlayers.sort((a,b) => b.mmr - a.mmr);
-            const rank = allPlayers.findIndex(p => p.name === playerName) + 1;
-            
-            document.getElementById('player-name').textContent = playerData.name;
-            document.getElementById('stat-mmr').textContent = Math.round(playerData.mmr);
-            document.getElementById('stat-rank').textContent = `${rank}위`;
-            document.getElementById('stat-record').textContent = `${playerData.wins}승 ${playerData.losses}패`;
-            document.getElementById('stat-winrate').textContent = `${playerData.winRate}%`;
-            document.getElementById('stat-champs').textContent = playerData.championships || 0;
-            document.getElementById('stat-partner').textContent = playerData.bestPartner || '-';
-
-            renderMatchHistory(allMatches, allPlayers, playerName, false);
-            const showAllBtn = document.getElementById('show-all-matches-btn');
-            showAllBtn.addEventListener('click', () => {
-                renderMatchHistory(allMatches, allPlayers, playerName, true);
-                showAllBtn.style.display = 'none';
-            }, { once: true });
-
-            setupH2H(allMatches, allPlayers, playerName);
-            calculateAndRenderRelationships(allMatches, playerName);
         };
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
              const savedTheme = localStorage.getItem('theme') || 'light';
              document.documentElement.setAttribute('data-theme', savedTheme);
-             loadProfileData();
+             
+             try {
+                await signInAnonymously(auth);
+                loadProfileData();
+             } catch(e) {
+                 console.error("Auth failed", e);
+             }
+
+             document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelector('.tab-btn.active').classList.remove('active');
+                    btn.classList.add('active');
+                    activeView = btn.dataset.view;
+                    loadProfileData();
+                });
+            });
         });
     </script>
 </body>
