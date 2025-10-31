@@ -118,7 +118,7 @@
     <div class="container">
         <h1>호수 오픈</h1>
         <div class="section" id="schedule-section">
-            <h2 id="schedule-title">2025 가을시즌 경기 일정</h2>
+            <h2 id="schedule-title">2025-26 겨울시즌 경기 일정</h2>
             <div class="input-group">
                 <button id="how-to-use-btn" class="btn">이용방법</button>
             </div>
@@ -128,10 +128,10 @@
             <button id="restore-backup-btn" class="btn danger" style="margin-top: 10px;">💾 오류 수정 (백업 복구)</button>
         </div>
         <div class="section">
-            <h2 id="ranking-main-title">시즌 순위표 <span id="season-countdown" style="font-size: 1rem; color: var(--accent-gold);"></span></h2>
+            <h2 id="ranking-main-title">2025-26 겨울 시즌 순위표</h2>
             
             <div class="season-tabs">
-                <button class="tab-btn active" data-view="current">2025 가을시즌</button>
+                <button class="tab-btn active" data-view="current">2025-26 겨울 시즌</button>
                 <button class="tab-btn" data-view="previous">2025 여름시즌</button>
                 <button class="tab-btn" data-view="alltime">통산 기록</button>
             </div>
@@ -225,7 +225,7 @@
         // --- 시즌 설정 ---
         const BASE_COLLECTION = 'league';
         const SEASONS = {
-            'v2': { name: '2025 가을시즌', endDate: '2025-11-30T23:59:59' },
+            'v2': { name: '2025-26 겨울 시즌', endDate: '2025-11-30T23:59:59' },
             'v1': { name: '2025 여름시즌', endDate: '2025-08-31T23:59:59' },
         };
         const CURRENT_SEASON_VERSION = 'v2';
@@ -255,33 +255,33 @@
         
         const updateRankingTitleAndCountdown = (view) => {
             const titleEl = document.getElementById('ranking-main-title');
-            let seasonVersion, seasonName, seasonEndDate;
+            let seasonVersion, seasonName; // seasonEndDate 제거
 
             if (view === 'current') {
                 seasonVersion = CURRENT_SEASON_VERSION;
             } else if (view === 'previous') {
                 seasonVersion = PREVIOUS_SEASON_VERSION;
             } else { // alltime
-                titleEl.innerHTML = '통산 기록 순위표 <span id="season-countdown" style="font-size: 1rem; color: var(--accent-gold);"></span>';
-                titleEl.querySelector('#season-countdown').textContent = '';
+                titleEl.innerHTML = '통산 기록 순위표'; // span 제거
+                // titleEl.querySelector('#season-countdown').textContent = ''; // 제거
                 return;
             }
 
             seasonName = SEASONS[seasonVersion].name;
-            seasonEndDate = new Date(SEASONS[seasonVersion].endDate);
+            // seasonEndDate = new Date(SEASONS[seasonVersion].endDate); // 제거
             
-            titleEl.innerHTML = `${seasonName} 순위표 <span id="season-countdown" style="font-size: 1rem; color: var(--accent-gold);"></span>`;
-            const countdownEl = titleEl.querySelector('#season-countdown');
+            titleEl.innerHTML = `${seasonName} 순위표`; // span 제거
+            // const countdownEl = titleEl.querySelector('#season-countdown'); // 제거
 
-            const now = new Date();
-            const diff = seasonEndDate - now;
+            // const now = new Date(); // 카운트다운 로직 모두 제거
+            // const diff = seasonEndDate - now;
 
-            if (diff > 0) {
-                const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                countdownEl.textContent = `(시즌 종료 D-${daysLeft})`;
-            } else {
-                countdownEl.textContent = '(시즌 종료)';
-            }
+            // if (diff > 0) {
+            //     const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
+            //     countdownEl.textContent = `(시즌 종료 D-${daysLeft})`;
+            // } else {
+            //     countdownEl.textContent = '(시즌 종료)';
+            // }
         };
 
 
