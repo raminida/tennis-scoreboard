@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025/26 TU 리그</title>
+    <!-- 1. 제목 수정 -->
+    <title>호수 오픈</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,6 +40,7 @@
         }
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
         .container { max-width: 1700px; margin: 0 auto; }
+        /* 1. h1 제목 수정 */
         h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; color: var(--secondary-color); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: var(--spacing-lg); margin-bottom: 2rem; letter-spacing: -2px; text-shadow: 2px 2px 10px var(--shadow-color); }
         .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
         h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--border-color); }
@@ -106,9 +108,34 @@
         .player-management-item { display: flex; justify-content: space-between; align-items: center; padding: var(--spacing-md); border-bottom: 1px solid var(--border-color); }
         .player-management-item:last-child { border-bottom: none; }
         .player-management-item span { font-weight: bold; flex-basis: 40%; text-align: left; }
-        .player-management-item .controls { display: flex; align-items: center; gap: 10px; } /* 15px -> 10px */
-        /* Season Tabs Removed */
-        .season-tabs { display: none; } /* 탭 숨김 */
+        .player-management-item .controls { display: flex; align-items: center; gap: 10px; }
+        
+        /* --- 3. 탭 CSS 부활 --- */
+        .season-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0;
+            flex-wrap: wrap; /* 모바일에서 탭 줄바꿈 */
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            background: none;
+            border: none;
+            color: var(--text-secondary-color);
+            cursor: pointer;
+            border-bottom: 4px solid transparent;
+            margin-bottom: -2px;
+            transition: color .3s, border-color .3s;
+        }
+        .tab-btn:hover { color: var(--primary-color); }
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom: 4px solid var(--accent-gold);
+        }
         
         /* --- 모바일 UI 수정 --- */
         @media screen and (max-width: 600px) {
@@ -133,6 +160,7 @@
             .saved-info { font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: inline-block; vertical-align: middle; }
             .popup { max-width: 90vw; width: auto; padding: var(--spacing-md); }
             .ranking-controls { flex-direction: column; align-items: stretch; }
+            .tab-btn { font-size: 0.9rem; padding: 8px 12px; } /* 모바일 탭 버튼 크기 */
 
             /* --- *** 선수관리 팝업 너비 수정 *** --- */
             #player-management-popup {
@@ -187,22 +215,28 @@
 <body>
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
-        <!-- *** h1, h2 제목은 새로 올린 파일 기준으로 유지 *** -->
-        <h1>2025/26 TU 리그</h1> 
+        <h1>호수 오픈</h1>
         <div class="section" id="schedule-section">
-            <h2 id="schedule-title">2025-26시즌 경기 일정</h2>
+            <h2 id="schedule-title">경기 일정</h2>
             <div class="input-group">
                 <button id="how-to-use-btn" class="btn">이용방법</button>
             </div>
-            <!-- *** 회차 양식 (schedule-container) 추가 *** -->
             <div id="schedule-container"></div>
-            <button class="btn save-all-btn">모든 데이터 저장</button>
-            <button id="update-ranking" class="btn update-btn">순위 업데이트</button>
-            <button id="restore-backup-btn" class="btn danger" style="margin-top: 10px;">💾 오류 수정 (백업 복구)</button>
+            <!-- 관리자 버튼 (JS로 숨김/표시 제어) -->
+            <button class="btn save-all-btn admin-btn">모든 데이터 저장</button>
+            <button id="update-ranking" class="btn update-btn admin-btn">순위 업데이트</button>
+            <button id="restore-backup-btn" class="btn danger admin-btn" style="margin-top: 10px;">💾 오류 수정 (백업 복구)</button>
         </div>
         <div class="section">
-            <h2 id="ranking-main-title">2025-26시즌 순위표</h2>
+            <h2 id="ranking-main-title">순위표</h2>
             
+            <!-- 3. 탭 HTML 부활 -->
+            <div class="season-tabs" id="season-tabs-container">
+                <button class="tab-btn active" data-view="current">2025/26 겨울시즌</button>
+                <button class="tab-btn" data-view="previous">2025 여름시즌</button>
+                <button class="tab-btn" data-view="alltime">통합기록</button>
+            </div>
+
             <div id="potw-container"></div>
             <div class="ranking-controls">
                 <div class="ranking-filter">
@@ -210,9 +244,8 @@
                     <button class="filter-btn" data-filter="male">남자 순위</button>
                     <button class="filter-btn" data-filter="female">여자 순위</button>
                 </div>
-                <!-- *** datalist 삭제 (키보드 제안 바로 대체) *** -->
                 <input type="search" id="ranking-search" placeholder="선수 이름 검색...">
-                <button id="manage-players-btn" class="btn secondary">선수 관리</button>
+                <button id="manage-players-btn" class="btn secondary admin-btn">선수 관리</button>
             </div>
             <div class="table-wrapper">
                 <table id="ranking-table">
@@ -226,9 +259,10 @@
                             <th data-sort="losses">패</th>
                             <th data-sort="winRate">승률(%)</th>
                             <th data-sort="avgGameDiff">평균 득실</th>
-                            <th data-sort="tieBreakWinRate">타이승률(%)</th>
-                            <th data-sort="bagelWins">베이글승률(%)</th>
-                            <th data-sort="bagelLosses">베이글패률(%)</th>
+                            <!-- 4. 헤더 이름 변경 -->
+                            <th data-sort="closeMatchWinRate">접전률(%)</th>
+                            <th data-sort="dominantWins">압도승률(%)</th>
+                            <th data-sort="dominantLosses">압도패률(%)</th>
                             <th data-sort="bestPartner">최고 파트너</th>
                         </tr>
                     </thead>
@@ -246,7 +280,7 @@
     <div id="toast" class="toast"></div>
     <div id="overlay" class="overlay"></div>
     
-    <!-- *** 팝업들 (이용방법, 선수관리, 비번, 이름변경) 추가 *** -->
+    <!-- 팝업들 (이용방법, 선수관리, 비번, 이름변경) -->
     <div id="info-popup" class="popup">
         <button class="close-btn" data-target="info-popup">×</button>
         <h3>이용 방법</h3>
@@ -286,40 +320,45 @@
         </div>
     </div>
     
-    <!-- *** 자동완성 제안 바 추가 *** -->
+    <!-- 자동완성 제안 바 -->
     <div id="autocomplete-bar" class="autocomplete-bar">
         <!-- JS로 채워짐 -->
     </div>
 
 
     <script type="module">
-        // *** 스크립트 태그도 이전 파일 기능 모두 복사 ***
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch, onSnapshot, query, orderBy, limit, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+        // 2. 파이어베이스 ID 및 임포트 수정
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch, onSnapshot, query, orderBy, limit, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-        // tetus-c91f0 설정 (올려준 파일 기준)
+        // 2. 새 firebaseConfig 적용
         const firebaseConfig = {
-            apiKey: "AIzaSyCj33GM2pM2-Vz1Fmh6eyMwQkWjByA7xdw",
-            authDomain: "tetus-c91f0.firebaseapp.com",
-            projectId: "tetus-c91f0",
-            storageBucket: "tetus-c91f0.firebasestorage.app",
-            messagingSenderId: "877913022272",
-            appId: "1:877913022272:web:ec685d63235c87c3c1e4a5",
-            measurementId: "G-7FJY9EKPV5"
+           apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
+           authDomain: "tennis-plan-jibung.firebaseapp.com",
+           projectId: "tennis-plan-jibung",
+           storageBucket: "tennis-plan-jibung.firebasestorage.app",
+           messagingSenderId: "491083537160",
+           appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd",
+           measurementId: "G-4CSJLPFJD6"
         };
 
         const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app); // 애널리틱스 초기화
         const db = getFirestore(app);
         const auth = getAuth(app);
         
+        // --- 3. 시즌 설정 (탭용) ---
         const BASE_COLLECTION = 'league';
-        const CURRENT_SEASON_VERSION = 'v2'; 
+        const CURRENT_SEASON_VERSION = 'v2'; // 2025/26 겨울시즌
+        const PREVIOUS_SEASON_VERSION = 'v1'; // 2025 여름시즌
+        // --- /시즌 설정 ---
 
         let currentFilter = 'all', sortKey = 'mmr', sortOrder = 'desc';
         let allPlayersData = [];
         let currentPotw = null;
-        let activeView = 'current'; 
+        let activeView = 'current'; // 'current'로 기본값
         let scheduleUnsubscribe = null;
         let rankingUnsubscribe = null;
         let currentActiveInput = null; 
@@ -338,35 +377,41 @@
             document.getElementById('theme-toggle').textContent = validTheme === 'dark' ? '☀️' : '🌙';
         };
         
+        // 3. 탭에 따라 제목 변경
         const updateRankingTitleAndCountdown = (view) => {
-            const titleEl = document.getElementById('ranking-main-title');
-            titleEl.innerHTML = '2025-26시즌 순위표'; // 제목 고정
+            const rankingTitleEl = document.getElementById('ranking-main-title');
+            const scheduleTitleEl = document.getElementById('schedule-title');
+            
+            if (view === 'current') {
+                rankingTitleEl.innerHTML = '2025/26 겨울시즌 순위표';
+                scheduleTitleEl.innerHTML = '2025/26 겨울시즌 경기 일정';
+            } else if (view === 'previous') {
+                rankingTitleEl.innerHTML = '2025 여름시즌 순위표';
+                scheduleTitleEl.innerHTML = '2025 여름시즌 경기 일정';
+            } else {
+                rankingTitleEl.innerHTML = '통합기록 순위표';
+                scheduleTitleEl.innerHTML = '통합기록 경기 일정';
+            }
         };
 
         const updateAutocompleteSuggestions = (filterText) => {
             const bar = document.getElementById('autocomplete-bar');
             if (!bar) return;
-
             bar.innerHTML = ''; 
             const filter = filterText.toLowerCase().trim();
-            
             if (!allPlayersData || allPlayersData.length === 0) {
-                bar.innerHTML = '<span>선수 데이터 없음</span>';
-                return;
+                bar.innerHTML = '<span>선수 데이터 없음</span>'; return;
             }
-
             let suggestions = allPlayersData;
             if (filter) {
                 suggestions = allPlayersData.filter(p => p.name.toLowerCase().includes(filter));
             }
-            
             suggestions.slice(0, 15).forEach(player => {
                 const btn = document.createElement('button');
                 btn.textContent = player.name;
                 btn.dataset.name = player.name; 
                 bar.appendChild(btn);
             });
-
             if (suggestions.length === 0 && filter) {
                 bar.innerHTML = '<span>일치하는 선수 없음</span>';
             } else if (suggestions.length === 0 && !filter) {
@@ -374,13 +419,11 @@
             }
         };
 
-        // *** createScheduleRounds 함수 (회차 양식) 추가 ***
         const createScheduleRounds = (savedRounds = new Map()) => {
             const container = document.getElementById('schedule-container');
             if (!container) return showToast("스케줄 컨테이너 오류!");
             let roundsHtml = '';
             const roundsPerCategory = 30, totalRounds = 200;
-
             for (let category = 0; category < Math.ceil(totalRounds / roundsPerCategory); category++) {
                 const startRound = category * roundsPerCategory + 1;
                 const endRound = Math.min((category + 1) * roundsPerCategory, totalRounds);
@@ -395,7 +438,6 @@
                         <summary>${i}회${isSaved ? `<span class="saved-indicator">💾</span><span class="saved-info">[${savedDate}, 우승: ${champions}]</span>` : ''}</summary>
                         <div class="table-wrapper">
                             <table class="schedule-table" data-round-id="${i}">
-                                <!-- *** P1, 4점 등 모바일 최적화 헤더 적용 *** -->
                                 <thead><tr><th>P1</th><th>P2</th><th>vs</th><th>P3</th><th>P4</th><th>Score</th><th>4점</th></tr></thead>
                                 <tbody>
                                     ${Array(3).fill().map(() => `
@@ -411,7 +453,8 @@
                                 </tbody>
                             </table>
                         </div>
-                        <button class="btn save-all-btn" style="margin: 10px 15px;">저장하기</button>
+                        <!-- 3. 탭 기능: 저장 버튼도 admin-btn 클래스 추가 -->
+                        <button class="btn save-all-btn admin-btn" style="margin: 10px 15px;">저장하기</button>
                     </details>`;
                 }
                 roundsHtml += `</div></details>`;
@@ -419,65 +462,43 @@
             container.innerHTML = roundsHtml;
         };
         
-        // *** saveAllData 함수 추가 ***
         const saveAllData = async () => {
             if (!db) return showToast('DB 연결 실패!');
-            if (activeView !== 'current') {
+            if (activeView !== 'current') { // 현재 탭에서만 저장
                 showToast('현재 시즌 탭에서만 저장할 수 있습니다.');
                 return;
             }
-
             const allSaveButtons = document.querySelectorAll('.save-all-btn');
-            allSaveButtons.forEach(btn => {
-                btn.disabled = true;
-                btn.textContent = '저장 중...';
-            });
-
+            allSaveButtons.forEach(btn => { btn.disabled = true; btn.textContent = '저장 중...'; });
             try {
                 const scheduleDocRef = doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION);
                 const scheduleDoc = await getDoc(scheduleDocRef);
                 const existingTimestamps = new Map();
                 if (scheduleDoc.exists()) {
                     (scheduleDoc.data().matches || []).forEach(match => {
-                        if (!existingTimestamps.has(match.round)) {
-                            existingTimestamps.set(match.round, match.timestamp);
-                        }
+                        if (!existingTimestamps.has(match.round)) existingTimestamps.set(match.round, match.timestamp);
                     });
                 }
-
                 const batch = writeBatch(db);
                 const scheduleData = [];
                 document.querySelectorAll('.schedule-table').forEach(table => {
                     const roundId = parseInt(table.getAttribute('data-round-id'));
                     const roundTimestamp = existingTimestamps.get(roundId) || new Date().toISOString();
-                    
                     table.querySelectorAll('tbody tr').forEach(row => {
                         const players = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
                         const score = row.querySelector('.score').value.trim();
                         const isFourPoint = row.querySelector('.is-four-point').checked;
                         if (players.every(p => p)) {
-                            scheduleData.push({ 
-                                round: roundId, 
-                                players, 
-                                score, 
-                                isFourPoint,
-                                timestamp: roundTimestamp
-                            });
+                            scheduleData.push({ round: roundId, players, score, isFourPoint, timestamp: roundTimestamp });
                         }
                     });
                 });
-                
                 batch.set(scheduleDocRef, { matches: scheduleData, lastUpdated: serverTimestamp() }, { merge: true });
-
                 if (scheduleData.length > 0) {
                     const backupTimestamp = new Date().toISOString();
                     const backupDocRef = doc(collection(db, BASE_COLLECTION, 'data', `backups-${CURRENT_SEASON_VERSION}`), backupTimestamp);
-                    batch.set(backupDocRef, {
-                        schedule: scheduleData,
-                        timestamp: serverTimestamp()
-                    });
+                    batch.set(backupDocRef, { schedule: scheduleData, timestamp: serverTimestamp() });
                 }
-
                 await batch.commit();
                 showToast("경기 일정 저장 및 백업 완료!");
             } catch (e) {
@@ -495,13 +516,11 @@
             }
         };
         
-        // *** updateRankingTable 함수 (기능 포함된 버전) ***
         const updateRankingTable = (rankingData, potw) => {
             allPlayersData = rankingData; 
             currentPotw = potw;
-
             const potwContainer = document.getElementById('potw-container');
-            if (potw && potw.players && potw.players.length > 0 && activeView === 'current') {
+            if (potw && potw.players && potw.players.length > 0 && activeView === 'current') { // 현재 탭에서만 POTW
                 potwContainer.innerHTML = `
                     <div class="potw-section">
                         <h3>🏆 이주의 선수 🏆</h3>
@@ -558,6 +577,7 @@
 
             finalFilteredData.forEach((player) => {
                 const row = rankingBody.insertRow();
+                // 5. 랭킹 테이블 렌더링 수정
                 row.innerHTML = `
                     <td class="rank-cell">${player.rank}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span></td>
                     <td><input type="text" value="${player.isFemale ? `${player.name}*` : player.name}" class="ranking-player readonly" readonly></td>
@@ -567,9 +587,9 @@
                     <td><input type="text" value="${player.losses || '0'}" class="losses readonly" readonly></td>
                     <td><input type="text" value="${player.winRate || '0'}" class="win-rate readonly" readonly></td>
                     <td><input type="text" value="${player.avgGameDiff || '0.00'}" class="avg-game-diff readonly" readonly></td>
-                    <td><input type="text" value="${player.tieBreakWinRate || '0%'}" class="tie-break-win-rate readonly" readonly></td>
-                    <td><input type="text" value="${player.bagelWins || '0%'}" class="bagel-wins readonly" readonly></td>
-                    <td><input type="text" value="${player.bagelLosses || '0%'}" class="bagel-losses readonly" readonly></td>
+                    <td><input type="text" value="${player.closeMatchWinRate || '0%'}" class="close-match-win-rate readonly" readonly></td>
+                    <td><input type="text" value="${player.dominantWins || '0%'}" class="dominant-wins readonly" readonly></td>
+                    <td><input type="text" value="${player.dominantLosses || '0%'}" class="dominant-losses readonly" readonly></td>
                     <td><input type="text" value="${player.bestPartner || '-'}" class="best-partner readonly" readonly></td>
                 `;
             });
@@ -579,7 +599,6 @@
             }));
         };
 
-        // *** calculateRankingFromMatches 함수 추가 ***
         const calculateRankingFromMatches = (allMatches, initialPlayers = {}) => {
             const constants = {
                 BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6
@@ -604,10 +623,7 @@
                         };
                     }
                 });
-
-                if (!matchesByRound.has(match.round)) {
-                    matchesByRound.set(match.round, []);
-                }
+                if (!matchesByRound.has(match.round)) matchesByRound.set(match.round, []);
                 matchesByRound.get(match.round).push(match);
             });
 
@@ -623,52 +639,38 @@
                 let playerMMR = player.mmr || constants.BASE_MMR;
                 const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
                 let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
-
                 if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
-
                 const isPlayerEffectivelyFemale = player.isFemale && player.mmr < 1850;
                 const isPartnerEffectivelyFemale = partner?.isFemale && partner?.mmr < 1850;
                 const isPlayerTeamMixed = (isPlayerEffectivelyFemale && !isPartnerEffectivelyFemale) || (!isPlayerEffectivelyFemale && isPartnerEffectivelyFemale);
-                
                 if (isWinner) {
                     mmrChange *= isPlayerTeamMixed ? 1.5 : constants.WIN_BONUS;
                 } else {
                     mmrChange *= isPlayerTeamMixed ? 0.3 : constants.LOSS_REDUCTION;
                 }
-                
                 let finalChange = Math.round(mmrChange);
                 if (isWinner && finalChange < 10) finalChange = 10;
-                
                 return finalChange;
             };
 
             sortedRounds.forEach(([roundId, roundMatches]) => {
-                
                 const netMmrChanges = new Map(); 
-
                 roundMatches.forEach(match => {
                     const playerNames = match.players.map(p => p.replace(/\*/g, ''));
                     const [p1, p2, p3, p4] = playerNames.map(name => players[name]);
-
-                    if (!p1 || !p2 || !p3 || !p4 || !match.score || !match.score.includes('-')) {
-                        return; 
-                    }
-
+                    if (!p1 || !p2 || !p3 || !p4 || !match.score || !match.score.includes('-')) return; 
                     let team1MMR = (p1.mmr + p2.mmr) / 2;
                     let team2MMR = (p3.mmr + p4.mmr) / 2;
-                    
                     const [s1, s2] = match.score.split('-').map(Number);
                     const isTeam1Winner = s1 > s2;
                     const gameDiffVal = Math.abs(s1 - s2);
                     const scoreWeight = 0.8 + (gameDiffVal / 6) * 0.7;
-
                     const mmrChanges = [
                         calculateMMRChange(p1, team2MMR, isTeam1Winner, p2, match.isFourPoint, scoreWeight),
                         calculateMMRChange(p2, team2MMR, isTeam1Winner, p1, match.isFourPoint, scoreWeight),
                         calculateMMRChange(p3, team1MMR, !isTeam1Winner, p4, match.isFourPoint, scoreWeight),
                         calculateMMRChange(p4, team1MMR, !isTeam1Winner, p3, match.isFourPoint, scoreWeight)
                     ];
-
                     const updatePlayerStats_NO_MMR = (name, isWinner, gameDiffVal) => {
                         const p = players[name];
                         if (!p) return;
@@ -684,23 +686,16 @@
                             p.streakIsWin = false;
                         }
                     };
-
                     updatePlayerStats_NO_MMR(playerNames[0], isTeam1Winner, gameDiffVal);
                     updatePlayerStats_NO_MMR(playerNames[1], isTeam1Winner, gameDiffVal);
                     updatePlayerStats_NO_MMR(playerNames[2], !isTeam1Winner, gameDiffVal);
                     updatePlayerStats_NO_MMR(playerNames[3], !isTeam1Winner, gameDiffVal);
-
                     playerNames.forEach((name, idx) => {
-                        if (name) {
-                            netMmrChanges.set(name, (netMmrChanges.get(name) || 0) + mmrChanges[idx]);
-                        }
+                        if (name) netMmrChanges.set(name, (netMmrChanges.get(name) || 0) + mmrChanges[idx]);
                     });
                 });
-
                 netMmrChanges.forEach((totalChange, playerName) => {
-                    if (players[playerName]) {
-                        players[playerName].mmr += totalChange;
-                    }
+                    if (players[playerName]) players[playerName].mmr += totalChange;
                 });
             });
 
@@ -713,7 +708,6 @@
                 const [s1, s2] = match.score.split('-').map(Number);
                 const actual1 = s1 > s2;
                 const gameDiffVal = Math.abs(s1 - s2);
-
                 const updatePartner = (p1, p2, isWin) => {
                     if (!p1 || !p2) return;
                     if (!partnerStats[p1]) partnerStats[p1] = {};
@@ -736,29 +730,33 @@
 
                 playerNames.forEach((name, index) => {
                     if (!name) return;
-                    if (!derivedStats[name]) derivedStats[name] = { totalSets: 0, tieBreakSets: 0, tieBreakWins: 0, bagelWins: 0, bagelLosses: 0 };
+                    // 5. 파생 스탯 객체 초기화 수정
+                    if (!derivedStats[name]) derivedStats[name] = { totalSets: 0, closeMatchSets: 0, closeMatchWins: 0, dominantWins: 0, dominantLosses: 0 };
                     const stats = derivedStats[name];
                     stats.totalSets++;
                     const isWinner = (index < 2 && actual1) || (index >= 2 && !actual1);
                     
-                    const isTieBreak = (s1 === 6 && s2 === 5) || (s1 === 5 && s2 === 6);
-                    const isBagel = (s1 === 6 && s2 === 0) || (s1 === 0 && s2 === 6);
+                    // *** 여기 수정 ***
+                    // 5. '접전' (6-5, 5-6, 6-4, 4-6) 로직 수정
+                    const isCloseMatch = (s1 === 6 && s2 === 5) || (s1 === 5 && s2 === 6) ||
+                                         (s1 === 6 && s2 === 4) || (s1 === 4 && s2 === 6);
+                    // 5. '압도' (6-0, 6-1) 로직 수정
+                    const isDominant = (s1 === 6 && s2 === 0) || (s1 === 0 && s2 === 6) ||
+                                       (s1 === 6 && s2 === 1) || (s1 === 1 && s2 === 6);
 
-                    if (isTieBreak) {
-                        stats.tieBreakSets++;
-                        if (isWinner) stats.tieBreakWins++;
+                    if (isCloseMatch) {
+                        stats.closeMatchSets++;
+                        if (isWinner) stats.closeMatchWins++;
                     }
-                    
-                    if (isBagel) {
-                        if (isWinner) stats.bagelWins++;
-                        else stats.bagelLosses++;
+                    if (isDominant) {
+                        if (isWinner) stats.dominantWins++;
+                        else stats.dominantLosses++;
                     }
                 });
             });
 
             allCalculatedPlayers.forEach(p => {
                 p.championships = Object.values(roundWinsAll).filter(round => round[p.name] && round[p.name] >= 3).length;
-                
                 let bestPartner = { name: '-', wins: 0 };
                 if (partnerStats[p.name]) {
                     for (const partnerName in partnerStats[p.name]) {
@@ -767,53 +765,45 @@
                     }
                 }
                 p.bestPartner = bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name} (${bestPartner.wins}승)`;
-                
                 const totalGames = p.wins + p.losses;
                 p.winRate = totalGames > 0 ? Math.round((p.wins / totalGames) * 100) : 0;
                 p.avgGameDiff = p.totalSets > 0 ? (p.gameDiff / p.totalSets).toFixed(2) : '0.00';
                 
-                const dStats = derivedStats[p.name] || { totalSets: 0, tieBreakSets: 0, tieBreakWins: 0, bagelWins: 0, bagelLosses: 0 };
-                p.tieBreakWinRate = dStats.tieBreakSets > 0 ? `${Math.round((dStats.tieBreakWins / dStats.tieBreakSets) * 100)}%(${dStats.tieBreakWins}승)` : '0%';
-                p.bagelWins = dStats.totalSets > 0 ? `${Math.round((dStats.bagelWins / dStats.totalSets) * 100)}%(${dStats.bagelWins}승)` : '0%';
-                p.bagelLosses = dStats.totalSets > 0 ? `${Math.round((dStats.bagelLosses / dStats.totalSets) * 100)}%(${dStats.bagelLosses}패)` : '0%';
+                // 5. 파생 스탯 계산 수정
+                const dStats = derivedStats[p.name] || { totalSets: 0, closeMatchSets: 0, closeMatchWins: 0, dominantWins: 0, dominantLosses: 0 };
+                
+                // *** 여기 수정 ***
+                // '접전률' = (총 접전 경기 / 총 경기) %
+                p.closeMatchWinRate = dStats.totalSets > 0 ? `${Math.round((dStats.closeMatchSets / dStats.totalSets) * 100)}%(${dStats.closeMatchSets}경기)` : '0%';
+                
+                p.dominantWins = dStats.totalSets > 0 ? `${Math.round((dStats.dominantWins / dStats.totalSets) * 100)}%(${dStats.dominantWins}승)` : '0%';
+                p.dominantLosses = dStats.totalSets > 0 ? `${Math.round((dStats.dominantLosses / dStats.totalSets) * 100)}%(${dStats.dominantLosses}패)` : '0%';
             });
-
             return allCalculatedPlayers;
         }
 
-        // *** updateRanking 함수 추가 ***
         const updateRanking = async () => {
             if (activeView !== 'current') {
-                showToast('현재 시즌 탭에서만 순위를 업데이트할 수 있습니다.');
-                return;
+                showToast('현재 시즌 탭에서만 순위를 업데이트할 수 있습니다.'); return;
             }
             const updateRankingBtn = document.getElementById('update-ranking');
-            updateRankingBtn.disabled = true;
-            updateRankingBtn.textContent = '계산 중...';
+            updateRankingBtn.disabled = true; updateRankingBtn.textContent = '계산 중...';
             showToast('전체 순위를 다시 계산합니다. 잠시만 기다려주세요...');
-
             return new Promise(async (resolve) => {
                 const scheduleDoc = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION));
                 const allMatchesFromDB = scheduleDoc.exists() ? scheduleDoc.data().matches : [];
-
                 if (allMatchesFromDB.length === 0) {
                     showToast("계산할 경기 기록이 없습니다.");
-                    updateRankingBtn.disabled = false;
-                    updateRankingBtn.textContent = '순위 업데이트';
-                    resolve();
-                    return;
+                    updateRankingBtn.disabled = false; updateRankingBtn.textContent = '순위 업데이트';
+                    resolve(); return;
                 }
-
                 const allCalculatedPlayers = calculateRankingFromMatches(allMatchesFromDB, {}); 
-                
                 const latestProcessedRound = Math.max(...allMatchesFromDB.map(m => m.round), 0);
-                
                 try {
                     const batch = writeBatch(db);
                     batch.set(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION), { 
                         players: allCalculatedPlayers, lastProcessedRound: latestProcessedRound, lastUpdated: serverTimestamp() 
                     });
-                    
                     const historyTimestamp = new Date().toISOString();
                     const newHistoryDocRef = doc(collection(db, BASE_COLLECTION, 'data', `rankingHistory-${CURRENT_SEASON_VERSION}`), historyTimestamp);
                     const newHistoryData = {
@@ -821,51 +811,39 @@
                         ...Object.fromEntries(allCalculatedPlayers.map(p => [p.name.replace(/\./g, '_'), p.mmr]))
                     };
                     batch.set(newHistoryDocRef, newHistoryData);
-
                     await batch.commit();
                     showToast('순위 업데이트 및 저장 완료!');
                 } catch (e) {
                     showToast(`랭킹 저장 실패: ${e.message || '알 수 없는 오류'}`);
                     console.error("Rankings save error:", e);
                 } finally {
-                    updateRankingBtn.disabled = false;
-                    updateRankingBtn.textContent = '순위 업데이트';
+                    updateRankingBtn.disabled = false; updateRankingBtn.textContent = '순위 업데이트';
                     resolve();
                 }
             });
         };
 
-        // *** handlePlayerRename 함수 추가 ***
         const handlePlayerRename = async () => {
+            if (activeView !== 'current') {
+                showToast('현재 시즌 탭에서만 선수 정보를 변경할 수 있습니다.'); return;
+            }
             const btn = document.getElementById('confirm-rename-btn');
             const oldName = btn.dataset.oldName;
             const newName = document.getElementById('rename-new-name').value.trim();
-
             if (!newName || oldName === newName) {
-                showToast("새 이름이 유효하지 않습니다.");
-                return;
+                showToast("새 이름이 유효하지 않습니다."); return;
             }
-            
             if (allPlayersData.some(p => p.name === newName)) {
-                showToast("이미 존재하는 이름입니다.");
-                return;
+                showToast("이미 존재하는 이름입니다."); return;
             }
-
-            btn.disabled = true;
-            btn.textContent = '변경 중...';
+            btn.disabled = true; btn.textContent = '변경 중...';
             showToast(`1단계: 경기 일정(Schedule) DB 업데이트 중... (${oldName} -> ${newName})`);
-
             try {
                 const scheduleDocRef = doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION);
                 const scheduleDoc = await getDoc(scheduleDocRef);
-                
-                if (!scheduleDoc.exists()) {
-                    throw new Error("경기 일정 문서를 찾을 수 없습니다.");
-                }
-
+                if (!scheduleDoc.exists()) throw new Error("경기 일정 문서를 찾을 수 없습니다.");
                 const allMatches = scheduleDoc.data().matches || [];
                 let matchesModified = false;
-
                 const updatedMatches = allMatches.map(match => {
                     const updatedPlayers = match.players.map(pName => {
                         const cleanPName = pName.replace(/\*/g, '');
@@ -877,34 +855,25 @@
                     });
                     return { ...match, players: updatedPlayers };
                 });
-
                 const batch = writeBatch(db);
-
                 if (matchesModified) {
                     batch.set(scheduleDocRef, { matches: updatedMatches }, { merge: true });
                 }
-                
                 await batch.commit();
-
                 showToast("2단계: 랭킹(Rankings) 재계산 중...");
-                
                 await updateRanking(); 
-                
                 showToast("모든 작업 완료!");
                 closePopup('rename-player-popup');
-
             } catch (error) {
                 showToast(`이름 변경 실패: ${error.message}`);
                 console.error("Rename failed:", error);
             } finally {
-                btn.disabled = false;
-                btn.textContent = '변경 실행';
+                btn.disabled = false; btn.textContent = '변경 실행';
             }
         };
 
-        // *** downloadCSV 함수 추가 ***
         const downloadCSV = () => {
-            let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,승률(%),평균 게임 득실,타이승률(%),베이글승률(%),베이글패률(%),최고 파트너\n';
+            let rankingCSV = `\uFEFF순위,선수,MMR,우승,승,패,승률(%),평균 게임 득실,접전률(%),압도승률(%),압도패률(%),최고 파트너\n`; // 헤더 수정
             document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
                 const rawName = row.querySelector('.ranking-player').value.trim();
                 const player = rawName.replace(/\*/g, '');
@@ -916,23 +885,23 @@
                     const losses = row.querySelector('.losses').value;
                     const winRate = row.querySelector('.win-rate').value;
                     const avgGameDiff = row.querySelector('.avg-game-diff').value;
-                    const tieBreakWinRate = row.querySelector('.tie-break-win-rate').value.replace(/%|\(|\)|승/g, '');
-                    const bagelWins = row.querySelector('.bagel-wins').value.replace(/%|\(|\)|승/g, '');
-                    const bagelLosses = row.querySelector('.bagel-losses').value.replace(/%|\(|\)|패/g, '');
+                    // 클래스 이름 수정
+                    const closeMatchWinRate = row.querySelector('.close-match-win-rate').value.replace(/%|\(|\)|승|경기/g, ''); // '경기'도 제거
+                    const dominantWins = row.querySelector('.dominant-wins').value.replace(/%|\(|\)|승/g, '');
+                    const dominantLosses = row.querySelector('.dominant-losses').value.replace(/%|\(|\)|패/g, '');
                     const bestPartner = row.querySelector('.best-partner').value;
-                    rankingCSV += `${rank},"${player}",${mmr},${championships},${wins},${losses},${winRate},${avgGameDiff},${tieBreakWinRate},${bagelWins},${bagelLosses},"${bestPartner}"\n`;
+                    rankingCSV += `${rank},"${player}",${mmr},${championships},${wins},${losses},${winRate},${avgGameDiff},${closeMatchWinRate},${dominantWins},${dominantLosses},"${bestPartner}"\n`;
                 }
             });
             const blob = new Blob([rankingCSV], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `rankings_current_season.csv`; 
+            link.download = `rankings_${activeView}_season.csv`; // 파일 이름에 뷰 추가
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         };
 
-        // *** 팝업 함수 추가 ***
         const openPopup = (id) => {
             document.getElementById(id).classList.add('show');
             document.getElementById('overlay').classList.add('show');
@@ -943,12 +912,10 @@
             document.getElementById('overlay').classList.remove('show');
         };
 
-        // *** 선수관리 팝업 함수 추가 ***
         const populatePlayerManagementPopup = () => {
             const listContainer = document.getElementById('player-management-list');
             listContainer.innerHTML = '';
             const sortedPlayers = [...allPlayersData].sort((a,b) => a.name.localeCompare(b.name, 'ko'));
-
             sortedPlayers.forEach(player => {
                 const item = document.createElement('div');
                 item.className = 'player-management-item';
@@ -963,12 +930,10 @@
                 `;
                 listContainer.appendChild(item);
             });
-
             listContainer.addEventListener('click', (e) => {
                 const item = e.target.closest('.player-management-item');
                 if (!item) return;
                 const playerName = item.dataset.playerName;
-
                 if (e.target.classList.contains('delete-player-btn')) {
                     item.remove();
                 } else if (e.target.classList.contains('rename-player-btn')) {
@@ -982,39 +947,26 @@
             });
         };
 
-        // *** 선수변경 저장 함수 추가 ***
         const savePlayerChanges = async () => {
             if (activeView !== 'current') {
-                showToast('현재 시즌 탭에서만 선수 정보를 변경할 수 있습니다.');
-                return;
+                showToast('현재 시즌 탭에서만 선수 정보를 변경할 수 있습니다.'); return;
             }
-
             const updatedPlayersMap = new Map();
             document.querySelectorAll('#player-management-list .player-management-item').forEach(item => {
                 const name = item.dataset.playerName;
                 const isFemale = item.querySelector('.is-female-checkbox').checked;
                 const originalPlayer = allPlayersData.find(p => p.name === name);
-                
-                if (originalPlayer) {
-                    updatedPlayersMap.set(name, { ...originalPlayer, isFemale });
-                }
+                if (originalPlayer) updatedPlayersMap.set(name, { ...originalPlayer, isFemale });
             });
-
             allPlayersData.forEach(p => {
-                if (!updatedPlayersMap.has(p.name)) {
-                    updatedPlayersMap.set(p.name, p);
-                }
+                if (!updatedPlayersMap.has(p.name)) updatedPlayersMap.set(p.name, p);
             });
-
             const finalUpdatedPlayers = Array.from(updatedPlayersMap.values());
-
             try {
                 const rankingsRef = doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION);
                 await setDoc(rankingsRef, { players: finalUpdatedPlayers }, { merge: true });
-                
                 showToast('선수 정보 변경 완료! 순위를 다시 계산합니다.');
                 closePopup('player-management-popup');
-                
                 await updateRanking(); 
             } catch (error) {
                 showToast(`선수 정보 저장 실패: ${error.message}`);
@@ -1022,21 +974,17 @@
             }
         };
 
-        // *** 백업/복구 함수 추가 ***
         async function restoreScheduleFromBackup(seasonVersion, isInitialLoad = false) {
             try {
                 const backupCol = collection(db, BASE_COLLECTION, 'data', `backups-${seasonVersion}`);
                 const q = query(backupCol, orderBy('timestamp', 'desc'), limit(1));
                 const backupSnap = await getDocs(q);
-
                 if (backupSnap.empty) {
                     if (!isInitialLoad) showToast("복구할 백업 데이터가 없습니다.");
                     return null;
                 }
-
                 const latestBackup = backupSnap.docs[0].data();
                 const scheduleData = latestBackup.schedule;
-
                 if (scheduleData && scheduleData.length > 0) {
                     await setDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', seasonVersion), { matches: scheduleData, lastUpdated: serverTimestamp() });
                     if (!isInitialLoad) showToast("최신 백업에서 경기 기록을 복구했습니다.");
@@ -1052,8 +1000,7 @@
         
         async function runRestoreLogic() {
             const btn = document.getElementById('restore-backup-btn');
-            btn.disabled = true;
-            btn.textContent = '복구 중...';
+            btn.disabled = true; btn.textContent = '복구 중...';
             showToast("최신 백업 데이터 복구를 시도합니다...");
             try {
                 const restoredData = await restoreScheduleFromBackup(CURRENT_SEASON_VERSION);
@@ -1066,23 +1013,17 @@
             } catch (error) {
                 showToast(`복구 프로세스 전체 실패: ${error.message}`);
             } finally {
-                btn.disabled = false;
-                btn.textContent = '💾 오류 수정 (백업 복구)';
+                btn.disabled = false; btn.textContent = '💾 오류 수정 (백업 복구)';
             }
         }
 
-        // *** processAndRenderSchedule 함수 추가 ***
         function processAndRenderSchedule(scheduleData) {
             const savedRounds = new Map();
             const roundWins = {};
-
             scheduleData.forEach(match => {
-                if (!savedRounds.has(match.round)) {
-                    savedRounds.set(match.round, { timestamp: match.timestamp, champions: [], matches: [] });
-                }
+                if (!savedRounds.has(match.round)) savedRounds.set(match.round, { timestamp: match.timestamp, champions: [], matches: [] });
                 savedRounds.get(match.round).matches.push(match);
             });
-
             scheduleData.forEach(match => {
                 const roundId = match.round;
                 if (match.score && /^\d+-\d+$/.test(match.score) && !match.isFourPoint) {
@@ -1099,14 +1040,11 @@
                     });
                 }
             });
-            
             createScheduleRounds(savedRounds);
-            
             document.querySelectorAll('.schedule-table').forEach(table => {
                 const roundId = parseInt(table.getAttribute('data-round-id'));
                 const roundData = savedRounds.get(roundId);
                 const matches = roundData ? roundData.matches : [];
-                
                 table.querySelectorAll('tbody tr').forEach((row, index) => {
                     const match = matches[index]; 
                     if (match) {
@@ -1118,33 +1056,84 @@
             });
         }
 
-        // *** loadViewData 함수 추가 ***
+        // 3. loadViewData 함수 탭 기능 통합
         const loadViewData = async () => {
             if (scheduleUnsubscribe) scheduleUnsubscribe();
             if (rankingUnsubscribe) rankingUnsubscribe();
+            updateRankingTitleAndCountdown(activeView);
+            
+            const adminButtons = document.querySelectorAll('.admin-btn');
+            
+            if (activeView === 'current') {
+                adminButtons.forEach(btn => btn.style.display = 'block');
+                
+                scheduleUnsubscribe = onSnapshot(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION), (docSnap) => {
+                    const scheduleData = (docSnap.exists() && docSnap.data().matches) ? docSnap.data().matches : [];
+                    processAndRenderSchedule(scheduleData);
+                }, (error) => console.error("Schedule onSnapshot failed:", error));
+                
+                rankingUnsubscribe = onSnapshot(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION), (docSnap) => {
+                    const data = docSnap.exists() ? docSnap.data() : {};
+                    updateRankingTable(data.players || [], data.potw || null);
+                }, (error) => console.error("Ranking onSnapshot failed:", error));
 
-            updateRankingTitleAndCountdown(activeView); 
-            const scheduleSection = document.getElementById('schedule-section');
-            scheduleSection.style.display = 'block'; 
-            
-            scheduleUnsubscribe = onSnapshot(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION), (docSnap) => {
-                const scheduleData = (docSnap.exists() && docSnap.data().matches) ? docSnap.data().matches : [];
-                processAndRenderSchedule(scheduleData);
-            }, (error) => {
-                console.error("Schedule onSnapshot failed:", error);
-                showToast("경기 일정 로딩 중 오류 발생.");
-            });
-            
-            rankingUnsubscribe = onSnapshot(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION), (docSnap) => {
-                const data = docSnap.exists() ? docSnap.data() : {};
-                updateRankingTable(data.players || [], data.potw || null);
-            }, (error) => {
-                console.error("Ranking onSnapshot failed:", error);
-                showToast("랭킹 로딩 중 오류 발생.");
-            });
+            } else {
+                adminButtons.forEach(btn => btn.style.display = 'none');
+                
+                try {
+                    if (activeView === 'previous') {
+                        const schedSnap = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION));
+                        const rankSnap = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION));
+                        const scheduleData = (schedSnap.exists() && schedSnap.data().matches) ? schedSnap.data().matches : [];
+                        processAndRenderSchedule(scheduleData);
+                        const rankData = rankSnap.exists() ? rankSnap.data() : {};
+                        updateRankingTable(rankData.players || [], rankData.potw || null);
+                    } else if (activeView === 'alltime') {
+                        const schedSnapV1 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION));
+                        const schedSnapV2 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION));
+                        const rankSnapV1 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION));
+                        const rankSnapV2 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION));
+
+                        const matchesV1 = (schedSnapV1.exists() && schedSnapV1.data().matches) ? schedSnapV1.data().matches : [];
+                        const matchesV2 = (schedSnapV2.exists() && schedSnapV2.data().matches) ? schedSnapV2.data().matches : [];
+                        const allMatches = [...matchesV1, ...matchesV2];
+
+                        const playersV1 = (rankSnapV1.exists() && rankSnapV1.data().players) ? rankSnapV1.data().players : [];
+                        const playersV2 = (rankSnapV2.exists() && rankSnapV2.data().players) ? rankSnapV2.data().players : [];
+                        
+                        const initialPlayersMap = {};
+                        [...playersV1, ...playersV2].forEach(p => {
+                            if (!initialPlayersMap[p.name]) {
+                                initialPlayersMap[p.name] = { name: p.name, isFemale: p.isFemale, championships: 0 };
+                            }
+                            if (playersV2.find(p2 => p2.name === p.name)) {
+                                initialPlayersMap[p.name].isFemale = playersV2.find(p2 => p2.name === p.name).isFemale;
+                            }
+                        });
+                        
+                        const champCounts = {};
+                        [...playersV1, ...playersV2].forEach(p => {
+                            champCounts[p.name] = (champCounts[p.name] || 0) + (p.championships || 0);
+                        });
+                        Object.keys(initialPlayersMap).forEach(name => {
+                            initialPlayersMap[name].championships = champCounts[name] || 0;
+                        });
+                        
+                        const allTimeRankings = calculateRankingFromMatches(allMatches, initialPlayersMap);
+                        allTimeRankings.forEach(p => {
+                            p.championships = initialPlayersMap[p.name]?.championships || p.championships;
+                        });
+
+                        processAndRenderSchedule(allMatches);
+                        updateRankingTable(allTimeRankings, null);
+                    }
+                } catch (error) {
+                    showToast("과거 데이터 로딩 실패: " + error.message);
+                    console.error("Error loading read-only data:", error);
+                }
+            }
         };
 
-        // *** setupInputListeners 함수 (기능 포함) ***
         const setupInputListeners = () => {
             const scheduleContainer = document.getElementById('schedule-container');
             const autocompleteBar = document.getElementById('autocomplete-bar');
@@ -1157,62 +1146,48 @@
                     updateAutocompleteSuggestions(e.target.value);
                 }
             });
-
             scheduleContainer.addEventListener('input', (e) => {
                 if (e.target.classList.contains('player-input')) {
-                    if (currentActiveInput !== e.target) {
-                        currentActiveInput = e.target;
-                    }
+                    if (currentActiveInput !== e.target) currentActiveInput = e.target;
                     updateAutocompleteSuggestions(e.target.value);
                 }
-                
-                // 4점 자동체크
                 if (e.target.classList.contains('score-input')) {
                     const score = e.target.value.trim();
                     const scorePattern = /^4-\d$|^\d-4$/; 
                     const tr = e.target.closest('tr');
                     if (tr) {
                         const checkbox = tr.querySelector('.is-four-point');
-                        if (checkbox && scorePattern.test(score)) {
-                            checkbox.checked = true;
-                        }
+                        if (checkbox && scorePattern.test(score)) checkbox.checked = true;
                     }
                 }
             });
-
             scheduleContainer.addEventListener('focusout', (e) => {
                 if (e.target.classList.contains('player-input')) {
-                    setTimeout(() => {
-                        autocompleteBar.classList.remove('show');
-                    }, 200); 
+                    setTimeout(() => autocompleteBar.classList.remove('show'), 200); 
                 }
             });
-
             autocompleteBar.addEventListener('click', (e) => {
                 if (e.target.tagName === 'BUTTON' && currentActiveInput) {
                     currentActiveInput.value = e.target.dataset.name;
                 }
             });
             
-            // 기타 리스너
+            // 기타 리스너 (탭 활성화 확인)
             document.addEventListener('click', function(e) {
                 if (e.target.classList.contains('save-all-btn')) {
-                    e.preventDefault();
-                    e.target.blur();
-                    saveAllData();
+                    if (activeView !== 'current') return showToast('현재 시즌 탭에서만 저장할 수 있습니다.');
+                    e.preventDefault(); e.target.blur(); saveAllData();
                 }
             });
-
             document.getElementById('update-ranking')?.addEventListener('click', (e) => {
+                if (activeView !== 'current') return showToast('현재 시즌 탭에서만 순위를 업데이트할 수 있습니다.');
                 e.preventDefault(); e.currentTarget.blur(); updateRanking();
             });
             document.getElementById('download-csv')?.addEventListener('click', downloadCSV);
             document.getElementById('how-to-use-btn')?.addEventListener('click', () => openPopup('info-popup'));
-            
             document.querySelectorAll('.close-btn').forEach(btn => {
                 btn.addEventListener('click', () => closePopup(btn.dataset.target));
             });
-
             document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
@@ -1232,37 +1207,34 @@
             document.getElementById('ranking-search')?.addEventListener('input', () => updateRankingTable(allPlayersData, currentPotw));
             
             document.getElementById('restore-backup-btn')?.addEventListener('click', (e) => {
-                e.preventDefault();
                 if (activeView !== 'current') {
-                    showToast('현재 시즌 탭에서만 복구할 수 있습니다.');
-                    return;
+                    showToast('현재 시즌 탭에서만 복구할 수 있습니다.'); return;
                 }
+                e.preventDefault();
                 const passwordInput = document.getElementById('backup-password-input');
-                passwordInput.value = '';
-                openPopup('backup-password-popup');
+                passwordInput.value = ''; openPopup('backup-password-popup');
                 setTimeout(() => passwordInput.focus(), 100);
             });
-
             document.getElementById('manage-players-btn').addEventListener('click', () => {
+                if (activeView !== 'current') {
+                    showToast('현재 시즌 탭에서만 선수를 관리할 수 있습니다.'); return;
+                }
                 const passwordInput = document.getElementById('password-input');
-                passwordInput.value = '';
-                openPopup('password-popup');
+                passwordInput.value = ''; openPopup('password-popup');
                 setTimeout(() => passwordInput.focus(), 100);
             });
             
             const submitPassword = () => {
                 const passwordInput = document.getElementById('password-input');
-                if (passwordInput.value === '0718') {
+                if (passwordInput.value === '0718') { // 비밀번호
                     closePopup('password-popup');
                     populatePlayerManagementPopup();
                     openPopup('player-management-popup');
                 } else {
-                    showToast('비밀번호가 틀렸습니다.');
-                    passwordInput.focus();
+                    showToast('비밀번호가 틀렸습니다.'); passwordInput.focus();
                 }
                 passwordInput.value = '';
             };
-
             document.getElementById('password-submit-btn').addEventListener('click', submitPassword);
             document.getElementById('password-input').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') submitPassword();
@@ -1270,16 +1242,14 @@
             
             const submitBackupPassword = () => {
                 const passwordInput = document.getElementById('backup-password-input');
-                if (passwordInput.value === '0718') {
+                if (passwordInput.value === '0718') { // 비밀번호
                     closePopup('backup-password-popup');
                     runRestoreLogic(); 
                 } else {
-                    showToast('비밀번호가 틀렸습니다.');
-                    passwordInput.focus();
+                    showToast('비밀번호가 틀렸습니다.'); passwordInput.focus();
                 }
                 passwordInput.value = '';
             };
-            
             document.getElementById('backup-password-submit-btn').addEventListener('click', submitBackupPassword);
             document.getElementById('backup-password-input').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') submitBackupPassword();
@@ -1287,17 +1257,28 @@
 
             document.getElementById('save-player-changes-btn').addEventListener('click', savePlayerChanges);
             document.getElementById('confirm-rename-btn').addEventListener('click', handlePlayerRename);
+
+            // 3. 탭 버튼 리스너 추가
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (btn.classList.contains('active')) return;
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeView = btn.dataset.view;
+                    loadViewData(); // 탭 누르면 데이터 다시 로드
+                });
+            });
         };
 
-        // *** DOMContentLoaded 리스너 (기능 포함) ***
         document.addEventListener('DOMContentLoaded', async () => {
             setupInputListeners();
             const savedTheme = localStorage.getItem('theme') || 'light';
             applyTheme(savedTheme);
 
-            createScheduleRounds(); // 뼈대 먼저
-            updateRankingTable([], null); // 뼈대 먼저
-            updateRankingTitleAndCountdown(activeView);
+            // 탭 로직 때문에 뼈대 렌더링은 loadViewData가 하도록 변경
+            // createScheduleRounds(); // -> loadViewData가 호출
+            // updateRankingTable([], null); // -> loadViewData가 호출
+            // updateRankingTitleAndCountdown(activeView); // -> loadViewData가 호출
 
             document.getElementById('dashboard-link').href = `dash.html?season=${CURRENT_SEASON_VERSION}`;
             document.getElementById('hof-link').href = `hall_of_fame.html?season=${CURRENT_SEASON_VERSION}`;
@@ -1307,7 +1288,7 @@
                 try {
                     await signInAnonymously(auth); 
                     console.log("Signed in anonymously.");
-                    loadViewData(); 
+                    loadViewData(); // 인증 후 'current' 탭 데이터 로드
                 } catch (error) {
                     console.error("Anonymous sign-in failed:", error);
                     showToast("DB 인증에 실패했습니다.");
