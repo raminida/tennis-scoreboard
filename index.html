@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="dark">
+<html lang="ko" data-theme="light"> <!-- 롤랑가로스 테마는 라이트 모드 기준 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 1. 제목 수정 -->
     <title>호수 오픈</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,16 +10,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=stylesheet" rel="stylesheet">
     <style>
         :root {
-            /* US Open Dark Theme (Blue) */
-            --bg-color: #121212;
-            --surface-color: #1E1E1E;
-            --primary-color: #3399FF; /* Brighter Blue for Dark Mode */
-            --primary-variant-color: #66B2FF;
+            /* 롤랑가로스 다크 테마 (기능 유지용) */
+            --bg-color: #1A1A1A;
+            --surface-color: #242424;
+            --primary-color: #E8854D; /* Brighter Clay Orange */
+            --primary-variant-color: #F0A070;
             --secondary-color: #FFFFFF;
             --text-color: #E0E0E0;
             --text-secondary-color: #A0A0A0;
-            --accent-gold: #FFC107; /* Tennis ball yellow */
-            --border-color: #333333;
+            --accent-gold: #008C5A; /* Brighter Green */
+            --border-color: #444444;
             --shadow-color: rgba(0, 0, 0, 0.5);
             --spacing-sm: 8px;
             --spacing-md: 12px;
@@ -28,38 +27,37 @@
             --radius: 8px;
         }
         html[data-theme="light"] {
-            /* US Open Light Theme (Blue) */
-            --bg-color: #F0F4F8;
+            /* 롤랑가로스 라이트 테마 (메인) */
+            --bg-color: #F4F0E9; /* Light Clay/Sand */
             --surface-color: #FFFFFF;
-            --primary-color: #0055A5; /* Official US Open Blue */
-            --primary-variant-color: #007BFF;
-            --text-color: #1F2937;
-            --text-secondary-color: #6B7280;
-            --border-color: #E5E7EB;
-            --shadow-color: rgba(0, 0, 0, 0.1);
+            --primary-color: #D76E2D; /* Clay Orange */
+            --primary-variant-color: #B65F26; /* Darker Clay */
+            --text-color: #333333;
+            --text-secondary-color: #666666;
+            --accent-gold: #006442; /* Roland Garros Green */
+            --border-color: #E0E0E0;
+            --shadow-color: rgba(0, 0, 0, 0.08);
         }
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
         .container { max-width: 1700px; margin: 0 auto; }
-        /* 1. h1 제목 수정 */
         h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; color: var(--secondary-color); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: var(--spacing-lg); margin-bottom: 2rem; letter-spacing: -2px; text-shadow: 2px 2px 10px var(--shadow-color); }
         .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
         h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--border-color); }
         #ranking-main-title { text-align: center; }
         details { margin-bottom: 1rem; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-color); }
-        details summary { padding: var(--spacing-md) 15px; cursor: pointer; font-size: 1.1rem; font-weight: 700; outline: none; transition: background 0.3s ease, color 0.3s ease; background: linear-gradient(135deg, #2a2a2a, #222222); color: var(--secondary-color); }
-        html[data-theme="light"] details summary { background: linear-gradient(135deg, #f9f9f9, #f1f1f1); color: var(--text-color); }
-        details[open] > summary { background: var(--primary-color); color: var(--bg-color); }
-        html[data-theme="light"] details[open] > summary { color: var(--secondary-color); }
-        .round-group-content { padding: 15px 10px 5px 10px; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border-color); }
-        html[data-theme="light"] .round-group-content { background: rgba(0,0,0,0.02); }
+        details summary { padding: var(--spacing-md) 15px; cursor: pointer; font-size: 1.1rem; font-weight: 700; outline: none; transition: background 0.3s ease, color 0.3s ease; background: var(--surface-color); color: var(--text-color); border-bottom: 1px solid var(--border-color); }
+        html[data-theme="light"] details summary { background: linear-gradient(135deg, #fdfdfd, #f9f9f9); }
+        details[open] > summary { background: var(--primary-color); color: #FFFFFF; border-bottom-color: var(--primary-color); }
+        .round-group-content { padding: 15px 10px 5px 10px; background: rgba(0,0,0,0.02); border-top: 1px solid var(--border-color); }
+        html[data-theme="dark"] .round-group-content { background: rgba(0,0,0,0.1); }
         .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; max-width: 100%; -webkit-overflow-scrolling: touch; }
         table { width: 100%; min-width: 100%; border-collapse: collapse; }
         th, td { padding: var(--spacing-md) 4px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
         #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; cursor: pointer; }
-        #ranking-table thead th:hover { background: var(--primary-color); color: var(--bg-color); }
-        th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
-        html[data-theme="light"] th { background-color: #F9FAFB; }
-        .rank-cell { font-weight: 900; color: var(--accent-gold); text-shadow: 0 0 5px var(--shadow-color); position: relative; line-height: 1.2; }
+        #ranking-table thead th:hover { background: var(--primary-color); color: #FFFFFF; }
+        th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.03); color: var(--primary-variant-color); font-weight: 700; }
+        html[data-theme="dark"] th { background-color: rgba(0, 0, 0, 0.2); }
+        .rank-cell { font-weight: 900; color: var(--primary-color); text-shadow: 0 0 5px var(--shadow-color); position: relative; line-height: 1.2; }
         .streak-cell { font-size: 0.7rem; white-space: nowrap; margin-left: var(--spacing-sm); }
         .streak-win { color: #4CAF50; font-weight: bold; }
         .streak-loss { color: #F44336; font-weight: bold; }
@@ -69,13 +67,12 @@
         .schedule-table .player-input { min-width: 80px; max-width: 110px; }
         .schedule-table .score-input { min-width: 40px; max-width: 60px; }
         input.ranking-player, input.mmr { min-width: 80px; max-width: 120px; }
-        input.readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
-        html[data-theme="light"] input.readonly { background-color: #f0f0f0; }
+        input.readonly { background-color: #f0f0f0; color: var(--text-secondary-color); font-weight: bold; }
+        html[data-theme="dark"] input.readonly { background-color: #252525; }
         .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: var(--spacing-lg); }
         .btn { display: inline-block; padding: var(--spacing-md) var(--spacing-lg); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; }
-        html[data-theme="dark"] .btn { color: var(--bg-color); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .update-btn { width: 100%; margin-top: var(--spacing-lg); padding: 15px; background: linear-gradient(135deg, var(--accent-gold), #F5B02E); color: var(--bg-color); border: none; border-radius: var(--radius); font-size: 1.2rem; font-weight: 900; cursor: pointer; }
+        .update-btn { width: 100%; margin-top: var(--spacing-lg); padding: 15px; background: linear-gradient(135deg, var(--accent-gold), #007A4F); color: #FFFFFF; border: none; border-radius: var(--radius); font-size: 1.2rem; font-weight: 900; cursor: pointer; }
         .btn.danger { background: linear-gradient(135deg, #f44336, #e57373); color: #fff; }
         .toast { position: fixed; bottom: var(--spacing-lg); left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #333, #111); color: #fff; padding: var(--spacing-md) 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 2001; }
         .toast.show { opacity: 1; }
@@ -86,7 +83,7 @@
         .ranking-filter { display: flex; gap: var(--spacing-sm); }
         #ranking-search { max-width: 200px; }
         .filter-btn { padding: var(--spacing-sm) var(--spacing-md); background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer; color: var(--text-color); font-weight: 700; }
-        .filter-btn.active { background: var(--primary-color); color: var(--bg-color); }
+        .filter-btn.active { background: var(--primary-color); color: #FFFFFF; }
         .saved-indicator { color: var(--accent-gold); margin-left: 5px; font-size: 0.9rem; }
         .saved-info { color: var(--text-secondary-color); margin-left: 5px; font-size: 0.8rem; }
         .champion-name { color: var(--accent-gold); font-weight: bold; }
@@ -100,24 +97,19 @@
         .popup-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
         .btn.secondary { background: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); }
         .potw-section { background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #fff; padding: var(--spacing-lg); border-radius: var(--radius); margin-bottom: var(--spacing-lg); text-align: center; }
-        html[data-theme="dark"] .potw-section { color: var(--bg-color); }
-        .potw-section h3 { font-family: 'Poppins', sans-serif; font-size: 1.5rem; margin: 0 0 10px 0; text-shadow: 1px 1px 5px rgba(0,0,0,0.3); }
-        .potw-player { font-size: 2rem; font-weight: 900; }
-        .potw-reason { font-size: 1rem; opacity: 0.9; }
         #player-management-list { max-height: 60vh; overflow-y: auto; margin-top: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius); }
         .player-management-item { display: flex; justify-content: space-between; align-items: center; padding: var(--spacing-md); border-bottom: 1px solid var(--border-color); }
         .player-management-item:last-child { border-bottom: none; }
         .player-management-item span { font-weight: bold; flex-basis: 40%; text-align: left; }
         .player-management-item .controls { display: flex; align-items: center; gap: 10px; }
         
-        /* --- 3. 탭 CSS 부활 --- */
         .season-tabs {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 0;
-            flex-wrap: wrap; /* 모바일에서 탭 줄바꿈 */
+            flex-wrap: wrap; 
         }
         .tab-btn {
             padding: 10px 20px;
@@ -134,10 +126,9 @@
         .tab-btn:hover { color: var(--primary-color); }
         .tab-btn.active {
             color: var(--primary-color);
-            border-bottom: 4px solid var(--accent-gold);
+            border-bottom: 4px solid var(--accent-gold); /* 녹색 탭 하이라이트 */
         }
         
-        /* --- 모바일 UI 수정 --- */
         @media screen and (max-width: 600px) {
             body { padding: 4px; }
             .section { padding: var(--spacing-md); }
@@ -145,12 +136,8 @@
             input[type="text"], input[type="search"], input[type="password"], select { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
             input.ranking-player, input.mmr { min-width: 70px; max-width: 100px; }
             input.best-partner { min-width: 200px; max-width: 225px; }
-            
-            /* player-input 칸 줄임 */
             .schedule-table .player-input { min-width: 50px; max-width: 60px; font-size: 0.65rem; } 
-            /* score-input 칸 줄임 */
             .schedule-table .score-input { min-width: 35px; max-width: 45px; } 
-            
             .schedule-table th, .schedule-table td { padding: 4px 1px; }
             .schedule-table td { border: 0.5px solid var(--border-color); }
             .btn { padding: 8px 12px; font-size: 0.9rem; }
@@ -160,19 +147,15 @@
             .saved-info { font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: inline-block; vertical-align: middle; }
             .popup { max-width: 90vw; width: auto; padding: var(--spacing-md); }
             .ranking-controls { flex-direction: column; align-items: stretch; }
-            .tab-btn { font-size: 0.9rem; padding: 8px 12px; } /* 모바일 탭 버튼 크기 */
-
-            /* --- *** 선수관리 팝업 너비 수정 *** --- */
+            .tab-btn { font-size: 0.9rem; padding: 8px 12px; } 
             #player-management-popup {
-                width: 95vw; /* auto 대신 95vw */
-                box-sizing: border-box; /* 패딩 포함해서 95vw */
+                width: 95vw; 
+                box-sizing: border-box; 
             }
-            /* --- --- */
         }
 
-        /* --- 자동완성 바 스타일 --- */
         .autocomplete-bar {
-            display: none; /* 평소엔 숨김 */
+            display: none; 
             position: fixed;
             bottom: 0;
             left: 0;
@@ -183,8 +166,8 @@
             padding: 10px;
             box-sizing: border-box;
             white-space: nowrap;
-            overflow-x: auto; /* 이름 많으면 스크롤 */
-            z-index: 1500; /* 팝업보단 낮고, 페이지보단 높게 */
+            overflow-x: auto; 
+            z-index: 1500; 
         }
         .autocomplete-bar.show {
             display: block;
@@ -194,22 +177,18 @@
             padding: 8px 12px;
             margin-right: 8px;
             background-color: var(--primary-color);
-            color: var(--bg-color);
+            color: #FFFFFF; /* 롤랑가로스는 흰색 글씨 */
             border: none;
             border-radius: var(--radius);
             font-size: 0.9rem;
             font-weight: 700;
             cursor: pointer;
         }
-        html[data-theme="light"] .autocomplete-bar button {
-             color: var(--secondary-color); /* 라이트모드에선 흰색 */
-        }
         .autocomplete-bar span {
             color: var(--text-secondary-color);
             padding: 8px;
             font-size: 0.9rem;
         }
-        /* --- --- */
     </style>
 </head>
 <body>
@@ -222,7 +201,6 @@
                 <button id="how-to-use-btn" class="btn">이용방법</button>
             </div>
             <div id="schedule-container"></div>
-            <!-- 관리자 버튼 (JS로 숨김/표시 제어) -->
             <button class="btn save-all-btn admin-btn">모든 데이터 저장</button>
             <button id="update-ranking" class="btn update-btn admin-btn">순위 업데이트</button>
             <button id="restore-backup-btn" class="btn danger admin-btn" style="margin-top: 10px;">💾 오류 수정 (백업 복구)</button>
@@ -230,7 +208,6 @@
         <div class="section">
             <h2 id="ranking-main-title">순위표</h2>
             
-            <!-- 3. 탭 HTML 부활 -->
             <div class="season-tabs" id="season-tabs-container">
                 <button class="tab-btn active" data-view="current">2025/26 겨울시즌</button>
                 <button class="tab-btn" data-view="previous">2025 여름시즌</button>
@@ -259,7 +236,6 @@
                             <th data-sort="losses">패</th>
                             <th data-sort="winRate">승률(%)</th>
                             <th data-sort="avgGameDiff">평균 득실</th>
-                            <!-- 4. 헤더 이름 변경 -->
                             <th data-sort="closeMatchWinRate">접전률(%)</th>
                             <th data-sort="dominantWins">압도승률(%)</th>
                             <th data-sort="dominantLosses">압도패률(%)</th>
@@ -280,7 +256,6 @@
     <div id="toast" class="toast"></div>
     <div id="overlay" class="overlay"></div>
     
-    <!-- 팝업들 (이용방법, 선수관리, 비번, 이름변경) -->
     <div id="info-popup" class="popup">
         <button class="close-btn" data-target="info-popup">×</button>
         <h3>이용 방법</h3>
@@ -320,20 +295,16 @@
         </div>
     </div>
     
-    <!-- 자동완성 제안 바 -->
     <div id="autocomplete-bar" class="autocomplete-bar">
-        <!-- JS로 채워짐 -->
     </div>
 
 
     <script type="module">
-        // 2. 파이어베이스 ID 및 임포트 수정
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch, onSnapshot, query, orderBy, limit, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-        // 2. 새 firebaseConfig 적용
         const firebaseConfig = {
            apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
            authDomain: "tennis-plan-jibung.firebaseapp.com",
@@ -345,20 +316,18 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app); // 애널리틱스 초기화
+        const analytics = getAnalytics(app); 
         const db = getFirestore(app);
         const auth = getAuth(app);
         
-        // --- 3. 시즌 설정 (탭용) ---
         const BASE_COLLECTION = 'league';
-        const CURRENT_SEASON_VERSION = 'v2'; // 2025/26 겨울시즌
-        const PREVIOUS_SEASON_VERSION = 'v1'; // 2025 여름시즌
-        // --- /시즌 설정 ---
+        const CURRENT_SEASON_VERSION = 'v2'; 
+        const PREVIOUS_SEASON_VERSION = 'v1'; 
 
         let currentFilter = 'all', sortKey = 'mmr', sortOrder = 'desc';
         let allPlayersData = [];
         let currentPotw = null;
-        let activeView = 'current'; // 'current'로 기본값
+        let activeView = 'current'; 
         let scheduleUnsubscribe = null;
         let rankingUnsubscribe = null;
         let currentActiveInput = null; 
@@ -377,7 +346,6 @@
             document.getElementById('theme-toggle').textContent = validTheme === 'dark' ? '☀️' : '🌙';
         };
         
-        // 3. 탭에 따라 제목 변경
         const updateRankingTitleAndCountdown = (view) => {
             const rankingTitleEl = document.getElementById('ranking-main-title');
             const scheduleTitleEl = document.getElementById('schedule-title');
@@ -453,7 +421,6 @@
                                 </tbody>
                             </table>
                         </div>
-                        <!-- 3. 탭 기능: 저장 버튼도 admin-btn 클래스 추가 -->
                         <button class="btn save-all-btn admin-btn" style="margin: 10px 15px;">저장하기</button>
                     </details>`;
                 }
@@ -464,7 +431,7 @@
         
         const saveAllData = async () => {
             if (!db) return showToast('DB 연결 실패!');
-            if (activeView !== 'current') { // 현재 탭에서만 저장
+            if (activeView !== 'current') { 
                 showToast('현재 시즌 탭에서만 저장할 수 있습니다.');
                 return;
             }
@@ -518,9 +485,17 @@
         
         const updateRankingTable = (rankingData, potw) => {
             allPlayersData = rankingData; 
+
+            // *** 자동완성 버그 수정 ***
+            // 데이터가 로드되었을 때, 만약 자동완성 바가 열려있다면(즉, 유저가 타이핑 중이라면)
+            // 즉시 제안 목록을 갱신한다.
+            if (currentActiveInput && document.getElementById('autocomplete-bar').classList.contains('show')) {
+                updateAutocompleteSuggestions(currentActiveInput.value);
+            }
+            
             currentPotw = potw;
             const potwContainer = document.getElementById('potw-container');
-            if (potw && potw.players && potw.players.length > 0 && activeView === 'current') { // 현재 탭에서만 POTW
+            if (potw && potw.players && potw.players.length > 0 && activeView === 'current') { 
                 potwContainer.innerHTML = `
                     <div class="potw-section">
                         <h3>🏆 이주의 선수 🏆</h3>
@@ -577,7 +552,6 @@
 
             finalFilteredData.forEach((player) => {
                 const row = rankingBody.insertRow();
-                // 5. 랭킹 테이블 렌더링 수정
                 row.innerHTML = `
                     <td class="rank-cell">${player.rank}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span></td>
                     <td><input type="text" value="${player.isFemale ? `${player.name}*` : player.name}" class="ranking-player readonly" readonly></td>
@@ -730,17 +704,13 @@
 
                 playerNames.forEach((name, index) => {
                     if (!name) return;
-                    // 5. 파생 스탯 객체 초기화 수정
                     if (!derivedStats[name]) derivedStats[name] = { totalSets: 0, closeMatchSets: 0, closeMatchWins: 0, dominantWins: 0, dominantLosses: 0 };
                     const stats = derivedStats[name];
                     stats.totalSets++;
                     const isWinner = (index < 2 && actual1) || (index >= 2 && !actual1);
                     
-                    // *** 여기 수정 ***
-                    // 5. '접전' (6-5, 5-6, 6-4, 4-6) 로직 수정
                     const isCloseMatch = (s1 === 6 && s2 === 5) || (s1 === 5 && s2 === 6) ||
                                          (s1 === 6 && s2 === 4) || (s1 === 4 && s2 === 6);
-                    // 5. '압도' (6-0, 6-1) 로직 수정
                     const isDominant = (s1 === 6 && s2 === 0) || (s1 === 0 && s2 === 6) ||
                                        (s1 === 6 && s2 === 1) || (s1 === 1 && s2 === 6);
 
@@ -769,13 +739,8 @@
                 p.winRate = totalGames > 0 ? Math.round((p.wins / totalGames) * 100) : 0;
                 p.avgGameDiff = p.totalSets > 0 ? (p.gameDiff / p.totalSets).toFixed(2) : '0.00';
                 
-                // 5. 파생 스탯 계산 수정
                 const dStats = derivedStats[p.name] || { totalSets: 0, closeMatchSets: 0, closeMatchWins: 0, dominantWins: 0, dominantLosses: 0 };
-                
-                // *** 여기 수정 ***
-                // '접전률' = (총 접전 경기 / 총 경기) %
                 p.closeMatchWinRate = dStats.totalSets > 0 ? `${Math.round((dStats.closeMatchSets / dStats.totalSets) * 100)}%(${dStats.closeMatchSets}경기)` : '0%';
-                
                 p.dominantWins = dStats.totalSets > 0 ? `${Math.round((dStats.dominantWins / dStats.totalSets) * 100)}%(${dStats.dominantWins}승)` : '0%';
                 p.dominantLosses = dStats.totalSets > 0 ? `${Math.round((dStats.dominantLosses / dStats.totalSets) * 100)}%(${dStats.dominantLosses}패)` : '0%';
             });
@@ -873,7 +838,7 @@
         };
 
         const downloadCSV = () => {
-            let rankingCSV = `\uFEFF순위,선수,MMR,우승,승,패,승률(%),평균 게임 득실,접전률(%),압도승률(%),압도패률(%),최고 파트너\n`; // 헤더 수정
+            let rankingCSV = `\uFEFF순위,선수,MMR,우승,승,패,승률(%),평균 게임 득실,접전률(%),압도승률(%),압도패률(%),최고 파트너\n`; 
             document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
                 const rawName = row.querySelector('.ranking-player').value.trim();
                 const player = rawName.replace(/\*/g, '');
@@ -885,8 +850,7 @@
                     const losses = row.querySelector('.losses').value;
                     const winRate = row.querySelector('.win-rate').value;
                     const avgGameDiff = row.querySelector('.avg-game-diff').value;
-                    // 클래스 이름 수정
-                    const closeMatchWinRate = row.querySelector('.close-match-win-rate').value.replace(/%|\(|\)|승|경기/g, ''); // '경기'도 제거
+                    const closeMatchWinRate = row.querySelector('.close-match-win-rate').value.replace(/%|\(|\)|승|경기/g, ''); 
                     const dominantWins = row.querySelector('.dominant-wins').value.replace(/%|\(|\)|승/g, '');
                     const dominantLosses = row.querySelector('.dominant-losses').value.replace(/%|\(|\)|패/g, '');
                     const bestPartner = row.querySelector('.best-partner').value;
@@ -896,7 +860,7 @@
             const blob = new Blob([rankingCSV], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `rankings_${activeView}_season.csv`; // 파일 이름에 뷰 추가
+            link.download = `rankings_${activeView}_season.csv`; 
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -1056,7 +1020,6 @@
             });
         }
 
-        // 3. loadViewData 함수 탭 기능 통합
         const loadViewData = async () => {
             if (scheduleUnsubscribe) scheduleUnsubscribe();
             if (rankingUnsubscribe) rankingUnsubscribe();
@@ -1082,12 +1045,26 @@
                 
                 try {
                     if (activeView === 'previous') {
+                        // *** v1(여름시즌) 버그 수정: 랭킹을 DB에서 바로 읽지 않고 재계산 ***
                         const schedSnap = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION));
                         const rankSnap = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION));
+                        
                         const scheduleData = (schedSnap.exists() && schedSnap.data().matches) ? schedSnap.data().matches : [];
-                        processAndRenderSchedule(scheduleData);
                         const rankData = rankSnap.exists() ? rankSnap.data() : {};
-                        updateRankingTable(rankData.players || [], rankData.potw || null);
+                        const initialPlayers = rankData.players || [];
+
+                        // 랭킹에서 초기 선수 정보(이름, 성별, 우승)만 가져와서 Map 생성
+                        const initialPlayersMap = {};
+                        initialPlayers.forEach(p => {
+                            initialPlayersMap[p.name] = { name: p.name, isFemale: p.isFemale, championships: p.championships || 0 };
+                        });
+
+                        // v1 스케줄 데이터로 랭킹 재계산
+                        const previousRankings = calculateRankingFromMatches(scheduleData, initialPlayersMap);
+
+                        processAndRenderSchedule(scheduleData);
+                        updateRankingTable(previousRankings, rankData.potw || null); // 재계산된 랭킹으로 테이블 업데이트
+                        
                     } else if (activeView === 'alltime') {
                         const schedSnapV1 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION));
                         const schedSnapV2 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION));
@@ -1258,28 +1235,24 @@
             document.getElementById('save-player-changes-btn').addEventListener('click', savePlayerChanges);
             document.getElementById('confirm-rename-btn').addEventListener('click', handlePlayerRename);
 
-            // 3. 탭 버튼 리스너 추가
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     if (btn.classList.contains('active')) return;
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     activeView = btn.dataset.view;
-                    loadViewData(); // 탭 누르면 데이터 다시 로드
+                    loadViewData(); 
                 });
             });
         };
 
         document.addEventListener('DOMContentLoaded', async () => {
             setupInputListeners();
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            // 롤랑가로스 테마가 라이트 모드 기본이므로 'light'로 설정
+            const savedTheme = localStorage.getItem('theme') || 'light'; 
             applyTheme(savedTheme);
 
-            // 탭 로직 때문에 뼈대 렌더링은 loadViewData가 하도록 변경
-            // createScheduleRounds(); // -> loadViewData가 호출
-            // updateRankingTable([], null); // -> loadViewData가 호출
-            // updateRankingTitleAndCountdown(activeView); // -> loadViewData가 호출
-
+            // 링크들에도 시즌 버전 동적으로 할당
             document.getElementById('dashboard-link').href = `dash.html?season=${CURRENT_SEASON_VERSION}`;
             document.getElementById('hof-link').href = `hall_of_fame.html?season=${CURRENT_SEASON_VERSION}`;
             document.getElementById('partner-link').href = `partner.html?season=${CURRENT_SEASON_VERSION}`;
