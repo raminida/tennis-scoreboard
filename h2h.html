@@ -155,6 +155,7 @@
         </div>
 
         <div class="stat-grid">
+            <!-- [수정] 통산기록 탭에서 제목이 바뀌므로 ID대신 클래스로 참조 -->
             <div class="stat-card"><div class="stat-title">현재 MMR</div><div id="stat-mmr" class="stat-value">-</div></div>
             <div class="stat-card"><div class="stat-title">시즌 순위</div><div id="stat-rank" class="stat-value">-</div></div>
             <div class="stat-card"><div class="stat-title">승/패</div><div id="stat-record" class="stat-value">-</div></div>
@@ -284,12 +285,16 @@
 
             const playersState = {};
             allPlayersData.forEach(p => {
+                // [수정] 통산 기록(alltime) 뷰에서는 MMR/승패를 0에서 다시 계산해야
+                // 배치고사(K-factor)가 정확히 적용됨.
+                const isAllTime = (activeView === 'alltime');
+                
                 playersState[p.name] = { 
                     name: p.name, 
                     mmr: constants.BASE_MMR, 
                     isFemale: p.isFemale,
-                    wins: p.wins || 0, // 배치고사 룰을 위해 wins/losses 정보 필요
-                    losses: p.losses || 0
+                    wins: isAllTime ? 0 : (p.wins || 0), // 통산 아니면 v1/v2 승패 가져오기
+                    losses: isAllTime ? 0 : (p.losses || 0) // 통산 아니면 v1/v2 승패 가져오기
                 };
             });
 
@@ -650,6 +655,7 @@
         // --- [신규] 함수 끝 ---
 
 
+        // --- [수정] 통산 기록 탭 버그 수정 ---
         const loadProfileData = async () => {
             const { mainPlayerName } = getParams();
             if (!mainPlayerName) {
@@ -662,6 +668,7 @@
             let rankingDocs = [];
             let scheduleDocs = [];
 
+            // [수정] 탭 로직 수정: 'alltime'일 때 v1, v2 랭킹/스케줄을 모두 가져옴
             if (activeView === 'current') {
                 rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION)));
                 scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION)));
@@ -669,10 +676,10 @@
                 rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION)));
                 scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION)));
             } else { // alltime
-                rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION)));
-                rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION)));
-                scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION)));
-                scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION)));
+                rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION))); // v1 랭킹
+                rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION))); // v2 랭킹
+                scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION))); // v1 스케줄
+                scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION))); // v2 스케줄
             }
 
             try {
@@ -683,6 +690,9 @@
                 const allMatches = scheduleSnaps.flatMap(snap => snap.exists() ? snap.data().matches : []);
                 
                 let playerData;
+                let playerHistory = []; // [수정] playerHistory를 여기서 선언
+                const uniquePlayers = [...new Map(allPlayers.map(p => [p.name, p])).values()]; // [수정] uniquePlayers 여기서 선언
+
                 if (activeView === 'alltime') {
                     const cumulativeStats = {};
                     allMatches.forEach(match => {
@@ -690,7 +700,6 @@
                         match.players.forEach((p, i) => {
                             const name = p.replace(/\*/g, '');
                             if (!cumulativeStats[name]) {
-                                // [수정] allPlayers에서 isFemale 정보 가져오기
                                 const pData = allPlayers.find(pl => pl.name === name);
                                 cumulativeStats[name] = { name, wins: 0, losses: 0, championships: 0, isFemale: pData ? pData.isFemale : p.includes('*') };
                             }
@@ -702,79 +711,150 @@
                         winners.forEach(w => { if(cumulativeStats[w]) cumulativeStats[w].wins++ });
                         losers.forEach(l => { if(cumulativeStats[l]) cumulativeStats[l].losses++ });
                     });
-                    
-                    // [수정] v2(current)의 MMR, bestPartner, championships 정보 합산
-                    const currentPlayerData = allPlayers.find(p => p.name === mainPlayerName && p.mmr); // v2데이터 찾기
-                    
+                                        
                     playerData = cumulativeStats[mainPlayerName];
                     
                     if (playerData) {
                         const total = playerData.wins + playerData.losses;
-                        playerData.winRate = total > 0 ? Math.round((p.wins / total) * 100) : 0;
-                        playerData.mmr = currentPlayerData?.mmr || 'N/A'; 
-                        playerData.bestPartner = currentPlayerData?.bestPartner || '-';
-                        // 우승 횟수 합산 (v1 + v2)
+                        playerData.winRate = total > 0 ? Math.round((playerData.wins / total) * 100) : 0; 
+                        
+                        // [수정] '최고 파트너'를 allMatches 기준으로 재계산
+                        playerData.bestPartner = calculateAllTimeBestPartner(allMatches, mainPlayerName); 
+                        
+                        // [수정] '우승' 횟수 합산 (v1 + v2)
                         playerData.championships = allPlayers
                             .filter(p => p.name === mainPlayerName)
                             .reduce((acc, p) => acc + (p.championships || 0), 0);
+
+                        // --- [신규] 최고 MMR / 최고 순위 계산 ---
+                        const v1Players = rankingSnaps[0].exists() ? rankingSnaps[0].data().players : [];
+                        const v2Players = rankingSnaps[1].exists() ? rankingSnaps[1].data().players : [];
+
+                        const v1PlayerData = v1Players.find(p => p.name === mainPlayerName);
+                        const v2PlayerData = v2Players.find(p => p.name === mainPlayerName);
+
+                        // 1. Calculate Highest MMR
+                        const v1MMR = v1PlayerData?.mmr || 0; 
+                        const v2MMR = v2PlayerData?.mmr || 0;
+                        const highestMMR = Math.max(v1MMR, v2MMR);
+                        playerData.mmr = highestMMR; // 표시할 MMR은 최고점으로
+
+                        // 2. Calculate Highest Rank
+                        const v1Sorted = [...v1Players].sort((a,b) => (b.mmr || 0) - (a.mmr || 0));
+                        const v1Rank = v1Sorted.findIndex(p => p.name === mainPlayerName) + 1;
+                        
+                        const v2Sorted = [...v2Players].sort((a,b) => (b.mmr || 0) - (a.mmr || 0));
+                        const v2Rank = v2Sorted.findIndex(p => p.name === mainPlayerName) + 1;
+
+                        const validRanks = [];
+                        if (v1Rank > 0) validRanks.push(v1Rank);
+                        if (v2Rank > 0) validRanks.push(v2Rank);
+
+                        const highestRank = validRanks.length > 0 ? Math.min(...validRanks) : 0;
+                        
+                        playerData.rank = highestRank > 0 ? `${highestRank}위` : '-'; 
+                        
+                        // 3. Update Stat Box Titles
+                        document.querySelector('.stat-grid .stat-card:nth-child(1) .stat-title').textContent = '시즌 최고 MMR';
+                        document.querySelector('.stat-grid .stat-card:nth-child(2) .stat-title').textContent = '시즌 최고 순위';
+                        // --- [신규] 끝 ---
                     }
 
                 } else {
+                    // 'current' 또는 'previous' 탭
                     playerData = allPlayers.find(p => p.name === mainPlayerName);
+                    
+                    // [신규] 스탯 박스 제목 리셋
+                    document.querySelector('.stat-grid .stat-card:nth-child(1) .stat-title').textContent = '현재 MMR';
+                    document.querySelector('.stat-grid .stat-card:nth-child(2) .stat-title').textContent = '시즌 순위';
+                    
+                    let rank = '-';
+                    if(activeView === 'current' && rankingSnaps[0].exists()) {
+                        const currentPlayers = rankingSnaps[0].data().players || [];
+                        const sortedPlayers = [...currentPlayers].sort((a,b) => b.mmr - a.mmr);
+                        const rankIndex = sortedPlayers.findIndex(p => p.name === mainPlayerName) + 1;
+                        rank = rankIndex > 0 ? `${rankIndex}위` : '-';
+                    } else if (activeView === 'previous' && rankingSnaps[0].exists()) {
+                        const previousPlayers = rankingSnaps[0].data().players || [];
+                        const sortedPlayers = [...previousPlayers].sort((a,b) => b.mmr - a.mmr);
+                        const rankIndex = sortedPlayers.findIndex(p => p.name === mainPlayerName) + 1;
+                        rank = rankIndex > 0 ? `${rankIndex}위` : '-';
+                    }
+                    if(playerData) playerData.rank = rank; // playerData가 있을 때만 rank 할당
                 }
 
                 if (!playerData) {
                     ['stat-mmr', 'stat-rank', 'stat-record', 'stat-winrate', 'stat-champs', 'stat-partner'].forEach(id => document.getElementById(id).textContent = '-');
-                    renderMatchHistory([], false); // [수정]
+                    renderMatchHistory([], false); 
                     setupH2H([], [], mainPlayerName);
                     calculateAndRenderRelationships([], mainPlayerName);
-                    calculateAndDisplayAchievements({}, []); // [신규]
+                    calculateAndDisplayAchievements({}, []); 
                     return;
                 }
                 
-                let rank = '-';
-                // [수정] 랭킹 스냅샷을 정확히 참조
-                if(activeView === 'current' && rankingSnaps[0].exists()) {
-                    const currentPlayers = rankingSnaps[0].data().players || [];
-                    const sortedPlayers = [...currentPlayers].sort((a,b) => b.mmr - a.mmr);
-                    const rankIndex = sortedPlayers.findIndex(p => p.name === mainPlayerName) + 1;
-                    rank = rankIndex > 0 ? `${rankIndex}위` : '-';
-                } else if (activeView === 'previous' && rankingSnaps[0].exists()) {
-                    const previousPlayers = rankingSnaps[0].data().players || [];
-                    const sortedPlayers = [...previousPlayers].sort((a,b) => b.mmr - a.mmr);
-                    const rankIndex = sortedPlayers.findIndex(p => p.name === mainPlayerName) + 1;
-                    rank = rankIndex > 0 ? `${rankIndex}위` : '-';
-                }
-                
+                // [수정] playerData.rank는 위에서 이미 계산됨
                 document.getElementById('stat-mmr').textContent = Math.round(playerData.mmr) || 'N/A';
-                document.getElementById('stat-rank').textContent = rank;
+                document.getElementById('stat-rank').textContent = playerData.rank || '-'; // playerData에 저장된 랭크 사용
                 document.getElementById('stat-record').textContent = `${playerData.wins || 0}승 ${playerData.losses || 0}패`;
                 document.getElementById('stat-winrate').textContent = `${playerData.winRate || 0}%`;
                 document.getElementById('stat-champs').textContent = playerData.championships || 0;
                 document.getElementById('stat-partner').textContent = playerData.bestPartner || '-';
                 
-                // [수정] 렌더링과 업적 계산을 위해 playerHistory를 먼저 계산
-                const uniquePlayers = [...new Map(allPlayers.map(p => [p.name, p])).values()];
-                const playerHistory = getPlayerMatchHistory(allMatches, uniquePlayers, mainPlayerName);
+                playerHistory = getPlayerMatchHistory(allMatches, uniquePlayers, mainPlayerName);
 
-                renderMatchHistory(playerHistory, false); // [수정]
+                renderMatchHistory(playerHistory, false); 
                 const showAllBtn = document.getElementById('show-all-matches-btn');
                 const newBtn = showAllBtn.cloneNode(true);
                 showAllBtn.parentNode.replaceChild(newBtn, showAllBtn);
                 newBtn.style.display = 'inline-block';
                 newBtn.addEventListener('click', () => {
-                    renderMatchHistory(playerHistory, true); // [수정]
+                    renderMatchHistory(playerHistory, true); 
                     newBtn.style.display = 'none';
                 }, { once: true });
 
                 setupH2H(allMatches, uniquePlayers, mainPlayerName);
                 calculateAndRenderRelationships(allMatches, mainPlayerName);
-                calculateAndDisplayAchievements(playerData, playerHistory); // [신규]
+                calculateAndDisplayAchievements(playerData, playerHistory); 
 
             } catch (e) {
                 console.error("Profile data load failed:", e);
             }
         };
+        // --- [수정] 끝 ---
+        
+        // --- [신규] '통산 기록'용 최고 파트너 계산 헬퍼 ---
+        const calculateAllTimeBestPartner = (allMatches, mainPlayerName) => {
+            const partnerStats = {};
+            allMatches.forEach(match => {
+                if (!match.players || !match.score || !match.score.includes('-')) return;
+                const playerNames = match.players.map(p => p.replace(/\*/g, ''));
+                if (!playerNames.includes(mainPlayerName)) return;
+
+                const playerIndex = playerNames.indexOf(mainPlayerName);
+                const playerTeamIndex = playerIndex < 2 ? 0 : 1;
+                const partnerName = playerNames[playerTeamIndex * 2 + (1 - (playerIndex % 2))];
+                
+                const [s1, s2] = match.score.split('-').map(Number);
+                const isWinner = (playerTeamIndex === 0 && s1 > s2) || (playerTeamIndex === 1 && s2 > s1);
+
+                if (partnerName) {
+                    if (!partnerStats[partnerName]) partnerStats[partnerName] = { wins: 0, losses: 0, matches: 0 };
+                    partnerStats[partnerName].matches++;
+                    if(isWinner) partnerStats[partnerName].wins++; else partnerStats[partnerName].losses++;
+                }
+            });
+
+            let bestPartner = { name: '-', wins: 0 };
+            for (const partnerName in partnerStats) {
+                const stats = partnerStats[partnerName];
+                if (stats.wins > bestPartner.wins) {
+                    bestPartner = { name: partnerName, wins: stats.wins };
+                }
+            }
+            return bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name} (${bestPartner.wins}승)`;
+        };
+        // --- [신규] 끝 ---
+
 
         document.addEventListener('DOMContentLoaded', async () => {
              // [수정] 호수 오픈은 라이트 테마가 기본
