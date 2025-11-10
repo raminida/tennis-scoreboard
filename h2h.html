@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=stylesheet" rel="stylesheet">
+    <!-- [신규] Chart.js CDN 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             /* 롤랑가로스 다크 테마 */
@@ -156,8 +158,8 @@
 
         <div class="stat-grid">
             <!-- [수정] 통산기록 탭에서 제목이 바뀌므로 ID대신 클래스로 참조 -->
-            <div class="stat-card"><div class="stat-title">현재 MMR</div><div id="stat-mmr" class="stat-value">-</div></div>
-            <div class="stat-card"><div class="stat-title">시즌 순위</div><div id="stat-rank" class="stat-value">-</div></div>
+            <div class="stat-card"><div class="stat-title" id="mmr-title">현재 MMR</div><div id="stat-mmr" class="stat-value">-</div></div>
+            <div class="stat-card"><div class="stat-title" id="rank-title">시즌 순위</div><div id="stat-rank" class="stat-value">-</div></div>
             <div class="stat-card"><div class="stat-title">승/패</div><div id="stat-record" class="stat-value">-</div></div>
             <div class="stat-card"><div class="stat-title">승률</div><div id="stat-winrate" class="stat-value">-</div></div>
             <div class="stat-card"><div class="stat-title">우승</div><div id="stat-champs" class="stat-value">-</div></div>
@@ -203,6 +205,14 @@
             </div>
             <button id="show-all-matches-btn" class="btn">전체 전적 보기</button>
         </div>
+
+        <!-- [신규] MMR 변동 그래프 섹션 -->
+        <div class="section">
+            <h2>최근 10경기 MMR 변동</h2>
+            <canvas id="mmrChart"></canvas>
+        </div>
+        <!-- [신규] 끝 -->
+
         <div style="text-align:center;">
              <a id="main-link" href="index.html" class="btn">메인으로 돌아가기</a>
         </div>
@@ -232,6 +242,8 @@
         const CURRENT_SEASON_VERSION = 'v2';
         const PREVIOUS_SEASON_VERSION = 'v1';
         let activeView = 'current';
+        
+        let mmrChartInstance = null; // [신규] 차트 인스턴스
 
         const getParams = () => {
             const params = new URLSearchParams(window.location.search);
@@ -653,6 +665,85 @@
             });
         };
         // --- [신규] 함수 끝 ---
+        
+        // --- [신규] MMR 차트 렌더링 함수 ---
+        const renderMMRChart = (playerHistory) => {
+            const ctx = document.getElementById('mmrChart')?.getContext('2d');
+            if (!ctx) return;
+            
+            if (mmrChartInstance) {
+                mmrChartInstance.destroy(); // 기존 차트 파괴
+            }
+
+            const recentHistory = playerHistory.slice(-10); // 최근 10경기
+            const labels = recentHistory.map((_, i) => {
+                if (i === recentHistory.length - 1) return '최근';
+                return `${recentHistory.length - 1 - i}겜 전`;
+            });
+            const data = recentHistory.map(game => Math.round(game.newMMR));
+            
+            // CSS 변수에서 색상 가져오기
+            const style = getComputedStyle(document.body);
+            const primaryColor = style.getPropertyValue('--primary-color').trim() || '#D76E2D';
+            const textColor = style.getPropertyValue('--text-color').trim() || '#333333';
+            const gridColor = style.getPropertyValue('--border-color').trim() || '#E0E0E0';
+
+            mmrChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'MMR 변동',
+                        data: data,
+                        borderColor: primaryColor,
+                        backgroundColor: 'transparent',
+                        pointBackgroundColor: primaryColor,
+                        pointRadius: 4,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            ticks: {
+                                color: textColor,
+                                font: {
+                                    family: "'Noto Sans KR', sans-serif"
+                                }
+                            },
+                            grid: {
+                                color: gridColor
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: textColor,
+                                font: {
+                                    family: "'Noto Sans KR', sans-serif"
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: textColor,
+                                font: {
+                                    family: "'Noto Sans KR', sans-serif",
+                                    size: 14
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+        // --- [신규] 끝 ---
 
 
         // --- [수정] 통산 기록 탭 버그 수정 ---
@@ -693,6 +784,10 @@
                 let playerHistory = []; // [수정] playerHistory를 여기서 선언
                 const uniquePlayers = [...new Map(allPlayers.map(p => [p.name, p])).values()]; // [수정] uniquePlayers 여기서 선언
 
+                // [수정] 스탯 박스 제목 DOM 요소 찾기
+                const mmrTitleEl = document.getElementById('mmr-title');
+                const rankTitleEl = document.getElementById('rank-title');
+
                 if (activeView === 'alltime') {
                     const cumulativeStats = {};
                     allMatches.forEach(match => {
@@ -718,10 +813,10 @@
                         const total = playerData.wins + playerData.losses;
                         playerData.winRate = total > 0 ? Math.round((playerData.wins / total) * 100) : 0; 
                         
-                        // [수정] '최고 파트너'를 allMatches 기준으로 재계산
+                        // [버그 수정] '최고 파트너'를 allMatches 기준으로 재계산
                         playerData.bestPartner = calculateAllTimeBestPartner(allMatches, mainPlayerName); 
                         
-                        // [수정] '우승' 횟수 합산 (v1 + v2)
+                        // [버그 수정] '우승' 횟수 합산 (v1 + v2)
                         playerData.championships = allPlayers
                             .filter(p => p.name === mainPlayerName)
                             .reduce((acc, p) => acc + (p.championships || 0), 0);
@@ -737,7 +832,7 @@
                         const v1MMR = v1PlayerData?.mmr || 0; 
                         const v2MMR = v2PlayerData?.mmr || 0;
                         const highestMMR = Math.max(v1MMR, v2MMR);
-                        playerData.mmr = highestMMR; // 표시할 MMR은 최고점으로
+                        playerData.mmr = highestMMR > 0 ? Math.round(highestMMR) : 1500; // [수정] 0점 대신 1500
 
                         // 2. Calculate Highest Rank
                         const v1Sorted = [...v1Players].sort((a,b) => (b.mmr || 0) - (a.mmr || 0));
@@ -755,8 +850,8 @@
                         playerData.rank = highestRank > 0 ? `${highestRank}위` : '-'; 
                         
                         // 3. Update Stat Box Titles
-                        document.querySelector('.stat-grid .stat-card:nth-child(1) .stat-title').textContent = '시즌 최고 MMR';
-                        document.querySelector('.stat-grid .stat-card:nth-child(2) .stat-title').textContent = '시즌 최고 순위';
+                        if (mmrTitleEl) mmrTitleEl.textContent = '시즌 최고 MMR';
+                        if (rankTitleEl) rankTitleEl.textContent = '시즌 최고 순위';
                         // --- [신규] 끝 ---
                     }
 
@@ -765,8 +860,8 @@
                     playerData = allPlayers.find(p => p.name === mainPlayerName);
                     
                     // [신규] 스탯 박스 제목 리셋
-                    document.querySelector('.stat-grid .stat-card:nth-child(1) .stat-title').textContent = '현재 MMR';
-                    document.querySelector('.stat-grid .stat-card:nth-child(2) .stat-title').textContent = '시즌 순위';
+                    if (mmrTitleEl) mmrTitleEl.textContent = '현재 MMR';
+                    if (rankTitleEl) rankTitleEl.textContent = '시즌 순위';
                     
                     let rank = '-';
                     if(activeView === 'current' && rankingSnaps[0].exists()) {
@@ -789,6 +884,7 @@
                     setupH2H([], [], mainPlayerName);
                     calculateAndRenderRelationships([], mainPlayerName);
                     calculateAndDisplayAchievements({}, []); 
+                    renderMMRChart([]); // [신규] 차트 초기화
                     return;
                 }
                 
@@ -803,6 +899,8 @@
                 playerHistory = getPlayerMatchHistory(allMatches, uniquePlayers, mainPlayerName);
 
                 renderMatchHistory(playerHistory, false); 
+                renderMMRChart(playerHistory); // [신규] 차트 렌더링
+
                 const showAllBtn = document.getElementById('show-all-matches-btn');
                 const newBtn = showAllBtn.cloneNode(true);
                 showAllBtn.parentNode.replaceChild(newBtn, showAllBtn);
@@ -872,6 +970,12 @@
                 btn.addEventListener('click', () => {
                     if (btn.classList.contains('active')) return;
                     
+                    // [신규] 탭 변경 시 차트 파괴
+                    if (mmrChartInstance) {
+                        mmrChartInstance.destroy();
+                        mmrChartInstance = null;
+                    }
+
                     document.querySelector('.tab-btn.active').classList.remove('active');
                     btn.classList.add('active');
                     activeView = btn.dataset.view;
