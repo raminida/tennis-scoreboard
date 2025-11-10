@@ -3,21 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>선수 프로필</title>
+    <title>선수 프로필 - H2H</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=stylesheet" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #121212; --surface-color: #1E1E1E; --primary-color: #4CAF50; --primary-variant-color: #81C784; --text-color: #E0E0E0; --text-secondary-color: #A0A0A0; --border-color: #333333; --shadow-color: rgba(0, 0, 0, 0.5);
+            /* 롤랑가로스 다크 테마 */
+            --bg-color: #121212; 
+            --surface-color: #1E1E1E; 
+            --primary-color: #E8854D; /* Clay Orange */
+            --primary-variant-color: #F0A070;
+            --text-color: #E0E0E0; 
+            --text-secondary-color: #A0A0A0; 
+            --border-color: #333333; 
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --win-color: #4CAF50;
+            --loss-color: #F44336;
+
+            /* 업적 배지 색상 (롤랑가로스 테마) */
+            --bronze: #cd7f32;
+            --silver: #c0c0c0;
+            --gold: #ffd700;
+            --crystal: #006442; /* Roland Garros Green */
         }
         html[data-theme="light"] {
-            --bg-color: #F0F4F8; --surface-color: #FFFFFF; --primary-color: #1A3C34; --primary-variant-color: #2A6B5B; --text-color: #1F2937; --text-secondary-color: #6B7280; --border-color: #E5E7EB; --shadow-color: rgba(0, 0, 0, 0.1);
+            /* 롤랑가로스 라이트 테마 */
+            --bg-color: #F4F0E9; /* Light Clay/Sand */
+            --surface-color: #FFFFFF;
+            --primary-color: #D76E2D; /* Clay Orange */
+            --primary-variant-color: #B65F26; /* Darker Clay */
+            --text-color: #1F2937;
+            --text-secondary-color: #6B7280;
+            --border-color: #E5E7EB;
+            --shadow-color: rgba(0, 0, 0, 0.08);
+            
+            --crystal: #006442; /* Roland Garros Green */
         }
+
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: auto; }
-        .profile-header { text-align: center; margin-bottom: 40px; }
-        .player-name { font-family: 'Poppins', sans-serif; font-size: 3rem; color: var(--primary-color); margin: 0; }
+        
+        /* [수정] 헤더 스타일 */
+        .profile-header { 
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+        .player-name { 
+            font-family: 'Poppins', sans-serif; 
+            font-size: 3rem; 
+            color: var(--primary-color); /* 롤랑가로스 오렌지 */
+            margin: 0; 
+        }
+
+        /* --- [신규] 업적 배지 스타일 --- */
+        .achievement-badges-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        .achievement-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px; /* 둥근 알약 모양 */
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #333;
+            background-color: var(--silver); /* 기본: 실버 */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .achievement-badge.bronze {
+            background-color: var(--bronze);
+            color: #fff;
+        }
+        .achievement-badge.silver {
+            background-color: var(--silver);
+            color: #333;
+        }
+        .achievement-badge.gold {
+            background-color: var(--gold);
+            color: #5d4037; /* 금색 배경에 어울리는 짙은 갈색 */
+        }
+        .achievement-badge.crystal {
+            background-color: var(--crystal); /* 롤랑가로스 그린 */
+            color: #fff;
+        }
+        /* --- [신규] 끝 --- */
+
+
         .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 40px; }
         .stat-card { background: var(--surface-color); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color); }
         .stat-title { font-size: 0.9rem; color: var(--text-secondary-color); margin-bottom: 8px; }
@@ -30,10 +110,30 @@
         .table-wrapper { overflow-x: auto; }
         .recent-matches-table { width: 100%; border-collapse: collapse; }
         .recent-matches-table th, .recent-matches-table td { padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
-        .win { color: #4CAF50; }
-        .loss { color: #F44336; }
+        /* [수정] 롤랑가로스 테마 */
+        .recent-matches-table th {
+            background-color: #f9f9f9;
+            color: var(--primary-variant-color);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        html[data-theme="dark"] .recent-matches-table th {
+             background-color: #2a2a2a;
+        }
+        .recent-matches-table tbody tr:hover {
+            background-color: rgba(0,0,0,0.02);
+        }
+        html[data-theme="dark"] .recent-matches-table tbody tr:hover {
+            background-color: rgba(255,255,255,0.02);
+        }
+
+        .win { color: var(--win-color); }
+        .loss { color: var(--loss-color); }
         .btn { display: inline-block; padding: 12px 28px; margin-top: 20px; background: linear-gradient(135deg,var(--primary-color),var(--primary-variant-color)); color: #FFF; text-decoration: none; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; }
-        [data-theme="dark"] .btn { color: var(--bg-color); }
+        [data-theme="dark"] .btn { color: #fff; } /* 다크모드에서도 흰색 */
+        
+        /* [수정] 롤랑가로스 테마 탭 */
         .season-tabs{display:flex;gap:10px;margin-bottom:20px;border-bottom:2px solid var(--border-color);padding-bottom:10px}
         .tab-btn{padding:10px 20px;font-size:1rem;font-weight:700;background:none;border:none;color:var(--text-secondary-color);cursor:pointer;border-bottom:3px solid transparent;transition:color .3s,border-color .3s}
         .tab-btn.active{color:var(--primary-color);border-bottom:3px solid var(--primary-color)}
@@ -43,6 +143,10 @@
     <div class="container">
         <div class="profile-header">
             <h1 id="player-name" class="player-name">선수 로딩 중...</h1>
+            <!-- [신규] 업적 배지 컨테이너 -->
+            <div id="achievement-badges" class="achievement-badges-container">
+                <!-- JS로 채워짐 -->
+            </div>
         </div>
         <div class="season-tabs">
             <button class="tab-btn active" data-view="current">2025-26 겨울시즌</button>
@@ -105,6 +209,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        // [수정] getAnalytics 임포트 (파일에 없었음)
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
@@ -119,6 +225,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const analytics = getAnalytics(app); // [신규] analytics 초기화
 
         const BASE_COLLECTION = 'league';
         const CURRENT_SEASON_VERSION = 'v2';
@@ -136,9 +243,18 @@
             BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6
         };
 
+        // --- [수정] 배치고사 룰이 적용된 calculateMMRChangeForMatch ---
         const calculateMMRChangeForMatch = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight) => {
             if (!player || !partner) return 0;
             let K = constants.BASE_K;
+            
+            // [신규 룰] 배치고사 (6경기 1.5배)
+            const gamesPlayed = (player.wins || 0) + (player.losses || 0);
+            if (gamesPlayed < 6) { // 6경기 미만 (0~5)
+                K = constants.BASE_K * 1.5; 
+            }
+            // [신규 룰] 끝
+            
             let playerMMR = player.mmr || constants.BASE_MMR;
             const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
             let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
@@ -160,20 +276,24 @@
             
             return finalChange;
         };
+        // --- [수정] 끝 ---
 
-        const renderMatchHistory = (allMatches, allPlayersData, mainPlayerName, showAll = false) => {
-            const tbody = document.getElementById('recent-matches-body');
-            tbody.innerHTML = '';
-            document.getElementById('match-history-title').textContent = showAll ? '전체 경기 기록' : '최근 10경기 기록';
-
+        // --- [신규] 업적 계산을 위해 경기 기록을 반환하는 헬퍼 함수 ---
+        const getPlayerMatchHistory = (allMatches, allPlayersData, mainPlayerName) => {
             const sortedMatches = allMatches.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
             const playersState = {};
             allPlayersData.forEach(p => {
-                playersState[p.name] = { name: p.name, mmr: constants.BASE_MMR, isFemale: p.isFemale };
+                playersState[p.name] = { 
+                    name: p.name, 
+                    mmr: constants.BASE_MMR, 
+                    isFemale: p.isFemale,
+                    wins: p.wins || 0, // 배치고사 룰을 위해 wins/losses 정보 필요
+                    losses: p.losses || 0
+                };
             });
 
-            const playerMatchResults = [];
+            const playerMatchResults = []; // 이 선수의 경기 결과만 저장
 
             sortedMatches.forEach(match => {
                 if (!match.players || match.players.length < 4 || !match.score.includes('-')) return;
@@ -182,7 +302,13 @@
                 
                 playerNames.forEach((name, idx) => {
                     if (name && !playersState[name]) {
-                        playersState[name] = { name, mmr: constants.BASE_MMR, isFemale: match.players[idx].includes('*') };
+                        playersState[name] = { 
+                            name, 
+                            mmr: constants.BASE_MMR, 
+                            isFemale: match.players[idx].includes('*'),
+                            wins: 0,
+                            losses: 0
+                        };
                     }
                 });
                 
@@ -205,6 +331,7 @@
                     [playerNames[3]]: calculateMMRChangeForMatch(team2P2, team1MMR, !team1Won, team2P1, match.isFourPoint, scoreWeight),
                 };
 
+                // 메인 선수 경기 기록만 저장
                 if (playerNames.includes(mainPlayerName)) {
                     const playerIndex = playerNames.indexOf(mainPlayerName);
                     const playerTeamIndex = playerIndex < 2 ? 0 : 1;
@@ -219,18 +346,35 @@
                         opponentTeamAvgMMR: playerTeamIndex === 0 ? Math.round(team2MMR) : Math.round(team1MMR),
                         score: match.score,
                         mmrChange: mmrChanges[mainPlayerName],
-                        newMMR: playersState[mainPlayerName].mmr + mmrChanges[mainPlayerName]
+                        newMMR: playersState[mainPlayerName].mmr + mmrChanges[mainPlayerName],
+                        timestamp: match.timestamp,
+                        round: match.round // '완벽한 하루' 업적을 위해 라운드 ID 추가
                     });
                 }
                 
-                playerNames.forEach(name => {
+                // 다음 경기를 위해 MMR 및 승패 업데이트
+                playerNames.forEach((name, idx) => {
                     if (playersState[name]) {
                         playersState[name].mmr += mmrChanges[name];
+                        if (idx < 2) { // 1팀
+                            if (team1Won) playersState[name].wins++; else playersState[name].losses++;
+                        } else { // 2팀
+                            if (!team1Won) playersState[name].wins++; else playersState[name].losses++;
+                        }
                     }
                 });
             });
+            return playerMatchResults;
+        };
+        // --- [신규] 헬퍼 함수 끝 ---
 
-            const resultsToDisplay = showAll ? playerMatchResults : playerMatchResults.slice(-10);
+        // --- [수정] 렌더링 함수가 playerHistory를 받도록 수정 ---
+        const renderMatchHistory = (playerHistory, showAll = false) => {
+            const tbody = document.getElementById('recent-matches-body');
+            tbody.innerHTML = '';
+            document.getElementById('match-history-title').textContent = showAll ? '전체 경기 기록' : '최근 10경기 기록';
+            
+            const resultsToDisplay = showAll ? playerHistory : playerHistory.slice(-10);
             if (resultsToDisplay.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7">경기 기록이 없습니다.</td></tr>';
                 return;
@@ -254,6 +398,8 @@
                 tbody.innerHTML += row;
             });
         };
+        // --- [수정] 끝 ---
+
 
         const setupH2H = (allMatches, allPlayers, mainPlayerName) => {
             const select = document.getElementById('opponent-select');
@@ -352,6 +498,158 @@
             document.getElementById('stat-rival-record').textContent = `${rival.matches}경기 (${rival.record})`;
         };
 
+        // --- [신규] '꾸준함' 업적을 위한 헬퍼 함수 ---
+        const getWeekNumber = (d) => {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            // 일요일을 주의 시작(0)으로 계산
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); // 해당 주의 목요일
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            // 주차 계산
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return d.getUTCFullYear() * 100 + weekNo; // e.g., 202501, 202552
+        };
+        // --- [신규] 헬퍼 함수 끝 ---
+
+        // --- [신규] 업적 계산 및 표시 함수 ---
+        const calculateAndDisplayAchievements = (playerData, playerHistory) => {
+            const container = document.getElementById('achievement-badges');
+            if (!container) return;
+            container.innerHTML = ''; // 초기화
+
+            const achievements = [];
+            const mmr = playerData.mmr || 1500;
+            const wins = playerData.wins || 0;
+            const champs = playerData.championships || 0;
+            
+            // 1. MMR 업적
+            if (mmr >= 1600) achievements.push({ text: 'MMR 1600+ 🥉', color: 'bronze' });
+            if (mmr >= 1700) achievements.push({ text: 'MMR 1700+ 🥈', color: 'silver' });
+            if (mmr >= 1800) achievements.push({ text: 'MMR 1800+ 🥇', color: 'gold' });
+            if (mmr >= 1900) achievements.push({ text: 'MMR 1900+ 💎', color: 'crystal' });
+
+            // 2. 승수 업적
+            if (wins >= 10) achievements.push({ text: '10승 🥉', color: 'bronze' });
+            if (wins >= 50) achievements.push({ text: '50승 🥈', color: 'silver' });
+            if (wins >= 100) achievements.push({ text: '100승 🥇', color: 'gold' });
+
+            // 3. 우승 업적
+            if (champs >= 1) achievements.push({ text: '첫 우승 🏆', color: 'gold' });
+            if (champs >= 5) achievements.push({ text: '5회 우승 🏆💎', color: 'crystal' });
+
+            // 4. 경기 기록 분석 (연승, 베이글, 파트너, 완벽한 하루, 꾸준함)
+            let currentStreak = 0;
+            let maxStreak = 0;
+            let bagelWins = 0;
+            const partnerWins = {}; 
+            const winsByRound = {}; 
+            const playedWeeks = new Set(); 
+            
+            playerHistory.forEach(match => {
+                // 연승
+                if (match.isWinner) {
+                    currentStreak++;
+                } else {
+                    maxStreak = Math.max(maxStreak, currentStreak);
+                    currentStreak = 0;
+                }
+                
+                // 베이글승 (압도승)
+                const scores = match.score.split('-').map(Number);
+                const isBagel = (scores[0] === 6 && (scores[1] === 0 || scores[1] === 1)) ||
+                              ((scores[0] === 0 || scores[0] === 1) && scores[1] === 6);
+                if (isBagel && match.isWinner) {
+                    bagelWins++;
+                }
+
+                // 최고의 파트너
+                if (match.isWinner) {
+                    const partner = match.partnerName;
+                    partnerWins[partner] = (partnerWins[partner] || 0) + 1;
+                }
+
+                // 완벽한 하루
+                if (match.isWinner && match.round) {
+                    winsByRound[match.round] = (winsByRound[match.round] || 0) + 1;
+                }
+                
+                // 꾸준함
+                if (match.timestamp) {
+                    playedWeeks.add(getWeekNumber(new Date(match.timestamp)));
+                }
+            });
+            maxStreak = Math.max(maxStreak, currentStreak); // 마지막 연승까지 체크
+
+            // 5. 연승 업적
+            if (maxStreak >= 5) achievements.push({ text: `5연승 🔥`, color: 'silver' });
+            if (maxStreak >= 10) achievements.push({ text: `10연승 🔥🔥`, color: 'gold' });
+
+            // 6. 베이글 업적
+            if (bagelWins >= 1) achievements.push({ text: '첫 압도승 🥯', color: 'silver' });
+            if (bagelWins >= 3) achievements.push({ text: '압도승 3회 🥯', color: 'gold' });
+            
+            // 7. 참가 업적
+            if (playerHistory.length >= 50) achievements.push({ text: '50경기 참가 🥉', color: 'bronze' });
+            if (playerHistory.length >= 100) achievements.push({ text: '100경기 참가 🥈', color: 'silver' });
+
+            // 8. 최고의 파트너 업적
+            const hasBestPartner = Object.values(partnerWins).some(wins => wins >= 10);
+            if (hasBestPartner) {
+                achievements.push({ text: '최고의 파트너 🤝', color: 'gold' });
+            }
+
+            // 9. 완벽한 하루 업적
+            const hasPerfectDay = Object.values(winsByRound).some(wins => wins >= 3);
+            if (hasPerfectDay) {
+                achievements.push({ text: '완벽한 하루 (3승)', color: 'crystal' });
+            }
+
+            // 10. 꾸준함 업적
+            const sortedWeeks = Array.from(playedWeeks).sort((a, b) => a - b);
+            let maxConsecutiveWeeks = 0;
+            let currentConsecutiveWeeks = 0;
+            
+            for (let i = 0; i < sortedWeeks.length; i++) {
+                if (i === 0) {
+                    currentConsecutiveWeeks = 1;
+                } else {
+                    const lastWeek = sortedWeeks[i-1];
+                    const currentWeek = sortedWeeks[i];
+                    
+                    let expectedNextWeek = lastWeek + 1;
+                    // 연말/연초 처리 (e.g., 2024년 52주 -> 2025년 1주)
+                    if (String(lastWeek).slice(4, 6) === '52' || String(lastWeek).slice(4, 6) === '53') {
+                         const lastYear = Math.floor(lastWeek / 100);
+                         if (getWeekNumber(new Date(lastYear, 11, 31)) === lastWeek) {
+                             expectedNextWeek = (lastYear + 1) * 100 + 1; // 다음해 1주차
+                         }
+                    }
+
+                    if (currentWeek === expectedNextWeek) {
+                        currentConsecutiveWeeks++;
+                    } else if (currentWeek !== lastWeek) { // 같은 주 중복 참가 무시
+                        maxConsecutiveWeeks = Math.max(maxConsecutiveWeeks, currentConsecutiveWeeks);
+                        currentConsecutiveWeeks = 1; // 리셋
+                    }
+                }
+            }
+            maxConsecutiveWeeks = Math.max(maxConsecutiveWeeks, currentConsecutiveWeeks); // 마지막 스트릭 체크
+
+            if (maxConsecutiveWeeks >= 8) {
+                achievements.push({ text: '꾸준함의 상징 (8주) 💎', color: 'crystal' });
+            }
+
+            // 배지 렌더링
+            achievements.forEach(ach => {
+                const badge = document.createElement('span');
+                badge.className = `achievement-badge ${ach.color}`;
+                badge.textContent = ach.text;
+                badge.title = ach.text; // 마우스 오버 시 툴팁
+                container.appendChild(badge);
+            });
+        };
+        // --- [신규] 함수 끝 ---
+
+
         const loadProfileData = async () => {
             const { mainPlayerName } = getParams();
             if (!mainPlayerName) {
@@ -388,27 +686,37 @@
                 if (activeView === 'alltime') {
                     const cumulativeStats = {};
                     allMatches.forEach(match => {
+                        if (!match.players || match.players.length < 4 || !match.score.includes('-')) return;
                         match.players.forEach((p, i) => {
                             const name = p.replace(/\*/g, '');
                             if (!cumulativeStats[name]) {
-                                cumulativeStats[name] = { name, wins: 0, losses: 0, championships: 0, isFemale: p.includes('*') };
+                                // [수정] allPlayers에서 isFemale 정보 가져오기
+                                const pData = allPlayers.find(pl => pl.name === name);
+                                cumulativeStats[name] = { name, wins: 0, losses: 0, championships: 0, isFemale: pData ? pData.isFemale : p.includes('*') };
                             }
                         });
                         const [s1, s2] = match.score.split('-').map(Number);
                         const winners = (s1 > s2 ? match.players.slice(0, 2) : match.players.slice(2, 4)).map(p => p.replace(/\*/g, ''));
                         const losers = (s1 > s2 ? match.players.slice(2, 4) : match.players.slice(0, 2)).map(p => p.replace(/\*/g, ''));
-                        winners.forEach(w => cumulativeStats[w].wins++);
-                        losers.forEach(l => cumulativeStats[l].losses++);
+                        
+                        winners.forEach(w => { if(cumulativeStats[w]) cumulativeStats[w].wins++ });
+                        losers.forEach(l => { if(cumulativeStats[l]) cumulativeStats[l].losses++ });
                     });
                     
-                    Object.values(cumulativeStats).forEach(p => {
-                        const total = p.wins + p.losses;
-                        p.winRate = total > 0 ? Math.round((p.wins / total) * 100) : 0;
-                    });
+                    // [수정] v2(current)의 MMR, bestPartner, championships 정보 합산
+                    const currentPlayerData = allPlayers.find(p => p.name === mainPlayerName && p.mmr); // v2데이터 찾기
+                    
                     playerData = cumulativeStats[mainPlayerName];
+                    
                     if (playerData) {
-                        playerData.mmr = allPlayers.find(p => p.name === mainPlayerName)?.mmr || 'N/A';
-                        playerData.bestPartner = allPlayers.find(p => p.name === mainPlayerName)?.bestPartner || '-';
+                        const total = playerData.wins + playerData.losses;
+                        playerData.winRate = total > 0 ? Math.round((p.wins / total) * 100) : 0;
+                        playerData.mmr = currentPlayerData?.mmr || 'N/A'; 
+                        playerData.bestPartner = currentPlayerData?.bestPartner || '-';
+                        // 우승 횟수 합산 (v1 + v2)
+                        playerData.championships = allPlayers
+                            .filter(p => p.name === mainPlayerName)
+                            .reduce((acc, p) => acc + (p.championships || 0), 0);
                     }
 
                 } else {
@@ -417,31 +725,51 @@
 
                 if (!playerData) {
                     ['stat-mmr', 'stat-rank', 'stat-record', 'stat-winrate', 'stat-champs', 'stat-partner'].forEach(id => document.getElementById(id).textContent = '-');
+                    renderMatchHistory([], false); // [수정]
+                    setupH2H([], [], mainPlayerName);
+                    calculateAndRenderRelationships([], mainPlayerName);
+                    calculateAndDisplayAchievements({}, []); // [신규]
                     return;
                 }
                 
-                const sortedPlayers = [...allPlayers].sort((a,b) => b.mmr - a.mmr);
-                const rank = sortedPlayers.findIndex(p => p.name === mainPlayerName) + 1;
+                let rank = '-';
+                // [수정] 랭킹 스냅샷을 정확히 참조
+                if(activeView === 'current' && rankingSnaps[0].exists()) {
+                    const currentPlayers = rankingSnaps[0].data().players || [];
+                    const sortedPlayers = [...currentPlayers].sort((a,b) => b.mmr - a.mmr);
+                    const rankIndex = sortedPlayers.findIndex(p => p.name === mainPlayerName) + 1;
+                    rank = rankIndex > 0 ? `${rankIndex}위` : '-';
+                } else if (activeView === 'previous' && rankingSnaps[0].exists()) {
+                    const previousPlayers = rankingSnaps[0].data().players || [];
+                    const sortedPlayers = [...previousPlayers].sort((a,b) => b.mmr - a.mmr);
+                    const rankIndex = sortedPlayers.findIndex(p => p.name === mainPlayerName) + 1;
+                    rank = rankIndex > 0 ? `${rankIndex}위` : '-';
+                }
                 
                 document.getElementById('stat-mmr').textContent = Math.round(playerData.mmr) || 'N/A';
-                document.getElementById('stat-rank').textContent = rank > 0 ? `${rank}위` : '-';
+                document.getElementById('stat-rank').textContent = rank;
                 document.getElementById('stat-record').textContent = `${playerData.wins || 0}승 ${playerData.losses || 0}패`;
                 document.getElementById('stat-winrate').textContent = `${playerData.winRate || 0}%`;
                 document.getElementById('stat-champs').textContent = playerData.championships || 0;
                 document.getElementById('stat-partner').textContent = playerData.bestPartner || '-';
                 
-                renderMatchHistory(allMatches, allPlayers, mainPlayerName, false);
+                // [수정] 렌더링과 업적 계산을 위해 playerHistory를 먼저 계산
+                const uniquePlayers = [...new Map(allPlayers.map(p => [p.name, p])).values()];
+                const playerHistory = getPlayerMatchHistory(allMatches, uniquePlayers, mainPlayerName);
+
+                renderMatchHistory(playerHistory, false); // [수정]
                 const showAllBtn = document.getElementById('show-all-matches-btn');
                 const newBtn = showAllBtn.cloneNode(true);
                 showAllBtn.parentNode.replaceChild(newBtn, showAllBtn);
                 newBtn.style.display = 'inline-block';
                 newBtn.addEventListener('click', () => {
-                    renderMatchHistory(allMatches, allPlayers, mainPlayerName, true);
+                    renderMatchHistory(playerHistory, true); // [수정]
                     newBtn.style.display = 'none';
                 }, { once: true });
 
-                setupH2H(allMatches, allPlayers, mainPlayerName);
+                setupH2H(allMatches, uniquePlayers, mainPlayerName);
                 calculateAndRenderRelationships(allMatches, mainPlayerName);
+                calculateAndDisplayAchievements(playerData, playerHistory); // [신규]
 
             } catch (e) {
                 console.error("Profile data load failed:", e);
@@ -449,6 +777,7 @@
         };
 
         document.addEventListener('DOMContentLoaded', async () => {
+             // [수정] 호수 오픈은 라이트 테마가 기본
              const savedTheme = localStorage.getItem('theme') || 'light';
              document.documentElement.setAttribute('data-theme', savedTheme);
              
@@ -461,9 +790,12 @@
 
              document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
+                    if (btn.classList.contains('active')) return;
+                    
                     document.querySelector('.tab-btn.active').classList.remove('active');
                     btn.classList.add('active');
                     activeView = btn.dataset.view;
+                    
                     loadProfileData();
                 });
             });
