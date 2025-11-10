@@ -139,6 +139,16 @@
         .season-tabs{display:flex;gap:10px;margin-bottom:20px;border-bottom:2px solid var(--border-color);padding-bottom:10px}
         .tab-btn{padding:10px 20px;font-size:1rem;font-weight:700;background:none;border:none;color:var(--text-secondary-color);cursor:pointer;border-bottom:3px solid transparent;transition:color .3s,border-color .3s}
         .tab-btn.active{color:var(--primary-color);border-bottom:3px solid var(--primary-color)}
+
+        /* [수정] MMR 차트 캔버스 높이 Sizing */
+        #mmrChart {
+            max-height: 400px; /* PC에서는 최대 높이 제한 */
+        }
+        @media screen and (max-width: 600px) {
+            #mmrChart {
+                min-height: 250px; /* 모바일에서 최소 높이 확보 */
+            }
+        }
     </style>
 </head>
 <body>
@@ -704,7 +714,7 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false, // [수정] false로 변경하여 세로축 비율 확보
                     scales: {
                         y: {
                             ticks: {
