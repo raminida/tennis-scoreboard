@@ -41,7 +41,7 @@
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
         .container { max-width: 1700px; margin: 0 auto; }
         
-        /* --- [수정] 뉴스 티커 스타일 (롤랑가로스 테마) --- */
+        /* --- [신규] 뉴스 티커 스타일 (롤랑가로스 테마) --- */
         #news-ticker-section {
             display: none; /* JS로 데이터 로드 후 표시 */
             padding: var(--spacing-lg);
@@ -255,9 +255,8 @@
         <div id="news-ticker-section" class="section" style="display:none;">
             <div class="news-header">
                 <span>호수 오픈 속보</span>
-                <!-- <span id="news-source" class="news-source-badge"></span> --> <!-- 소스 배지 삭제 -->
             </div>
-            <div id="news-list-container"> <!-- 1줄 -> 3줄 리스트 컨테이너로 변경 -->
+            <div id="news-list-container">
                 <p>리그 데이터를 불러오는 중입니다...</p>
             </div>
         </div>
@@ -305,7 +304,8 @@
                             <th data-sort="losses">패</th>
                             <th data-sort="winRate">승률(%)</th>
                             <th data-sort="avgGameDiff">평균 득실</th>
-                            <th data-sort="closeMatchWinRate">접전률(%)</th>
+                            <!-- [수정] '접전승률'로 변경 -->
+                            <th data-sort="closeMatchWinRate">접전승률(%)</th> 
                             <th data-sort="dominantWins">압도승률(%)</th>
                             <th data-sort="dominantLosses">압도패률(%)</th>
                             <th data-sort="bestPartner">최고 파트너</th>
@@ -457,7 +457,7 @@
             }
         };
 
-        // --- [수정] 가상 뉴스 생성 로직 (3줄, H2H 링크, 뉴스 종류 추가) ---
+        // --- [수정] 가상 뉴스 생성 로직 (3줄, H2H 링크, 뉴스 종류 추가, 접전승률 반영) ---
         const generateLeagueNews = (matches, players) => {
             if (!matches || matches.length === 0 || !players || players.length === 0) {
                 document.getElementById('news-ticker-section').style.display = 'none';
@@ -582,13 +582,15 @@
                 });
             }
             
-            // 7. 접전 1위
-            const clutchPlayer = [...players].filter(p => (p.closeMatchWinRate?.match(/(\d+)경기/)?.[1] || 0) >= 5) // 최소 5경기
+            // 7. 접전승률 1위
+            // [수정] "승" 기준으로 필터링
+            const clutchPlayer = [...players].filter(p => (p.closeMatchWinRate?.match(/(\d+)승/)?.[1] || 0) >= 3) // 최소 3승
                                             .sort((a, b) => (b.closeMatchWinRate?.split('%')[0] || 0) - (a.closeMatchWinRate?.split('%')[0] || 0))[0];
             if (clutchPlayer) {
                  allNews.push({
-                    title: `'강심장' ${clutchPlayer.name}, 접전률 ${clutchPlayer.closeMatchWinRate} 달성... '클러치 그 자체'`,
-                    category: '접전',
+                    // [수정] "접전승률"
+                    title: `'강심장' ${clutchPlayer.name}, 접전승률 ${clutchPlayer.closeMatchWinRate} 달성... '클러치 그 자체'`,
+                    category: '접전승', // [수정]
                     playerName: clutchPlayer.name
                 });
             }
@@ -985,8 +987,11 @@
                     stats.totalSets++;
                     const isWinner = (index < 2 && actual1) || (index >= 2 && !actual1);
                     
+                    // --- [수정] 접전 정의 변경 ---
                     const isCloseMatch = (s1 === 6 && s2 === 5) || (s1 === 5 && s2 === 6) ||
-                                         (s1 === 6 && s2 === 4) || (s1 === 4 && s2 === 6);
+                                         (s1 === 6 && s2 === 4) || (s1 === 4 && s2 === 6) ||
+                                         (s1 === 4 && s2 === 3) || (s1 === 3 && s2 === 4); // 4점 경기 포함
+                    // --- [수정] 끝 ---
                     const isDominant = (s1 === 6 && s2 === 0) || (s1 === 0 && s2 === 6) ||
                                        (s1 === 6 && s2 === 1) || (s1 === 1 && s2 === 6);
 
@@ -1016,7 +1021,11 @@
                 p.avgGameDiff = p.totalSets > 0 ? (p.gameDiff / p.totalSets).toFixed(2) : '0.00';
                 
                 const dStats = derivedStats[p.name] || { totalSets: 0, closeMatchSets: 0, closeMatchWins: 0, dominantWins: 0, dominantLosses: 0 };
-                p.closeMatchWinRate = dStats.totalSets > 0 ? `${Math.round((dStats.closeMatchSets / dStats.totalSets) * 100)}%(${dStats.closeMatchSets}경기)` : '0%';
+                
+                // --- [수정] 접전승률 계산 (총 경기 대비 접전승리) ---
+                p.closeMatchWinRate = dStats.totalSets > 0 ? `${Math.round((dStats.closeMatchWins / dStats.totalSets) * 100)}%(${dStats.closeMatchWins}승)` : '0%';
+                // --- [수정] 끝 ---
+                
                 p.dominantWins = dStats.totalSets > 0 ? `${Math.round((dStats.dominantWins / dStats.totalSets) * 100)}%(${dStats.dominantWins}승)` : '0%';
                 p.dominantLosses = dStats.totalSets > 0 ? `${Math.round((dStats.dominantLosses / dStats.totalSets) * 100)}%(${dStats.dominantLosses}패)` : '0%';
             });
@@ -1169,7 +1178,8 @@
         };
 
         const downloadCSV = () => {
-            let rankingCSV = `\uFEFF순위,선수,MMR,우승,승,패,승률(%),평균 게임 득실,접전률(%),압도승률(%),압도패률(%),최고 파트너\n`; 
+            // [수정] '접전승률'로 변경
+            let rankingCSV = `\uFEFF순위,선수,MMR,우승,승,패,승률(%),평균 게임 득실,접전승률(%),압도승률(%),압도패률(%),최고 파트너\n`; 
             document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
                 const rawName = row.querySelector('.ranking-player').value.trim();
                 const player = rawName.replace(/\*/g, '');
@@ -1236,9 +1246,9 @@
                 bestPartner: '데이터 부족',
                 winRate: 0,
                 avgGameDiff: '0.00',
-                tieBreakWinRate: '0%', 
-                bagelWins: '0%', 
-                bagelLosses: '0%',
+                closeMatchWinRate: '0%', // [수정]
+                dominantWins: '0%', 
+                dominantLosses: '0%',
                 lastGameTimestamp: null 
             };
 
