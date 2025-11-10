@@ -40,6 +40,62 @@
         }
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
         .container { max-width: 1700px; margin: 0 auto; }
+        
+        /* --- [수정] 뉴스 티커 스타일 (롤랑가로스 테마) --- */
+        #news-ticker-section {
+            display: none; /* JS로 데이터 로드 후 표시 */
+            padding: var(--spacing-lg);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            background: var(--surface-color);
+        }
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .news-header span {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-color); /* Clay Orange */
+        }
+        
+        /* [수정] 뉴스 리스트 (3줄) */
+        #news-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* 뉴스 간 간격 */
+        }
+        .news-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .news-category {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: var(--radius);
+            background-color: var(--accent-gold); /* Roland Garros Green */
+            color: #FFFFFF; /* 흰색 글씨 */
+            flex-shrink: 0; /* 줄어들지 않음 */
+        }
+        .news-link {
+            font-size: 1.05rem; /* 1.1rem -> 1.05rem 살짝 줄임 */
+            font-weight: 600;
+            color: var(--text-color);
+            line-height: 1.5; /* 줄간격 */
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .news-link:hover {
+            color: var(--primary-variant-color); /* Darker Clay */
+            text-decoration: underline;
+        }
+        /* --- [수정] 끝 --- */
+
         h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; color: var(--secondary-color); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: var(--spacing-lg); margin-bottom: 2rem; letter-spacing: -2px; text-shadow: 2px 2px 10px var(--shadow-color); }
         .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
         h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--border-color); }
@@ -194,6 +250,19 @@
 <body>
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
+
+        <!-- --- [수정] 뉴스 티커 HTML --- -->
+        <div id="news-ticker-section" class="section" style="display:none;">
+            <div class="news-header">
+                <span>호수 오픈 속보</span>
+                <!-- <span id="news-source" class="news-source-badge"></span> --> <!-- 소스 배지 삭제 -->
+            </div>
+            <div id="news-list-container"> <!-- 1줄 -> 3줄 리스트 컨테이너로 변경 -->
+                <p>리그 데이터를 불러오는 중입니다...</p>
+            </div>
+        </div>
+        <!-- --- [수정] 끝 --- -->
+
         <h1>호수 오픈</h1>
         <div class="section" id="schedule-section">
             <h2 id="schedule-title">경기 일정</h2>
@@ -326,6 +395,7 @@
 
         let currentFilter = 'all', sortKey = 'mmr', sortOrder = 'desc';
         let allPlayersData = [];
+        let allMatchesData = []; // [신규] 뉴스용
         let currentPotw = null;
         let activeView = 'current'; 
         let scheduleUnsubscribe = null;
@@ -386,6 +456,197 @@
                 bar.innerHTML = '<span>선수 이름을 입력하세요...</span>';
             }
         };
+
+        // --- [수정] 가상 뉴스 생성 로직 (3줄, H2H 링크, 뉴스 종류 추가) ---
+        const generateLeagueNews = (matches, players) => {
+            if (!matches || matches.length === 0 || !players || players.length === 0) {
+                document.getElementById('news-ticker-section').style.display = 'none';
+                return;
+            }
+
+            const newsContainer = document.getElementById('news-ticker-section');
+            const newsList = document.getElementById('news-list-container');
+            if (!newsContainer || !newsList) return;
+
+            const allNews = [];
+            const oneWeekAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
+            const sortedPlayersByMMR = [...players].sort((a, b) => (b.mmr || 0) - (a.mmr || 0));
+
+            // 1. 랭킹 1위
+            if (sortedPlayersByMMR.length > 0) {
+                const topRanker = sortedPlayersByMMR[0];
+                allNews.push({
+                    title: `${topRanker.name}, MMR ${Math.round(topRanker.mmr)}점 랭킹 1위 등극... '왕좌'에 오르다`,
+                    category: '랭킹 1위',
+                    playerName: topRanker.name
+                });
+            }
+
+            // 2. 최고 연승자 (5연승 이상)
+            const hottestPlayer = [...players].filter(p => p.streakIsWin && p.streakCount >= 5).sort((a, b) => b.streakCount - a.streakCount)[0];
+            if (hottestPlayer) {
+                allNews.push({
+                    title: `'폼 미쳤다' ${hottestPlayer.name}, 파죽의 ${hottestPlayer.streakCount}연승 질주... "지금 막을 자 없다"`,
+                    category: '최다 연승',
+                    playerName: hottestPlayer.name
+                });
+            }
+
+            // 3. 최근 3승 우승자
+            const sortedMatches = [...matches].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            if (sortedMatches.length > 0) {
+                const lastRoundId = sortedMatches[0]?.round;
+                if (lastRoundId) {
+                    const lastRoundMatches = sortedMatches.filter(m => m.round === lastRoundId);
+                    const winsByPlayer = {};
+                    lastRoundMatches.forEach(match => {
+                        if (match.score.includes('-')) {
+                            const [s1, s2] = match.score.split('-').map(Number);
+                            const winners = (s1 > s2 ? match.players.slice(0, 2) : match.players.slice(2, 4)).map(p => p.replace(/\*/g, ''));
+                            winners.forEach(w => { winsByPlayer[w] = (winsByPlayer[w] || 0) + 1; });
+                        }
+                    });
+                    const perfectDayPlayers = Object.keys(winsByPlayer).filter(name => winsByPlayer[name] === 3);
+                    if (perfectDayPlayers.length > 0) {
+                        allNews.push({
+                            title: `[${lastRoundId}회차] ${perfectDayPlayers.join(', ')}, 3전 전승 '완벽한 하루' 달성!`,
+                            category: '회차 우승',
+                            playerName: perfectDayPlayers[0] // 첫 번째 선수에게 링크
+                        });
+                    }
+                }
+            }
+
+            // 4. 최대 이변 (Upset)
+            let biggestUpset = null;
+            matches.filter(m => new Date(m.timestamp).getTime() > oneWeekAgo) // 최근 1주일간 이변
+                   .forEach(match => {
+                if (!match.score.includes('-')) return;
+                const playerNames = match.players.map(p => p.replace(/\*/g, ''));
+                const [p1, p2, p3, p4] = playerNames.map(name => players.find(p => p.name === name));
+                if (!p1 || !p2 || !p3 || !p4) return;
+
+                const team1MMR = (p1.mmr + p2.mmr) / 2;
+                const team2MMR = (p3.mmr + p4.mmr) / 2;
+                const [s1, s2] = match.score.split('-').map(Number);
+                const team1Won = s1 > s2;
+                
+                const diff = team2MMR - team1MMR; // T2가 높으면 양수
+                const expectedWinRate1 = 1 / (1 + Math.pow(10, (diff) / 400));
+                
+                if (team1Won && expectedWinRate1 < 0.35) { // T1이 이김 (35% 미만 확률)
+                    if (!biggestUpset || expectedWinRate1 < biggestUpset.rate) {
+                        biggestUpset = { rate: expectedWinRate1, match: match, winners: [p1.name, p2.name], diff: Math.abs(diff) };
+                    }
+                } else if (!team1Won && (1 - expectedWinRate1) < 0.35) { // T2가 이김 (35% 미만 확률)
+                    if (!biggestUpset || (1 - expectedWinRate1) < biggestUpset.rate) {
+                        biggestUpset = { rate: (1 - expectedWinRate1), match: match, winners: [p3.name, p4.name], diff: Math.abs(diff) };
+                    }
+                }
+            });
+
+            if (biggestUpset) {
+                allNews.push({
+                    title: `호수 코트 '술렁'... ${biggestUpset.winners.join(', ')} 조, MMR ${Math.round(biggestUpset.diff)}점 차 꺾는 '대이변'`,
+                    category: '이변',
+                    playerName: biggestUpset.winners[0]
+                });
+            }
+
+            // 5. 최근 7일간 최다 참가자
+            const recentMatches = matches.filter(m => new Date(m.timestamp).getTime() > oneWeekAgo);
+            if (recentMatches.length > 0) {
+                const participation = {};
+                recentMatches.forEach(m => m.players.forEach(p => {
+                    const name = p.replace(/\*/g, '');
+                    participation[name] = (participation[name] || 0) + 1;
+                }));
+                const mostActivePlayer = Object.entries(participation).sort((a, b) => b[1] - a[1])[0];
+                if (mostActivePlayer && mostActivePlayer[1] >= 6) { // 1주일에 6경기(2회차) 이상
+                    allNews.push({
+                        title: `'강철 체력' ${mostActivePlayer[0]}, 최근 7일간 ${mostActivePlayer[1]}경기 소화... '코트의 주인'`,
+                        category: '최다 참가',
+                        playerName: mostActivePlayer[0]
+                    });
+                }
+            }
+            
+            // 6. 압도승 1위
+            const dominantPlayer = [...players].filter(p => (p.dominantWins?.match(/(\d+)승/)?.[1] || 0) >= 3) // 최소 3승
+                                              .sort((a, b) => (b.dominantWins?.split('%')[0] || 0) - (a.dominantWins?.split('%')[0] || 0))[0];
+            if (dominantPlayer) {
+                allNews.push({
+                    title: `'압살' ${dominantPlayer.name}, 압도승률 ${dominantPlayer.dominantWins} 기록... '무자비한 플레이'`,
+                    category: '압도승',
+                    playerName: dominantPlayer.name
+                });
+            }
+            
+            // 7. 접전 1위
+            const clutchPlayer = [...players].filter(p => (p.closeMatchWinRate?.match(/(\d+)경기/)?.[1] || 0) >= 5) // 최소 5경기
+                                            .sort((a, b) => (b.closeMatchWinRate?.split('%')[0] || 0) - (a.closeMatchWinRate?.split('%')[0] || 0))[0];
+            if (clutchPlayer) {
+                 allNews.push({
+                    title: `'강심장' ${clutchPlayer.name}, 접전률 ${clutchPlayer.closeMatchWinRate} 달성... '클러치 그 자체'`,
+                    category: '접전',
+                    playerName: clutchPlayer.name
+                });
+            }
+
+            // 8. 최고의 파트너
+            const bestPartnerPlayer = [...players].filter(p => (p.bestPartner?.match(/(\d+)승/)?.[1] || 0) >= 10)[0]; // 10승 이상
+            if(bestPartnerPlayer) {
+                 allNews.push({
+                    title: `'환상의 콤비' ${bestPartnerPlayer.name} & ${bestPartnerPlayer.bestPartner.split(' ')[0]}, 10승 합작!`,
+                    category: '파트너',
+                    playerName: bestPartnerPlayer.name
+                });
+            }
+
+            // 9. MMR 떡상
+            // (이건 랭킹(players) 데이터에 '지난주 MMR' 같은게 없어서 계산하기 어려움. 일단 뺌)
+
+
+            // 뉴스 렌더링
+            newsList.innerHTML = '';
+            if (allNews.length > 0) {
+                // 중복 제거 (e.g., 같은 플레이어가 연승+1위)
+                const uniqueNews = [];
+                const seenPlayers = new Set();
+                
+                // 뉴스를 섞어서 매번 다르게 보여줌
+                allNews.sort(() => 0.5 - Math.random()); 
+                
+                for (const news of allNews) {
+                    if (!seenPlayers.has(news.playerName)) {
+                        uniqueNews.push(news);
+                        seenPlayers.add(news.playerName);
+                    }
+                    if (uniqueNews.length >= 3) break; // 최대 3개
+                }
+                
+                // 3개 렌더링
+                uniqueNews.forEach(news => {
+                    const newsItem = document.createElement('div');
+                    newsItem.className = 'news-item';
+                    
+                    // h2h.html 링크용 시즌 버전 정하기
+                    const seasonParam = (activeView === 'previous') ? PREVIOUS_SEASON_VERSION : CURRENT_SEASON_VERSION;
+                    
+                    newsItem.innerHTML = `
+                        <span class="news-category" data-category="${news.category}">${news.category}</span>
+                        <a class="news-link" href="h2h.html?season=${seasonParam}&player=${encodeURIComponent(news.playerName)}">
+                            ${news.title}
+                        </a>
+                    `;
+                    newsList.appendChild(newsItem);
+                });
+                newsContainer.style.display = 'block';
+            } else {
+                newsContainer.style.display = 'none';
+            }
+        };
+        // --- [수정] 끝 ---
 
         const createScheduleRounds = (savedRounds = new Map()) => {
             const container = document.getElementById('schedule-container');
@@ -485,7 +746,7 @@
         
         const updateRankingTable = (rankingData, potw) => {
             allPlayersData = rankingData; 
-
+            
             if (currentActiveInput && document.getElementById('autocomplete-bar').classList.contains('show')) {
                 updateAutocompleteSuggestions(currentActiveInput.value);
             }
@@ -580,7 +841,7 @@
                 p.mmr = constants.BASE_MMR;
                 p.wins = 0; p.losses = 0; p.totalSets = 0; 
                 p.gameDiff = 0; p.streakCount = 0; p.streakIsWin = false;
-                p.lastGameTimestamp = null; // 마지막 게임 타임스탬프 초기화
+                p.lastGameTimestamp = p.lastGameTimestamp || null; 
             });
 
             const matchesByRound = new Map();
@@ -772,16 +1033,36 @@
             return new Promise(async (resolve) => {
                 const scheduleDoc = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION));
                 const allMatchesFromDB = scheduleDoc.exists() ? scheduleDoc.data().matches : [];
-                if (allMatchesFromDB.length === 0) {
-                    showToast("계산할 경기 기록이 없습니다.");
-                    updateRankingBtn.disabled = false; updateRankingBtn.textContent = '순위 업데이트';
-                    resolve(); return;
-                }
                 
-                // 1. 랭킹 계산 (lastGameTimestamp 포함)
-                const allCalculatedPlayers = calculateRankingFromMatches(allMatchesFromDB, {}); 
+                const rankingsDoc = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION));
+                const currentRankingPlayers = (rankingsDoc.exists() && rankingsDoc.data().players) ? rankingsDoc.data().players : [];
                 
-                // --- 2. 잠수 방지 룰 적용 ---
+                const initialPlayersMap = {};
+                currentRankingPlayers.forEach(p => {
+                    initialPlayersMap[p.name] = { 
+                        name: p.name, 
+                        isFemale: p.isFemale, 
+                        championships: p.championships || 0,
+                        lastGameTimestamp: p.lastGameTimestamp || null 
+                    };
+                });
+
+                const allCalculatedPlayers = calculateRankingFromMatches(allMatchesFromDB, initialPlayersMap); 
+
+                Object.values(initialPlayersMap).forEach(initialPlayer => {
+                    if (!allCalculatedPlayers.some(p => p.name === initialPlayer.name)) {
+                        allCalculatedPlayers.push({
+                            ...initialPlayer,
+                            mmr: 1500, wins: 0, losses: 0, totalSets: 0, gameDiff: 0,
+                            streakCount: 0, streakIsWin: false, 
+                            winRate: 0, avgGameDiff: '0.00',
+                            closeMatchWinRate: '0%', dominantWins: '0%', dominantLosses: '0%',
+                            bestPartner: '데이터 부족'
+                        });
+                    }
+                });
+
+                // --- [RULE 2: INACTIVITY PENALTY] ---
                 const now = new Date();
                 const eightWeeksInMs = 8 * 7 * 24 * 60 * 60 * 1000;
                 const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
@@ -789,35 +1070,34 @@
                 const decayAmount = 20; // 20점씩 하락
 
                 allCalculatedPlayers.forEach(p => {
-                    if (p.lastGameTimestamp) {
+                    if (p.lastGameTimestamp) { 
                         const lastGameDate = new Date(p.lastGameTimestamp);
                         const inactiveTime = now.getTime() - lastGameDate.getTime();
 
-                        // 8주(56일) 이상 지났으면
                         if (inactiveTime > eightWeeksInMs) {
-                            // 8주의 유예 기간을 뺀, 실제 페널티 적용 기간
                             const penaltyTime = inactiveTime - eightWeeksInMs;
-                            // 페널티 적용할 '주' 단위 계산
                             const weeksToPenalize = Math.floor(penaltyTime / oneWeekInMs);
                             
                             if (weeksToPenalize > 0) {
                                 const totalPenalty = weeksToPenalize * decayAmount;
-                                const newMMR = p.mmr - totalPenalty;
-                                // 1500점 밑으로 안 내려감
+                                const newMMR = (p.mmr || baseMMR) - totalPenalty;
                                 p.mmr = Math.max(baseMMR, newMMR); 
                             }
                         }
                     }
                 });
-                // --- 룰 적용 끝 ---
-
+                // --- [RULE 2 END] ---
+                
                 const latestProcessedRound = Math.max(...allMatchesFromDB.map(m => m.round), 0);
+                
                 try {
                     const batch = writeBatch(db);
-                    // 룰 적용된 랭킹으로 저장
                     batch.set(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION), { 
-                        players: allCalculatedPlayers, lastProcessedRound: latestProcessedRound, lastUpdated: serverTimestamp() 
+                        players: allCalculatedPlayers, 
+                        lastProcessedRound: latestProcessedRound, 
+                        lastUpdated: serverTimestamp() 
                     });
+                    
                     const historyTimestamp = new Date().toISOString();
                     const newHistoryDocRef = doc(collection(db, BASE_COLLECTION, 'data', `rankingHistory-${CURRENT_SEASON_VERSION}`), historyTimestamp);
                     const newHistoryData = {
@@ -825,13 +1105,15 @@
                         ...Object.fromEntries(allCalculatedPlayers.map(p => [p.name.replace(/\./g, '_'), p.mmr]))
                     };
                     batch.set(newHistoryDocRef, newHistoryData);
+
                     await batch.commit();
                     showToast('순위 업데이트 및 저장 완료!');
                 } catch (e) {
                     showToast(`랭킹 저장 실패: ${e.message || '알 수 없는 오류'}`);
                     console.error("Rankings save error:", e);
                 } finally {
-                    updateRankingBtn.disabled = false; updateRankingBtn.textContent = '순위 업데이트';
+                    updateRankingBtn.disabled = false;
+                    updateRankingBtn.textContent = '순위 업데이트';
                     resolve();
                 }
             });
@@ -925,10 +1207,55 @@
             document.getElementById('overlay').classList.remove('show');
         };
 
+        const handleAddNewPlayer = () => {
+            const nameInput = document.getElementById('new-player-name');
+            const isFemaleCheckbox = document.getElementById('new-player-is-female');
+            if (!nameInput || !isFemaleCheckbox) return;
+
+            const newName = nameInput.value.trim();
+            if (!newName) {
+                showToast("선수 이름을 입력하세요.");
+                return;
+            }
+            if (allPlayersData.some(p => p.name === newName)) {
+                showToast("이미 존재하는 이름입니다.");
+                return;
+            }
+
+            const newPlayer = {
+                name: newName,
+                isFemale: isFemaleCheckbox.checked,
+                mmr: 1500, 
+                wins: 0,
+                losses: 0,
+                totalSets: 0,
+                gameDiff: 0,
+                streakCount: 0,
+                streakIsWin: false,
+                championships: 0,
+                bestPartner: '데이터 부족',
+                winRate: 0,
+                avgGameDiff: '0.00',
+                tieBreakWinRate: '0%', 
+                bagelWins: '0%', 
+                bagelLosses: '0%',
+                lastGameTimestamp: null 
+            };
+
+            allPlayersData.push(newPlayer);
+            
+            nameInput.value = '';
+            isFemaleCheckbox.checked = false;
+            
+            populatePlayerManagementPopup();
+            showToast(`${newName} 선수 추가됨. (하단 '변경사항 저장' 필수)`);
+        };
+
         const populatePlayerManagementPopup = () => {
             const listContainer = document.getElementById('player-management-list');
             listContainer.innerHTML = '';
             const sortedPlayers = [...allPlayersData].sort((a,b) => a.name.localeCompare(b.name, 'ko'));
+
             sortedPlayers.forEach(player => {
                 const item = document.createElement('div');
                 item.className = 'player-management-item';
@@ -943,43 +1270,56 @@
                 `;
                 listContainer.appendChild(item);
             });
-            listContainer.addEventListener('click', (e) => {
-                const item = e.target.closest('.player-management-item');
-                if (!item) return;
-                const playerName = item.dataset.playerName;
-                if (e.target.classList.contains('delete-player-btn')) {
-                    item.remove();
-                } else if (e.target.classList.contains('rename-player-btn')) {
-                    document.getElementById('rename-old-name').textContent = playerName;
-                    document.getElementById('rename-new-name').value = '';
-                    document.getElementById('confirm-rename-btn').dataset.oldName = playerName;
-                    closePopup('player-management-popup');
-                    openPopup('rename-player-popup');
-                    setTimeout(() => document.getElementById('rename-new-name').focus(), 100);
-                }
-            });
+
+            listContainer.removeEventListener('click', handlePlayerListClick); 
+            listContainer.addEventListener('click', handlePlayerListClick);
+        };
+
+        const handlePlayerListClick = (e) => {
+            const item = e.target.closest('.player-management-item');
+            if (!item) return;
+            const playerName = item.dataset.playerName;
+            
+            if (e.target.classList.contains('delete-player-btn')) {
+                item.remove(); 
+            } else if (e.target.classList.contains('rename-player-btn')) {
+                document.getElementById('rename-old-name').textContent = playerName;
+                document.getElementById('rename-new-name').value = '';
+                document.getElementById('confirm-rename-btn').dataset.oldName = playerName;
+                closePopup('player-management-popup');
+                openPopup('rename-player-popup');
+                setTimeout(() => document.getElementById('rename-new-name').focus(), 100);
+            }
         };
 
         const savePlayerChanges = async () => {
             if (activeView !== 'current') {
                 showToast('현재 시즌 탭에서만 선수 정보를 변경할 수 있습니다.'); return;
             }
+
             const updatedPlayersMap = new Map();
             document.querySelectorAll('#player-management-list .player-management-item').forEach(item => {
                 const name = item.dataset.playerName;
                 const isFemale = item.querySelector('.is-female-checkbox').checked;
+                
                 const originalPlayer = allPlayersData.find(p => p.name === name);
-                if (originalPlayer) updatedPlayersMap.set(name, { ...originalPlayer, isFemale });
+                
+                if (originalPlayer) {
+                    updatedPlayersMap.set(name, { ...originalPlayer, isFemale });
+                } 
             });
-            allPlayersData.forEach(p => {
-                if (!updatedPlayersMap.has(p.name)) updatedPlayersMap.set(p.name, p);
-            });
+            
             const finalUpdatedPlayers = Array.from(updatedPlayersMap.values());
+
+            allPlayersData = finalUpdatedPlayers;
+
             try {
                 const rankingsRef = doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION);
-                await setDoc(rankingsRef, { players: finalUpdatedPlayers }, { merge: true });
+                await setDoc(rankingsRef, { players: finalUpdatedPlayers }, { merge: true }); 
+                
                 showToast('선수 정보 변경 완료! 순위를 다시 계산합니다.');
                 closePopup('player-management-popup');
+                
                 await updateRanking(); 
             } catch (error) {
                 showToast(`선수 정보 저장 실패: ${error.message}`);
@@ -1034,7 +1374,9 @@
             const savedRounds = new Map();
             const roundWins = {};
             scheduleData.forEach(match => {
-                if (!savedRounds.has(match.round)) savedRounds.set(match.round, { timestamp: match.timestamp, champions: [], matches: [] });
+                if (!savedRounds.has(match.round)) {
+                    savedRounds.set(match.round, { timestamp: match.timestamp, champions: [], matches: [] });
+                }
                 savedRounds.get(match.round).matches.push(match);
             });
             scheduleData.forEach(match => {
@@ -1076,17 +1418,27 @@
             
             const adminButtons = document.querySelectorAll('.admin-btn');
             
+            // [수정] 뉴스 생성을 위해 두 onSnapshot 콜백을 수정
             if (activeView === 'current') {
                 adminButtons.forEach(btn => btn.style.display = 'block');
                 
                 scheduleUnsubscribe = onSnapshot(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION), (docSnap) => {
                     const scheduleData = (docSnap.exists() && docSnap.data().matches) ? docSnap.data().matches : [];
+                    allMatchesData = scheduleData; 
                     processAndRenderSchedule(scheduleData);
+                    
+                    if (allPlayersData.length > 0) {
+                        generateLeagueNews(allMatchesData, allPlayersData);
+                    }
                 }, (error) => console.error("Schedule onSnapshot failed:", error));
                 
                 rankingUnsubscribe = onSnapshot(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION), (docSnap) => {
                     const data = docSnap.exists() ? docSnap.data() : {};
-                    updateRankingTable(data.players || [], data.potw || null);
+                    updateRankingTable(data.players || [], data.potw || null); // allPlayersData가 여기서 세팅됨
+
+                    if (allMatchesData.length > 0) {
+                        generateLeagueNews(allMatchesData, allPlayersData);
+                    }
                 }, (error) => console.error("Ranking onSnapshot failed:", error));
 
             } else {
@@ -1107,10 +1459,14 @@
                         });
 
                         const previousRankings = calculateRankingFromMatches(scheduleData, initialPlayersMap);
-
+                        
+                        allMatchesData = scheduleData; 
+                        allPlayersData = previousRankings; 
+                        
                         processAndRenderSchedule(scheduleData);
                         updateRankingTable(previousRankings, rankData.potw || null); 
-                        
+                        generateLeagueNews(allMatchesData, allPlayersData); // [신규] 뉴스 생성
+
                     } else if (activeView === 'alltime') {
                         const schedSnapV1 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION));
                         const schedSnapV2 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION));
@@ -1147,8 +1503,12 @@
                             p.championships = initialPlayersMap[p.name]?.championships || p.championships;
                         });
 
+                        allMatchesData = allMatches; 
+                        allPlayersData = allTimeRankings; 
+
                         processAndRenderSchedule(allMatches);
                         updateRankingTable(allTimeRankings, null);
+                        generateLeagueNews(allMatchesData, allPlayersData); // [신규] 뉴스 생성
                     }
                 } catch (error) {
                     showToast("과거 데이터 로딩 실패: " + error.message);
@@ -1202,6 +1562,8 @@
                     e.preventDefault(); e.target.blur(); saveAllData();
                 }
             });
+            
+            // --- [수정] 옵셔널 체이닝(?.') 추가 ---
             document.getElementById('update-ranking')?.addEventListener('click', (e) => {
                 if (activeView !== 'current') return showToast('현재 시즌 탭에서만 순위를 업데이트할 수 있습니다.');
                 e.preventDefault(); e.currentTarget.blur(); updateRanking();
@@ -1238,7 +1600,7 @@
                 passwordInput.value = ''; openPopup('backup-password-popup');
                 setTimeout(() => passwordInput.focus(), 100);
             });
-            document.getElementById('manage-players-btn').addEventListener('click', () => {
+            document.getElementById('manage-players-btn')?.addEventListener('click', () => {
                 if (activeView !== 'current') {
                     showToast('현재 시즌 탭에서만 선수를 관리할 수 있습니다.'); return;
                 }
@@ -1258,8 +1620,8 @@
                 }
                 passwordInput.value = '';
             };
-            document.getElementById('password-submit-btn').addEventListener('click', submitPassword);
-            document.getElementById('password-input').addEventListener('keypress', (e) => {
+            document.getElementById('password-submit-btn')?.addEventListener('click', submitPassword);
+            document.getElementById('password-input')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') submitPassword();
             });
             
@@ -1273,13 +1635,13 @@
                 }
                 passwordInput.value = '';
             };
-            document.getElementById('backup-password-submit-btn').addEventListener('click', submitBackupPassword);
-            document.getElementById('backup-password-input').addEventListener('keypress', (e) => {
+            document.getElementById('backup-password-submit-btn')?.addEventListener('click', submitBackupPassword);
+            document.getElementById('backup-password-input')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') submitBackupPassword();
             });
 
-            document.getElementById('save-player-changes-btn').addEventListener('click', savePlayerChanges);
-            document.getElementById('confirm-rename-btn').addEventListener('click', handlePlayerRename);
+            document.getElementById('save-player-changes-btn')?.addEventListener('click', savePlayerChanges);
+            document.getElementById('confirm-rename-btn')?.addEventListener('click', handlePlayerRename);
 
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
