@@ -1544,15 +1544,33 @@
                     if (currentActiveInput !== e.target) currentActiveInput = e.target;
                     updateAutocompleteSuggestions(e.target.value);
                 }
+                
+                // --- [수정] 4점 자동체크 로직 ---
                 if (e.target.classList.contains('score-input')) {
                     const score = e.target.value.trim();
-                    const scorePattern = /^4-\d$|^\d-4$/; 
+                    const scores = score.split('-').map(Number);
                     const tr = e.target.closest('tr');
-                    if (tr) {
+                    
+                    if (tr && scores.length === 2 && !isNaN(scores[0]) && !isNaN(scores[1])) {
+                        const maxScore = Math.max(scores[0], scores[1]);
+                        const minScore = Math.min(scores[0], scores[1]);
+                        
+                        // 4점이 최고점이고, 4-4가 아닐 때 (e.g., 4-0, 4-1, 4-2, 4-3)
+                        const isFourPointGame = (maxScore === 4 && minScore < 4);
+                        
                         const checkbox = tr.querySelector('.is-four-point');
-                        if (checkbox && scorePattern.test(score)) checkbox.checked = true;
+                        if (checkbox) {
+                            checkbox.checked = isFourPointGame; // true면 체크, false면 (e.g. 6-4) 체크 해제
+                        }
+                    } else if (tr) {
+                        // 스코어가 유효하지 않거나 "6-4" 같은 경우 (maxScore !== 4) 체크 해제
+                        const checkbox = tr.querySelector('.is-four-point');
+                        if (checkbox) {
+                            checkbox.checked = false;
+                        }
                     }
                 }
+                // --- [수정] 끝 ---
             });
             scheduleContainer.addEventListener('focusout', (e) => {
                 if (e.target.classList.contains('player-input')) {
