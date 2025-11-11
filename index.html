@@ -401,6 +401,11 @@
         let scheduleUnsubscribe = null;
         let rankingUnsubscribe = null;
         let currentActiveInput = null; 
+        
+        // --- [수정 1] 스크롤 튐 문제 해결을 위한 타이머 변수 ---
+        let autocompleteShowTimer = null;
+        let autocompleteHideTimer = null;
+        // --- [수정 1] 끝 ---
 
         const showToast = (message) => {
             const toast = document.getElementById('toast');
@@ -691,6 +696,50 @@
             }
             container.innerHTML = roundsHtml;
         };
+
+        // --- [수정 2] 파트너 자동 섞기 기능 ---
+        const autoFillPartners = (firstGameRow) => {
+            const tbody = firstGameRow.closest('tbody');
+            if (!tbody) return;
+
+            // 1. 1게임에서 4명 이름 가져오기
+            const p1 = firstGameRow.querySelector('.player1')?.value.trim();
+            const p2 = firstGameRow.querySelector('.player2')?.value.trim();
+            const p3 = firstGameRow.querySelector('.player3')?.value.trim();
+            const p4 = firstGameRow.querySelector('.player4')?.value.trim();
+
+            // 2. 4명 모두 채워졌는지 확인
+            if (!p1 || !p2 || !p3 || !p4) {
+                return; // 4명 다 안채워졌으면 중단
+            }
+            
+            // 3. 2, 3번째 게임 줄(row) 가져오기
+            const game2Row = tbody.querySelector('tr:nth-child(2)');
+            const game3Row = tbody.querySelector('tr:nth-child(3)');
+            
+            if (!game2Row || !game3Row) return; // 2, 3번째 줄이 없으면 중단
+
+            // 4. 2번째 게임이 비어있는지 확인 (이미 채워져있으면 덮어쓰지 않음)
+            const game2P1 = game2Row.querySelector('.player1')?.value.trim();
+            if (game2P1) {
+                return; // 2게임 P1에 이미 이름이 있으면 중단
+            }
+
+            // 5. 2게임 채우기: (P1, P3) vs (P2, P4)
+            game2Row.querySelector('.player1').value = p1;
+            game2Row.querySelector('.player2').value = p3;
+            game2Row.querySelector('.player3').value = p2;
+            game2Row.querySelector('.player4').value = p4;
+
+            // 6. 3게임 채우기: (P1, P4) vs (P2, P3)
+            game3Row.querySelector('.player1').value = p1;
+            game3Row.querySelector('.player2').value = p4;
+            game3Row.querySelector('.player3').value = p2;
+            game3Row.querySelector('.player4').value = p3;
+            
+            showToast('파트너가 자동으로 2, 3게임에 채워졌습니다.');
+        };
+        // --- [수정 2] 끝 ---
         
         const saveAllData = async () => {
             if (!db) return showToast('DB 연결 실패!');
@@ -1527,25 +1576,37 @@
             }
         };
 
+        // --- [수정] 문제 1, 2 해결을 위해 리스너 수정 ---
         const setupInputListeners = () => {
             const scheduleContainer = document.getElementById('schedule-container');
             const autocompleteBar = document.getElementById('autocomplete-bar');
 
-            // 자동완성 로직
+            // 자동완성 로직 (포커스 인)
             scheduleContainer.addEventListener('focusin', (e) => {
                 if (e.target.classList.contains('player-input')) {
+                    if (autocompleteHideTimer) { // 숨기기 타이머가 있다면 취소
+                        clearTimeout(autocompleteHideTimer);
+                        autocompleteHideTimer = null;
+                    }
                     currentActiveInput = e.target;
-                    autocompleteBar.classList.add('show');
-                    updateAutocompleteSuggestions(e.target.value);
+                    
+                    // [수정 1] 스크롤 튐 방지를 위해 딜레이 추가
+                    if (autocompleteShowTimer) clearTimeout(autocompleteShowTimer);
+                    autocompleteShowTimer = setTimeout(() => {
+                        if(autocompleteBar) autocompleteBar.classList.add('show');
+                        updateAutocompleteSuggestions(e.target.value);
+                    }, 200); // 0.2초 딜레이
                 }
             });
+
+            // 자동완성 로직 (입력 중)
             scheduleContainer.addEventListener('input', (e) => {
                 if (e.target.classList.contains('player-input')) {
                     if (currentActiveInput !== e.target) currentActiveInput = e.target;
                     updateAutocompleteSuggestions(e.target.value);
                 }
                 
-                // --- [수정] 4점 자동체크 로직 ---
+                // 4점 자동체크 로직
                 if (e.target.classList.contains('score-input')) {
                     const score = e.target.value.trim();
                     const scores = score.split('-').map(Number);
@@ -1555,35 +1616,60 @@
                         const maxScore = Math.max(scores[0], scores[1]);
                         const minScore = Math.min(scores[0], scores[1]);
                         
-                        // 4점이 최고점이고, 4-4가 아닐 때 (e.g., 4-0, 4-1, 4-2, 4-3)
                         const isFourPointGame = (maxScore === 4 && minScore < 4);
                         
                         const checkbox = tr.querySelector('.is-four-point');
                         if (checkbox) {
-                            checkbox.checked = isFourPointGame; // true면 체크, false면 (e.g. 6-4) 체크 해제
+                            checkbox.checked = isFourPointGame; 
                         }
                     } else if (tr) {
-                        // 스코어가 유효하지 않거나 "6-4" 같은 경우 (maxScore !== 4) 체크 해제
                         const checkbox = tr.querySelector('.is-four-point');
                         if (checkbox) {
                             checkbox.checked = false;
                         }
                     }
                 }
-                // --- [수정] 끝 ---
             });
+
+            // 자동완성 로직 (포커스 아웃)
             scheduleContainer.addEventListener('focusout', (e) => {
                 if (e.target.classList.contains('player-input')) {
-                    setTimeout(() => autocompleteBar.classList.remove('show'), 200); 
+                    // [수정 1] 스크롤 튐 방지 (보이기 타이머가 있다면 취소)
+                    if (autocompleteShowTimer) { 
+                        clearTimeout(autocompleteShowTimer);
+                        autocompleteShowTimer = null;
+                    }
+                    // 딜레이를 주어 자동완성 버튼 클릭 가능하게 함
+                    autocompleteHideTimer = setTimeout(() => {
+                        if(autocompleteBar) autocompleteBar.classList.remove('show');
+                        autocompleteHideTimer = null;
+                    }, 200); 
+                    
+                    // [수정 2] 파트너 자동 섞기 트리거
+                    // 4번째 선수(player4) 칸에서 포커스가 나갔을 때
+                    if (e.target.classList.contains('player4')) {
+                        const tr = e.target.closest('tr');
+                        const tbody = tr?.closest('tbody');
+                        
+                        if (tbody) {
+                            const firstRow = tbody.querySelector('tr:first-child');
+                            // 그리고 그 칸이 1게임(첫 번째 줄)의 칸일 때
+                            if (tr === firstRow) {
+                                autoFillPartners(tr); // 자동 섞기 함수 호출
+                            }
+                        }
+                    }
                 }
             });
+
+            // 자동완성 바 클릭
             autocompleteBar.addEventListener('click', (e) => {
                 if (e.target.tagName === 'BUTTON' && currentActiveInput) {
                     currentActiveInput.value = e.target.dataset.name;
                 }
             });
             
-            // 기타 리스너 (탭 활성화 확인)
+            // 기타 리스너
             document.addEventListener('click', function(e) {
                 if (e.target.classList.contains('save-all-btn')) {
                     if (activeView !== 'current') return showToast('현재 시즌 탭에서만 저장할 수 있습니다.');
@@ -1591,7 +1677,6 @@
                 }
             });
             
-            // --- [수정] 옵셔널 체이닝(?.') 추가 ---
             document.getElementById('update-ranking')?.addEventListener('click', (e) => {
                 if (activeView !== 'current') return showToast('현재 시즌 탭에서만 순위를 업데이트할 수 있습니다.');
                 e.preventDefault(); e.currentTarget.blur(); updateRanking();
@@ -1681,6 +1766,7 @@
                 });
             });
         };
+        // --- [수정] 끝 ---
 
         document.addEventListener('DOMContentLoaded', async () => {
             setupInputListeners();
