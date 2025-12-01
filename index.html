@@ -1,213 +1,208 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="light"> <!-- 롤랑가로스 테마는 라이트 모드 기준 -->
+<html lang="ko" data-theme="light"> <!-- 기본 테마: 겨울 (Light) -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>호수 오픈</title>
+    <title>호수 오픈 - Winter Season</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=stylesheet" rel="stylesheet">
     <style>
         :root {
-            /* 롤랑가로스 다크 테마 (기능 유지용) */
-            --bg-color: #1A1A1A;
-            --surface-color: #242424;
-            --primary-color: #E8854D; /* Brighter Clay Orange */
-            --primary-variant-color: #F0A070;
-            --secondary-color: #FFFFFF;
-            --text-color: #E0E0E0;
-            --text-secondary-color: #A0A0A0;
-            --accent-gold: #008C5A; /* Brighter Green */
-            --border-color: #444444;
-            --shadow-color: rgba(0, 0, 0, 0.5);
+            /* [다크 모드] 심해/밤눈 컨셉 (기능 유지) */
+            --bg-color: #1a2634; /* Dark Blue Grey */
+            --surface-color: #243447;
+            --primary-color: #64B5F6; /* Light Blue */
+            --primary-variant-color: #42A5F5;
+            --secondary-color: #E3F2FD;
+            --text-color: #E1E8ED;
+            --text-secondary-color: #8899A6;
+            --accent-gold: #4DD0E1; /* Cyan (Ice) */
+            --border-color: #37474F;
+            --shadow-color: rgba(0, 0, 0, 0.4);
             --spacing-sm: 8px;
             --spacing-md: 12px;
             --spacing-lg: 20px;
-            --radius: 8px;
+            --radius: 12px; /* 둥글기 약간 더 줌 */
         }
         html[data-theme="light"] {
-            /* 롤랑가로스 라이트 테마 (메인) */
-            --bg-color: #F4F0E9; /* Light Clay/Sand */
+            /* [라이트 모드] 윈터 아이스 테마 (메인) */
+            --bg-color: #F0F4F8; /* Snow White/Grey */
             --surface-color: #FFFFFF;
-            --primary-color: #D76E2D; /* Clay Orange */
-            --primary-variant-color: #B65F26; /* Darker Clay */
-            --text-color: #333333;
-            --text-secondary-color: #666666;
-            --accent-gold: #006442; /* Roland Garros Green */
-            --border-color: #E0E0E0;
-            --shadow-color: rgba(0, 0, 0, 0.08);
+            --primary-color: #2980B9; /* Strong Winter Blue */
+            --primary-variant-color: #34495E; /* Dark Slate */
+            --text-color: #2C3E50; /* Midnight Blue Text */
+            --text-secondary-color: #7F8C8D;
+            --accent-gold: #00CEC9; /* Ice Teal */
+            --border-color: #DDE6ED;
+            --shadow-color: rgba(41, 128, 185, 0.15); /* 푸른 그림자 */
         }
+
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
         .container { max-width: 1700px; margin: 0 auto; }
         
-        /* --- [신규] 뉴스 티커 스타일 (롤랑가로스 테마) --- */
+        /* --- 뉴스 티커 스타일 (윈터 스타일) --- */
         #news-ticker-section {
-            display: none; /* JS로 데이터 로드 후 표시 */
+            display: none;
             padding: var(--spacing-lg);
             margin-bottom: 2rem;
-            border: 1px solid var(--border-color);
-            background: var(--surface-color);
+            border: 1px solid var(--primary-color); /* 테두리에 포인트 */
+            background: linear-gradient(135deg, var(--surface-color) 0%, #EBF5FB 100%); /* 살짝 얼음 느낌 그라데이션 */
+            border-radius: var(--radius);
+            box-shadow: 0 4px 15px var(--shadow-color);
         }
         .news-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
         }
         .news-header span {
             font-family: 'Poppins', sans-serif;
             font-size: 1.2rem;
             font-weight: 700;
-            color: var(--primary-color); /* Clay Orange */
+            color: var(--primary-color);
         }
-        
-        /* [수정] 뉴스 리스트 (3줄) */
         #news-list-container {
             display: flex;
             flex-direction: column;
-            gap: 10px; /* 뉴스 간 간격 */
+            gap: 12px;
         }
         .news-item {
             display: flex;
-            align-items: flex-start;
-            gap: 8px;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background-color: rgba(255, 255, 255, 0.6);
+            border-radius: 6px;
         }
         .news-category {
-            font-size: 0.8rem;
-            font-weight: 700;
+            font-size: 0.75rem;
+            font-weight: 800;
             padding: 4px 8px;
-            border-radius: var(--radius);
-            background-color: var(--accent-gold); /* Roland Garros Green */
-            color: #FFFFFF; /* 흰색 글씨 */
-            flex-shrink: 0; /* 줄어들지 않음 */
+            border-radius: 20px;
+            background-color: var(--primary-color);
+            color: #FFFFFF;
+            flex-shrink: 0;
+            text-transform: uppercase;
         }
+        /* 뉴스 카테고리별 색상 차별화 */
+        .news-category[data-category="베이글"] { background-color: #e74c3c; } /* Red */
+        .news-category[data-category="아이스맨"] { background-color: #74b9ff; color: #2d3436; } /* Ice Blue */
+        .news-category[data-category="랭킹 1위"] { background-color: #f1c40f; color: #2c3e50; } /* Gold */
+        
         .news-link {
-            font-size: 1.05rem; /* 1.1rem -> 1.05rem 살짝 줄임 */
+            font-size: 1rem;
             font-weight: 600;
             color: var(--text-color);
-            line-height: 1.5; /* 줄간격 */
             text-decoration: none;
             cursor: pointer;
+            line-height: 1.4;
         }
         .news-link:hover {
-            color: var(--primary-variant-color); /* Darker Clay */
+            color: var(--primary-color);
             text-decoration: underline;
         }
-        /* --- [수정] 끝 --- */
 
-        h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; color: var(--secondary-color); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: var(--spacing-lg); margin-bottom: 2rem; letter-spacing: -2px; text-shadow: 2px 2px 10px var(--shadow-color); }
+        h1 { 
+            font-family: 'Poppins', sans-serif; 
+            font-size: 2.8rem; 
+            font-weight: 900; 
+            text-align: center; 
+            color: var(--primary-color); /* 단색 처리 혹은 그라데이션 */
+            background: linear-gradient(to right, #2980B9, #6DD5FA); /* Winter Gradient */
+            -webkit-background-clip: text; 
+            background-clip: text; 
+            color: transparent; 
+            padding-top: var(--spacing-lg); 
+            margin-bottom: 2rem; 
+            letter-spacing: -2px; 
+            text-shadow: 2px 2px 10px rgba(109, 213, 250, 0.3);
+        }
+
         .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
         h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--border-color); }
         #ranking-main-title { text-align: center; }
-        details { margin-bottom: 1rem; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-color); }
+        
+        details { margin-bottom: 1rem; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-color); background: #fff; }
         details summary { padding: var(--spacing-md) 15px; cursor: pointer; font-size: 1.1rem; font-weight: 700; outline: none; transition: background 0.3s ease, color 0.3s ease; background: var(--surface-color); color: var(--text-color); border-bottom: 1px solid var(--border-color); }
-        html[data-theme="light"] details summary { background: linear-gradient(135deg, #fdfdfd, #f9f9f9); }
+        html[data-theme="light"] details summary { background: linear-gradient(135deg, #ffffff, #f1f8ff); }
         details[open] > summary { background: var(--primary-color); color: #FFFFFF; border-bottom-color: var(--primary-color); }
         .round-group-content { padding: 15px 10px 5px 10px; background: rgba(0,0,0,0.02); border-top: 1px solid var(--border-color); }
-        html[data-theme="dark"] .round-group-content { background: rgba(0,0,0,0.1); }
+        
         .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; max-width: 100%; -webkit-overflow-scrolling: touch; }
         table { width: 100%; min-width: 100%; border-collapse: collapse; }
         th, td { padding: var(--spacing-md) 4px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
         #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; cursor: pointer; }
-        #ranking-table thead th:hover { background: var(--primary-color); color: #FFFFFF; }
-        th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.03); color: var(--primary-variant-color); font-weight: 700; }
-        html[data-theme="dark"] th { background-color: rgba(0, 0, 0, 0.2); }
+        #ranking-table thead th:hover { background: #EBF5FB; color: var(--primary-color); }
+        th { font-family: 'Poppins', sans-serif; background-color: rgba(41, 128, 185, 0.05); color: var(--primary-variant-color); font-weight: 700; }
+        
         .rank-cell { font-weight: 900; color: var(--primary-color); text-shadow: 0 0 5px var(--shadow-color); position: relative; line-height: 1.2; }
         .streak-cell { font-size: 0.7rem; white-space: nowrap; margin-left: var(--spacing-sm); }
-        .streak-win { color: #4CAF50; font-weight: bold; }
-        .streak-loss { color: #F44336; font-weight: bold; }
+        .streak-win { color: #e74c3c; font-weight: bold; } /* 연승 Red */
+        .streak-loss { color: #3498db; font-weight: bold; } /* 연패 Blue */
         .streak-none { color: var(--text-secondary-color); }
+        
         #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; }
+        
         input[type="text"], input[type="search"], input[type="password"], select { width: 100%; min-width: 70px; max-width: 100px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
+        input:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 2px rgba(41, 128, 185, 0.2); }
+        
         .schedule-table .player-input { min-width: 80px; max-width: 110px; }
         .schedule-table .score-input { min-width: 40px; max-width: 60px; }
         input.ranking-player, input.mmr { min-width: 80px; max-width: 120px; }
-        input.readonly { background-color: #f0f0f0; color: var(--text-secondary-color); font-weight: bold; }
-        html[data-theme="dark"] input.readonly { background-color: #252525; }
+        input.readonly { background-color: #f7f9fc; color: var(--text-secondary-color); font-weight: bold; }
+        
         .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: var(--spacing-lg); }
-        .btn { display: inline-block; padding: var(--spacing-md) var(--spacing-lg); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; }
+        .btn { display: inline-block; padding: var(--spacing-md) var(--spacing-lg); background: linear-gradient(135deg, var(--primary-color), #2980b9); color: #FFFFFF; text-decoration: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; transition: transform 0.1s, box-shadow 0.1s; }
+        .btn:active { transform: scale(0.98); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .update-btn { width: 100%; margin-top: var(--spacing-lg); padding: 15px; background: linear-gradient(135deg, var(--accent-gold), #007A4F); color: #FFFFFF; border: none; border-radius: var(--radius); font-size: 1.2rem; font-weight: 900; cursor: pointer; }
-        .btn.danger { background: linear-gradient(135deg, #f44336, #e57373); color: #fff; }
-        .toast { position: fixed; bottom: var(--spacing-lg); left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #333, #111); color: #fff; padding: var(--spacing-md) 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 2001; }
+        .update-btn { width: 100%; margin-top: var(--spacing-lg); padding: 15px; background: linear-gradient(135deg, var(--accent-gold), #00b894); color: #FFFFFF; border: none; border-radius: var(--radius); font-size: 1.2rem; font-weight: 900; cursor: pointer; }
+        .btn.danger { background: linear-gradient(135deg, #ff7675, #d63031); color: #fff; }
+        
+        .toast { position: fixed; bottom: var(--spacing-lg); left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #2d3436, #000); color: #fff; padding: var(--spacing-md) 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 2001; }
         .toast.show { opacity: 1; }
-        .championship-star { color: var(--accent-gold); text-shadow: 0 0 5px var(--shadow-color); font-size: 1.1rem; font-weight: 900; }
-        .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .ranking-player[value$="*"] { color: var(--primary-variant-color); }
+        
+        .championship-star { color: #f1c40f; text-shadow: 0 0 2px rgba(0,0,0,0.2); font-size: 1.1rem; font-weight: 900; }
+        .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; box-shadow: 0 2px 10px var(--shadow-color); }
+        .ranking-player[value$="*"] { color: #d63031; } /* 여성 플레이어 강조 색상 변경 */
+        
         .ranking-controls { display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-md); flex-wrap: wrap; align-items: center; }
         .ranking-filter { display: flex; gap: var(--spacing-sm); }
         #ranking-search { max-width: 200px; }
-        .filter-btn { padding: var(--spacing-sm) var(--spacing-md); background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer; color: var(--text-color); font-weight: 700; }
-        .filter-btn.active { background: var(--primary-color); color: #FFFFFF; }
+        .filter-btn { padding: var(--spacing-sm) var(--spacing-md); background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer; color: var(--text-color); font-weight: 700; transition: all 0.2s; }
+        .filter-btn.active { background: var(--primary-color); color: #FFFFFF; border-color: var(--primary-color); }
+        
         .saved-indicator { color: var(--accent-gold); margin-left: 5px; font-size: 0.9rem; }
         .saved-info { color: var(--text-secondary-color); margin-left: 5px; font-size: 0.8rem; }
-        .champion-name { color: var(--accent-gold); font-weight: bold; }
-        input[type="checkbox"] { margin: 0 auto; display: block; transform: scale(1.2); }
+        .champion-name { color: var(--primary-color); font-weight: bold; }
+        input[type="checkbox"] { margin: 0 auto; display: block; transform: scale(1.2); accent-color: var(--primary-color); }
+        
         .popup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); z-index: 2000; color: var(--text-color); border: 1px solid var(--border-color); max-width: 90vw; width: 500px; text-align: center; }
         .popup.show { display: block; }
         .close-btn { position: absolute; top: var(--spacing-sm); right: var(--spacing-sm); background: none; border: none; color: var(--text-color); font-size: 1.5rem; cursor: pointer; }
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1999; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1999; backdrop-filter: blur(2px); }
         .overlay.show { display: block; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .popup-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
-        .btn.secondary { background: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); }
-        .potw-section { background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #fff; padding: var(--spacing-lg); border-radius: var(--radius); margin-bottom: var(--spacing-lg); text-align: center; }
+        
+        .potw-section { background: linear-gradient(135deg, var(--primary-color), #6DD5FA); color: #fff; padding: var(--spacing-lg); border-radius: var(--radius); margin-bottom: var(--spacing-lg); text-align: center; box-shadow: 0 5px 15px rgba(41, 128, 185, 0.3); }
         #player-management-list { max-height: 60vh; overflow-y: auto; margin-top: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius); }
         .player-management-item { display: flex; justify-content: space-between; align-items: center; padding: var(--spacing-md); border-bottom: 1px solid var(--border-color); }
-        .player-management-item:last-child { border-bottom: none; }
-        .player-management-item span { font-weight: bold; flex-basis: 40%; text-align: left; }
-        .player-management-item .controls { display: flex; align-items: center; gap: 10px; }
-        
-        .season-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 0;
-            flex-wrap: wrap; 
-        }
-        .tab-btn {
-            padding: 10px 20px;
-            font-size: 1rem;
-            font-weight: 700;
-            background: none;
-            border: none;
-            color: var(--text-secondary-color);
-            cursor: pointer;
-            border-bottom: 4px solid transparent;
-            margin-bottom: -2px;
-            transition: color .3s, border-color .3s;
-        }
+        .season-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 0; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 20px; font-size: 1rem; font-weight: 700; background: none; border: none; color: var(--text-secondary-color); cursor: pointer; border-bottom: 4px solid transparent; margin-bottom: -2px; transition: color .3s, border-color .3s; }
         .tab-btn:hover { color: var(--primary-color); }
-        .tab-btn.active {
-            color: var(--primary-color);
-            border-bottom: 4px solid var(--accent-gold); /* 녹색 탭 하이라이트 */
-        }
-        
+        .tab-btn.active { color: var(--primary-color); border-bottom: 4px solid var(--primary-color); }
+
         @media screen and (max-width: 600px) {
             body { padding: 4px; }
             .section { padding: var(--spacing-md); }
             th, td { padding: 4px 2px; font-size: 0.7rem; }
-            input[type="text"], input[type="search"], input[type="password"], select { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
-            input.ranking-player, input.mmr { min-width: 70px; max-width: 100px; }
-            input.best-partner { min-width: 200px; max-width: 225px; }
-            .schedule-table .player-input { min-width: 50px; max-width: 60px; font-size: 0.65rem; } 
-            .schedule-table .score-input { min-width: 35px; max-width: 45px; } 
-            .schedule-table th, .schedule-table td { padding: 4px 1px; }
-            .schedule-table td { border: 0.5px solid var(--border-color); }
-            .btn { padding: 8px 12px; font-size: 0.9rem; }
+            input[type="text"] { min-width: 70px; font-size: 0.7rem; }
             h1 { font-size: 2rem; }
-            h2 { font-size: 1.5rem; }
-            #ranking-main-title span { display: block; }
-            .saved-info { font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: inline-block; vertical-align: middle; }
-            .popup { max-width: 90vw; width: auto; padding: var(--spacing-md); }
-            .ranking-controls { flex-direction: column; align-items: stretch; }
-            .tab-btn { font-size: 0.9rem; padding: 8px 12px; } 
-            #player-management-popup {
-                width: 95vw; 
-                box-sizing: border-box; 
-            }
+            .btn { padding: 10px; font-size: 0.9rem; }
+            .autocomplete-bar button { padding: 6px 10px; font-size: 0.8rem; }
         }
 
         .autocomplete-bar {
@@ -225,42 +220,34 @@
             overflow-x: auto; 
             z-index: 1500; 
         }
-        .autocomplete-bar.show {
-            display: block;
-        }
+        .autocomplete-bar.show { display: block; }
         .autocomplete-bar button {
             display: inline-block;
             padding: 8px 12px;
             margin-right: 8px;
             background-color: var(--primary-color);
-            color: #FFFFFF; /* 롤랑가로스는 흰색 글씨 */
+            color: #FFFFFF;
             border: none;
             border-radius: var(--radius);
             font-size: 0.9rem;
             font-weight: 700;
             cursor: pointer;
         }
-        .autocomplete-bar span {
-            color: var(--text-secondary-color);
-            padding: 8px;
-            font-size: 0.9rem;
-        }
     </style>
 </head>
 <body>
-    <button class="theme-toggle" id="theme-toggle">☀️</button>
+    <button class="theme-toggle" id="theme-toggle">❄️</button>
     <div class="container">
 
-        <!-- --- [수정] 뉴스 티커 HTML --- -->
-        <div id="news-ticker-section" class="section" style="display:none;">
+        <!-- 뉴스 티커 -->
+        <div id="news-ticker-section" class="section">
             <div class="news-header">
-                <span>호수 오픈 속보</span>
+                <span>❄️ 호수 윈터뉴스</span>
             </div>
             <div id="news-list-container">
                 <p>리그 데이터를 불러오는 중입니다...</p>
             </div>
         </div>
-        <!-- --- [수정] 끝 --- -->
 
         <h1>호수 오픈</h1>
         <div class="section" id="schedule-section">
@@ -304,7 +291,6 @@
                             <th data-sort="losses">패</th>
                             <th data-sort="winRate">승률(%)</th>
                             <th data-sort="avgGameDiff">평균 득실</th>
-                            <!-- [수정] '접전승률'로 변경 -->
                             <th data-sort="closeMatchWinRate">접전승률(%)</th> 
                             <th data-sort="dominantWins">압도승률(%)</th>
                             <th data-sort="dominantLosses">압도패률(%)</th>
@@ -395,17 +381,15 @@
 
         let currentFilter = 'all', sortKey = 'mmr', sortOrder = 'desc';
         let allPlayersData = [];
-        let allMatchesData = []; // [신규] 뉴스용
+        let allMatchesData = [];
         let currentPotw = null;
         let activeView = 'current'; 
         let scheduleUnsubscribe = null;
         let rankingUnsubscribe = null;
         let currentActiveInput = null; 
         
-        // --- [수정 1] 스크롤 튐 문제 해결을 위한 타이머 변수 ---
         let autocompleteShowTimer = null;
         let autocompleteHideTimer = null;
-        // --- [수정 1] 끝 ---
 
         const showToast = (message) => {
             const toast = document.getElementById('toast');
@@ -418,7 +402,7 @@
             const validTheme = theme === 'light' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', validTheme);
             localStorage.setItem('theme', validTheme);
-            document.getElementById('theme-toggle').textContent = validTheme === 'dark' ? '☀️' : '🌙';
+            document.getElementById('theme-toggle').textContent = validTheme === 'dark' ? '☀️' : '❄️';
         };
         
         const updateRankingTitleAndCountdown = (view) => {
@@ -462,7 +446,7 @@
             }
         };
 
-        // --- [수정] 가상 뉴스 생성 로직 (3줄, H2H 링크, 뉴스 종류 추가, 접전승률 반영) ---
+        // --- [뉴스 로직 대폭 수정] ---
         const generateLeagueNews = (matches, players) => {
             if (!matches || matches.length === 0 || !players || players.length === 0) {
                 document.getElementById('news-ticker-section').style.display = 'none';
@@ -474,30 +458,36 @@
             if (!newsContainer || !newsList) return;
 
             const allNews = [];
-            const oneWeekAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
+            // [날짜 수정] 단순 타임스탬프 비교가 아니라, "오늘 포함 최근 7일" 날짜로 계산
+            const today = new Date();
+            today.setHours(23, 59, 59, 999); // 오늘 끝까지 포함
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(today.getDate() - 7);
+            sevenDaysAgo.setHours(0, 0, 0, 0); // 7일 전 시작시간
+
             const sortedPlayersByMMR = [...players].sort((a, b) => (b.mmr || 0) - (a.mmr || 0));
 
             // 1. 랭킹 1위
             if (sortedPlayersByMMR.length > 0) {
                 const topRanker = sortedPlayersByMMR[0];
                 allNews.push({
-                    title: `${topRanker.name}, MMR ${Math.round(topRanker.mmr)}점 랭킹 1위 등극... '왕좌'에 오르다`,
+                    title: `${topRanker.name}, MMR ${Math.round(topRanker.mmr)}점 랭킹 1위... '왕좌' 굳건`,
                     category: '랭킹 1위',
                     playerName: topRanker.name
                 });
             }
 
-            // 2. 최고 연승자 (5연승 이상)
-            const hottestPlayer = [...players].filter(p => p.streakIsWin && p.streakCount >= 5).sort((a, b) => b.streakCount - a.streakCount)[0];
+            // 2. 최고 연승자
+            const hottestPlayer = [...players].filter(p => p.streakIsWin && p.streakCount >= 4).sort((a, b) => b.streakCount - a.streakCount)[0];
             if (hottestPlayer) {
                 allNews.push({
-                    title: `'폼 미쳤다' ${hottestPlayer.name}, 파죽의 ${hottestPlayer.streakCount}연승 질주... "지금 막을 자 없다"`,
-                    category: '최다 연승',
+                    title: `'파죽지세' ${hottestPlayer.name}, ${hottestPlayer.streakCount}연승 질주... "누가 막을쏘냐"`,
+                    category: '연승',
                     playerName: hottestPlayer.name
                 });
             }
 
-            // 3. 최근 3승 우승자
+            // 3. 최근 회차 완승(3승)
             const sortedMatches = [...matches].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             if (sortedMatches.length > 0) {
                 const lastRoundId = sortedMatches[0]?.round;
@@ -511,133 +501,126 @@
                             winners.forEach(w => { winsByPlayer[w] = (winsByPlayer[w] || 0) + 1; });
                         }
                     });
-                    const perfectDayPlayers = Object.keys(winsByPlayer).filter(name => winsByPlayer[name] === 3);
+                    const perfectDayPlayers = Object.keys(winsByPlayer).filter(name => winsByPlayer[name] >= 3);
                     if (perfectDayPlayers.length > 0) {
                         allNews.push({
-                            title: `[${lastRoundId}회차] ${perfectDayPlayers.join(', ')}, 3전 전승 '완벽한 하루' 달성!`,
-                            category: '회차 우승',
-                            playerName: perfectDayPlayers[0] // 첫 번째 선수에게 링크
+                            title: `[${lastRoundId}회차] ${perfectDayPlayers.join(', ')}, 전승 '완벽한 하루' 달성`,
+                            category: '퍼펙트',
+                            playerName: perfectDayPlayers[0]
                         });
                     }
                 }
             }
 
-            // 4. 최대 이변 (Upset)
-            let biggestUpset = null;
-            matches.filter(m => new Date(m.timestamp).getTime() > oneWeekAgo) // 최근 1주일간 이변
-                   .forEach(match => {
-                if (!match.score.includes('-')) return;
-                const playerNames = match.players.map(p => p.replace(/\*/g, ''));
-                const [p1, p2, p3, p4] = playerNames.map(name => players.find(p => p.name === name));
-                if (!p1 || !p2 || !p3 || !p4) return;
-
-                const team1MMR = (p1.mmr + p2.mmr) / 2;
-                const team2MMR = (p3.mmr + p4.mmr) / 2;
+            // 4. [신규] 6-0 베이글 마스터 (최근 1주일 내)
+            matches.filter(m => new Date(m.timestamp) >= sevenDaysAgo).forEach(match => {
+                if (!match.score) return;
                 const [s1, s2] = match.score.split('-').map(Number);
-                const team1Won = s1 > s2;
-                
-                const diff = team2MMR - team1MMR; // T2가 높으면 양수
-                const expectedWinRate1 = 1 / (1 + Math.pow(10, (diff) / 400));
-                
-                if (team1Won && expectedWinRate1 < 0.35) { // T1이 이김 (35% 미만 확률)
-                    if (!biggestUpset || expectedWinRate1 < biggestUpset.rate) {
-                        biggestUpset = { rate: expectedWinRate1, match: match, winners: [p1.name, p2.name], diff: Math.abs(diff) };
-                    }
-                } else if (!team1Won && (1 - expectedWinRate1) < 0.35) { // T2가 이김 (35% 미만 확률)
-                    if (!biggestUpset || (1 - expectedWinRate1) < biggestUpset.rate) {
-                        biggestUpset = { rate: (1 - expectedWinRate1), match: match, winners: [p3.name, p4.name], diff: Math.abs(diff) };
-                    }
+                if ((s1 === 6 && s2 === 0) || (s1 === 0 && s2 === 6)) {
+                    const winners = (s1 === 6) ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
+                    const winnerNames = winners.map(p => p.replace(/\*/g, '')).join(', ');
+                    // 중복 뉴스 방지 위해 allNews에 비슷한 내용 있나 확인은 나중에 셔플로 처리
+                    allNews.push({
+                        title: `'무자비한 경기력' ${winnerNames}, 6-0 완봉승... 상대 '망연자실'`,
+                        category: '베이글',
+                        playerName: winners[0].replace(/\*/g, '')
+                    });
                 }
             });
 
-            if (biggestUpset) {
-                allNews.push({
-                    title: `호수 코트 '술렁'... ${biggestUpset.winners.join(', ')} 조, MMR ${Math.round(biggestUpset.diff)}점 차 꺾는 '대이변'`,
-                    category: '이변',
-                    playerName: biggestUpset.winners[0]
-                });
-            }
+            // 5. [수정] 최근 7일간 최다 경기 소화 (로직 개선)
+            const recentMatches = matches.filter(m => {
+                const mDate = new Date(m.timestamp);
+                return mDate >= sevenDaysAgo && mDate <= today;
+            });
 
-            // 5. 최근 7일간 최다 참가자
-            const recentMatches = matches.filter(m => new Date(m.timestamp).getTime() > oneWeekAgo);
             if (recentMatches.length > 0) {
                 const participation = {};
                 recentMatches.forEach(m => m.players.forEach(p => {
                     const name = p.replace(/\*/g, '');
-                    participation[name] = (participation[name] || 0) + 1;
+                    // 공란이 아닐 경우만 카운트
+                    if(name) participation[name] = (participation[name] || 0) + 1;
                 }));
-                const mostActivePlayer = Object.entries(participation).sort((a, b) => b[1] - a[1])[0];
-                if (mostActivePlayer && mostActivePlayer[1] >= 6) { // 1주일에 6경기(2회차) 이상
+                // 최소 4경기 이상
+                const mostActiveEntry = Object.entries(participation).filter(e => e[1] >= 4).sort((a, b) => b[1] - a[1])[0];
+                if (mostActiveEntry) {
                     allNews.push({
-                        title: `'강철 체력' ${mostActivePlayer[0]}, 최근 7일간 ${mostActivePlayer[1]}경기 소화... '코트의 주인'`,
-                        category: '최다 참가',
-                        playerName: mostActivePlayer[0]
+                        title: `'지치지 않는 체력' ${mostActiveEntry[0]}, 최근 7일간 ${mostActiveEntry[1]}게임 소화... '코트의 지박령'`,
+                        category: '최다참가',
+                        playerName: mostActiveEntry[0]
                     });
                 }
             }
             
-            // 6. 압도승 1위
-            const dominantPlayer = [...players].filter(p => (p.dominantWins?.match(/(\d+)승/)?.[1] || 0) >= 3) // 최소 3승
-                                              .sort((a, b) => (b.dominantWins?.split('%')[0] || 0) - (a.dominantWins?.split('%')[0] || 0))[0];
-            if (dominantPlayer) {
+            // 6. [신규] 아이스맨 (접전 승률 높은 사람)
+            // 승률 50% 이상이면서, 접전승 횟수가 2회 이상인 사람 중 최고
+            const iceMan = [...players].filter(p => {
+                const closeWins = parseInt(p.closeMatchWinRate?.match(/(\d+)승/)?.[1] || 0);
+                return closeWins >= 2;
+            }).sort((a, b) => {
+                const rateA = parseInt(a.closeMatchWinRate?.split('%')[0] || 0);
+                const rateB = parseInt(b.closeMatchWinRate?.split('%')[0] || 0);
+                return rateB - rateA;
+            })[0];
+
+            if (iceMan) {
                 allNews.push({
-                    title: `'압살' ${dominantPlayer.name}, 압도승률 ${dominantPlayer.dominantWins} 기록... '무자비한 플레이'`,
-                    category: '압도승',
-                    playerName: dominantPlayer.name
-                });
-            }
-            
-            // 7. 접전승률 1위
-            // [수정] "승" 기준으로 필터링
-            const clutchPlayer = [...players].filter(p => (p.closeMatchWinRate?.match(/(\d+)승/)?.[1] || 0) >= 3) // 최소 3승
-                                            .sort((a, b) => (b.closeMatchWinRate?.split('%')[0] || 0) - (a.closeMatchWinRate?.split('%')[0] || 0))[0];
-            if (clutchPlayer) {
-                 allNews.push({
-                    // [수정] "접전승률"
-                    title: `'강심장' ${clutchPlayer.name}, 접전승률 ${clutchPlayer.closeMatchWinRate} 달성... '클러치 그 자체'`,
-                    category: '접전승', // [수정]
-                    playerName: clutchPlayer.name
+                    title: `'냉혈한 승부사' ${iceMan.name}, 접전 승률 ${iceMan.closeMatchWinRate}... "위기에 강하다"`,
+                    category: '아이스맨',
+                    playerName: iceMan.name
                 });
             }
 
-            // 8. 최고의 파트너
-            const bestPartnerPlayer = [...players].filter(p => (p.bestPartner?.match(/(\d+)승/)?.[1] || 0) >= 10)[0]; // 10승 이상
-            if(bestPartnerPlayer) {
-                 allNews.push({
-                    title: `'환상의 콤비' ${bestPartnerPlayer.name} & ${bestPartnerPlayer.bestPartner.split(' ')[0]}, 10승 합작!`,
-                    category: '파트너',
-                    playerName: bestPartnerPlayer.name
+            // 7. [신규] 영혼의 듀오 (최근 라운드에서 같이 이긴 파트너)
+            if (sortedMatches.length > 0) {
+                const lastRoundId = sortedMatches[0]?.round;
+                const lastRoundMatches = sortedMatches.filter(m => m.round === lastRoundId);
+                const partnerWins = {}; // "P1+P2": count
+                lastRoundMatches.forEach(m => {
+                    if(m.score && m.score.includes('-')) {
+                        const [s1, s2] = m.score.split('-').map(Number);
+                        const winners = (s1 > s2) ? [m.players[0], m.players[1]] : [m.players[2], m.players[3]];
+                        const p1 = winners[0].replace(/\*/g, '');
+                        const p2 = winners[1].replace(/\*/g, '');
+                        if(p1 && p2) {
+                            const key = [p1, p2].sort().join('&');
+                            partnerWins[key] = (partnerWins[key] || 0) + 1;
+                        }
+                    }
                 });
+                // 2승 이상 같이 한 파트너
+                const bestDuoKey = Object.keys(partnerWins).find(key => partnerWins[key] >= 2);
+                if(bestDuoKey) {
+                    const [p1, p2] = bestDuoKey.split('&');
+                    allNews.push({
+                        title: `'환상의 호흡' ${p1} & ${p2}, 오늘만 ${partnerWins[bestDuoKey]}승 합작... '영혼의 듀오'`,
+                        category: '듀오',
+                        playerName: p1
+                    });
+                }
             }
 
-            // 9. MMR 떡상
-            // (이건 랭킹(players) 데이터에 '지난주 MMR' 같은게 없어서 계산하기 어려움. 일단 뺌)
 
-
-            // 뉴스 렌더링
+            // 뉴스 렌더링 (랜덤 3개)
             newsList.innerHTML = '';
             if (allNews.length > 0) {
-                // 중복 제거 (e.g., 같은 플레이어가 연승+1위)
                 const uniqueNews = [];
-                const seenPlayers = new Set();
+                const seenCategories = new Set();
                 
-                // 뉴스를 섞어서 매번 다르게 보여줌
                 allNews.sort(() => 0.5 - Math.random()); 
                 
                 for (const news of allNews) {
-                    if (!seenPlayers.has(news.playerName)) {
+                    // 카테고리 중복 방지 (다양한 소식 보여주기 위해)
+                    if (!seenCategories.has(news.category)) {
                         uniqueNews.push(news);
-                        seenPlayers.add(news.playerName);
+                        seenCategories.add(news.category);
                     }
-                    if (uniqueNews.length >= 3) break; // 최대 3개
+                    if (uniqueNews.length >= 3) break;
                 }
                 
-                // 3개 렌더링
                 uniqueNews.forEach(news => {
                     const newsItem = document.createElement('div');
                     newsItem.className = 'news-item';
-                    
-                    // h2h.html 링크용 시즌 버전 정하기
                     const seasonParam = (activeView === 'previous') ? PREVIOUS_SEASON_VERSION : CURRENT_SEASON_VERSION;
                     
                     newsItem.innerHTML = `
@@ -653,7 +636,6 @@
                 newsContainer.style.display = 'none';
             }
         };
-        // --- [수정] 끝 ---
 
         const createScheduleRounds = (savedRounds = new Map()) => {
             const container = document.getElementById('schedule-container');
@@ -697,49 +679,29 @@
             container.innerHTML = roundsHtml;
         };
 
-        // --- [수정 2] 파트너 자동 섞기 기능 ---
         const autoFillPartners = (firstGameRow) => {
             const tbody = firstGameRow.closest('tbody');
             if (!tbody) return;
-
-            // 1. 1게임에서 4명 이름 가져오기
             const p1 = firstGameRow.querySelector('.player1')?.value.trim();
             const p2 = firstGameRow.querySelector('.player2')?.value.trim();
             const p3 = firstGameRow.querySelector('.player3')?.value.trim();
             const p4 = firstGameRow.querySelector('.player4')?.value.trim();
-
-            // 2. 4명 모두 채워졌는지 확인
-            if (!p1 || !p2 || !p3 || !p4) {
-                return; // 4명 다 안채워졌으면 중단
-            }
-            
-            // 3. 2, 3번째 게임 줄(row) 가져오기
+            if (!p1 || !p2 || !p3 || !p4) return;
             const game2Row = tbody.querySelector('tr:nth-child(2)');
             const game3Row = tbody.querySelector('tr:nth-child(3)');
-            
-            if (!game2Row || !game3Row) return; // 2, 3번째 줄이 없으면 중단
-
-            // 4. 2번째 게임이 비어있는지 확인 (이미 채워져있으면 덮어쓰지 않음)
+            if (!game2Row || !game3Row) return;
             const game2P1 = game2Row.querySelector('.player1')?.value.trim();
-            if (game2P1) {
-                return; // 2게임 P1에 이미 이름이 있으면 중단
-            }
-
-            // 5. 2게임 채우기: (P1, P3) vs (P2, P4)
+            if (game2P1) return;
             game2Row.querySelector('.player1').value = p1;
             game2Row.querySelector('.player2').value = p3;
             game2Row.querySelector('.player3').value = p2;
             game2Row.querySelector('.player4').value = p4;
-
-            // 6. 3게임 채우기: (P1, P4) vs (P2, P3)
             game3Row.querySelector('.player1').value = p1;
             game3Row.querySelector('.player2').value = p4;
             game3Row.querySelector('.player3').value = p2;
             game3Row.querySelector('.player4').value = p3;
-            
             showToast('파트너가 자동으로 2, 3게임에 채워졌습니다.');
         };
-        // --- [수정 2] 끝 ---
         
         const saveAllData = async () => {
             if (!db) return showToast('DB 연결 실패!');
@@ -917,18 +879,11 @@
                 return timestampA - timestampB;
             });
 
-            // 1. 배치고사 룰 적용
             const calculateMMRChange = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight) => {
                 if (!player) return 0;
                 let K = constants.BASE_K;
-                // 경기 수 (이번 경기를 제외한)
                 const gamesPlayed = (player.wins || 0) + (player.losses || 0);
-
-                // 배치고사: 5경기 미만일 때 K-Factor 1.5배
-                if (gamesPlayed < 5) {
-                    K = constants.BASE_K * 1.5; 
-                }
-                
+                if (gamesPlayed < 5) K = constants.BASE_K * 1.5; 
                 let playerMMR = player.mmr || constants.BASE_MMR;
                 const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
                 let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
@@ -947,9 +902,7 @@
             };
 
             sortedRounds.forEach(([roundId, roundMatches]) => {
-                // 2. 잠수 방지 룰 (lastGameTimestamp 기록)
-                const roundTimestamp = roundMatches[0]?.timestamp; // 라운드의 타임스탬프
-                
+                const roundTimestamp = roundMatches[0]?.timestamp;
                 const netMmrChanges = new Map(); 
                 roundMatches.forEach(match => {
                     const playerNames = match.players.map(p => p.replace(/\*/g, ''));
@@ -968,14 +921,13 @@
                         calculateMMRChange(p4, team1MMR, !isTeam1Winner, p3, match.isFourPoint, scoreWeight)
                     ];
 
-                    // 2. lastGameTimestamp를 넘기도록 수정
                     const matchTimestamp = match.timestamp || roundTimestamp;
                     const updatePlayerStats_NO_MMR = (name, isWinner, gameDiffVal, timestamp) => {
                         const p = players[name];
                         if (!p) return;
                         p.totalSets = (p.totalSets || 0) + 1;
                         p.gameDiff = (p.gameDiff || 0) + (isWinner ? gameDiffVal : -gameDiffVal);
-                        if (timestamp) p.lastGameTimestamp = timestamp; // 마지막 게임 시간 기록
+                        if (timestamp) p.lastGameTimestamp = timestamp; 
                         if (isWinner) {
                             p.wins = (p.wins || 0) + 1;
                             p.streakCount = p.streakIsWin ? (p.streakCount || 0) + 1 : 1;
@@ -1036,11 +988,9 @@
                     stats.totalSets++;
                     const isWinner = (index < 2 && actual1) || (index >= 2 && !actual1);
                     
-                    // --- [수정] 접전 정의 변경 ---
                     const isCloseMatch = (s1 === 6 && s2 === 5) || (s1 === 5 && s2 === 6) ||
                                          (s1 === 6 && s2 === 4) || (s1 === 4 && s2 === 6) ||
-                                         (s1 === 4 && s2 === 3) || (s1 === 3 && s2 === 4); // 4점 경기 포함
-                    // --- [수정] 끝 ---
+                                         (s1 === 4 && s2 === 3) || (s1 === 3 && s2 === 4); 
                     const isDominant = (s1 === 6 && s2 === 0) || (s1 === 0 && s2 === 6) ||
                                        (s1 === 6 && s2 === 1) || (s1 === 1 && s2 === 6);
 
@@ -1070,11 +1020,7 @@
                 p.avgGameDiff = p.totalSets > 0 ? (p.gameDiff / p.totalSets).toFixed(2) : '0.00';
                 
                 const dStats = derivedStats[p.name] || { totalSets: 0, closeMatchSets: 0, closeMatchWins: 0, dominantWins: 0, dominantLosses: 0 };
-                
-                // --- [수정] 접전승률 계산 (총 경기 대비 접전승리) ---
                 p.closeMatchWinRate = dStats.totalSets > 0 ? `${Math.round((dStats.closeMatchWins / dStats.totalSets) * 100)}%(${dStats.closeMatchWins}승)` : '0%';
-                // --- [수정] 끝 ---
-                
                 p.dominantWins = dStats.totalSets > 0 ? `${Math.round((dStats.dominantWins / dStats.totalSets) * 100)}%(${dStats.dominantWins}승)` : '0%';
                 p.dominantLosses = dStats.totalSets > 0 ? `${Math.round((dStats.dominantLosses / dStats.totalSets) * 100)}%(${dStats.dominantLosses}패)` : '0%';
             });
@@ -1120,12 +1066,11 @@
                     }
                 });
 
-                // --- [RULE 2: INACTIVITY PENALTY] ---
                 const now = new Date();
                 const eightWeeksInMs = 8 * 7 * 24 * 60 * 60 * 1000;
                 const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
                 const baseMMR = 1500;
-                const decayAmount = 20; // 20점씩 하락
+                const decayAmount = 20;
 
                 allCalculatedPlayers.forEach(p => {
                     if (p.lastGameTimestamp) { 
@@ -1144,7 +1089,6 @@
                         }
                     }
                 });
-                // --- [RULE 2 END] ---
                 
                 const latestProcessedRound = Math.max(...allMatchesFromDB.map(m => m.round), 0);
                 
@@ -1227,7 +1171,6 @@
         };
 
         const downloadCSV = () => {
-            // [수정] '접전승률'로 변경
             let rankingCSV = `\uFEFF순위,선수,MMR,우승,승,패,승률(%),평균 게임 득실,접전승률(%),압도승률(%),압도패률(%),최고 파트너\n`; 
             document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
                 const rawName = row.querySelector('.ranking-player').value.trim();
@@ -1264,50 +1207,6 @@
         const closePopup = (id) => {
             document.getElementById(id).classList.remove('show');
             document.getElementById('overlay').classList.remove('show');
-        };
-
-        const handleAddNewPlayer = () => {
-            const nameInput = document.getElementById('new-player-name');
-            const isFemaleCheckbox = document.getElementById('new-player-is-female');
-            if (!nameInput || !isFemaleCheckbox) return;
-
-            const newName = nameInput.value.trim();
-            if (!newName) {
-                showToast("선수 이름을 입력하세요.");
-                return;
-            }
-            if (allPlayersData.some(p => p.name === newName)) {
-                showToast("이미 존재하는 이름입니다.");
-                return;
-            }
-
-            const newPlayer = {
-                name: newName,
-                isFemale: isFemaleCheckbox.checked,
-                mmr: 1500, 
-                wins: 0,
-                losses: 0,
-                totalSets: 0,
-                gameDiff: 0,
-                streakCount: 0,
-                streakIsWin: false,
-                championships: 0,
-                bestPartner: '데이터 부족',
-                winRate: 0,
-                avgGameDiff: '0.00',
-                closeMatchWinRate: '0%', // [수정]
-                dominantWins: '0%', 
-                dominantLosses: '0%',
-                lastGameTimestamp: null 
-            };
-
-            allPlayersData.push(newPlayer);
-            
-            nameInput.value = '';
-            isFemaleCheckbox.checked = false;
-            
-            populatePlayerManagementPopup();
-            showToast(`${newName} 선수 추가됨. (하단 '변경사항 저장' 필수)`);
         };
 
         const populatePlayerManagementPopup = () => {
@@ -1360,25 +1259,19 @@
             document.querySelectorAll('#player-management-list .player-management-item').forEach(item => {
                 const name = item.dataset.playerName;
                 const isFemale = item.querySelector('.is-female-checkbox').checked;
-                
                 const originalPlayer = allPlayersData.find(p => p.name === name);
-                
                 if (originalPlayer) {
                     updatedPlayersMap.set(name, { ...originalPlayer, isFemale });
                 } 
             });
-            
             const finalUpdatedPlayers = Array.from(updatedPlayersMap.values());
-
             allPlayersData = finalUpdatedPlayers;
 
             try {
                 const rankingsRef = doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION);
                 await setDoc(rankingsRef, { players: finalUpdatedPlayers }, { merge: true }); 
-                
                 showToast('선수 정보 변경 완료! 순위를 다시 계산합니다.');
                 closePopup('player-management-popup');
-                
                 await updateRanking(); 
             } catch (error) {
                 showToast(`선수 정보 저장 실패: ${error.message}`);
@@ -1477,7 +1370,6 @@
             
             const adminButtons = document.querySelectorAll('.admin-btn');
             
-            // [수정] 뉴스 생성을 위해 두 onSnapshot 콜백을 수정
             if (activeView === 'current') {
                 adminButtons.forEach(btn => btn.style.display = 'block');
                 
@@ -1511,34 +1403,27 @@
                         const scheduleData = (schedSnap.exists() && schedSnap.data().matches) ? schedSnap.data().matches : [];
                         const rankData = rankSnap.exists() ? rankSnap.data() : {};
                         const initialPlayers = rankData.players || [];
-
                         const initialPlayersMap = {};
                         initialPlayers.forEach(p => {
                             initialPlayersMap[p.name] = { name: p.name, isFemale: p.isFemale, championships: p.championships || 0 };
                         });
-
                         const previousRankings = calculateRankingFromMatches(scheduleData, initialPlayersMap);
-                        
                         allMatchesData = scheduleData; 
                         allPlayersData = previousRankings; 
-                        
                         processAndRenderSchedule(scheduleData);
                         updateRankingTable(previousRankings, rankData.potw || null); 
-                        generateLeagueNews(allMatchesData, allPlayersData); // [신규] 뉴스 생성
+                        generateLeagueNews(allMatchesData, allPlayersData); 
 
                     } else if (activeView === 'alltime') {
                         const schedSnapV1 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION));
                         const schedSnapV2 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION));
                         const rankSnapV1 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION));
                         const rankSnapV2 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION));
-
                         const matchesV1 = (schedSnapV1.exists() && schedSnapV1.data().matches) ? schedSnapV1.data().matches : [];
                         const matchesV2 = (schedSnapV2.exists() && schedSnapV2.data().matches) ? schedSnapV2.data().matches : [];
                         const allMatches = [...matchesV1, ...matchesV2];
-
                         const playersV1 = (rankSnapV1.exists() && rankSnapV1.data().players) ? rankSnapV1.data().players : [];
                         const playersV2 = (rankSnapV2.exists() && rankSnapV2.data().players) ? rankSnapV2.data().players : [];
-                        
                         const initialPlayersMap = {};
                         [...playersV1, ...playersV2].forEach(p => {
                             if (!initialPlayersMap[p.name]) {
@@ -1548,7 +1433,6 @@
                                 initialPlayersMap[p.name].isFemale = playersV2.find(p2 => p2.name === p.name).isFemale;
                             }
                         });
-                        
                         const champCounts = {};
                         [...playersV1, ...playersV2].forEach(p => {
                             champCounts[p.name] = (champCounts[p.name] || 0) + (p.championships || 0);
@@ -1556,18 +1440,15 @@
                         Object.keys(initialPlayersMap).forEach(name => {
                             initialPlayersMap[name].championships = champCounts[name] || 0;
                         });
-                        
                         const allTimeRankings = calculateRankingFromMatches(allMatches, initialPlayersMap);
                         allTimeRankings.forEach(p => {
                             p.championships = initialPlayersMap[p.name]?.championships || p.championships;
                         });
-
                         allMatchesData = allMatches; 
                         allPlayersData = allTimeRankings; 
-
                         processAndRenderSchedule(allMatches);
                         updateRankingTable(allTimeRankings, null);
-                        generateLeagueNews(allMatchesData, allPlayersData); // [신규] 뉴스 생성
+                        generateLeagueNews(allMatchesData, allPlayersData); 
                     }
                 } catch (error) {
                     showToast("과거 데이터 로딩 실패: " + error.message);
@@ -1576,37 +1457,32 @@
             }
         };
 
-        // --- [수정] 문제 1, 2 해결을 위해 리스너 수정 ---
         const setupInputListeners = () => {
             const scheduleContainer = document.getElementById('schedule-container');
             const autocompleteBar = document.getElementById('autocomplete-bar');
 
-            // 자동완성 로직 (포커스 인)
             scheduleContainer.addEventListener('focusin', (e) => {
                 if (e.target.classList.contains('player-input')) {
-                    if (autocompleteHideTimer) { // 숨기기 타이머가 있다면 취소
+                    if (autocompleteHideTimer) { 
                         clearTimeout(autocompleteHideTimer);
                         autocompleteHideTimer = null;
                     }
                     currentActiveInput = e.target;
                     
-                    // [수정 1] 스크롤 튐 방지를 위해 딜레이 추가
                     if (autocompleteShowTimer) clearTimeout(autocompleteShowTimer);
                     autocompleteShowTimer = setTimeout(() => {
                         if(autocompleteBar) autocompleteBar.classList.add('show');
                         updateAutocompleteSuggestions(e.target.value);
-                    }, 200); // 0.2초 딜레이
+                    }, 200); 
                 }
             });
 
-            // 자동완성 로직 (입력 중)
             scheduleContainer.addEventListener('input', (e) => {
                 if (e.target.classList.contains('player-input')) {
                     if (currentActiveInput !== e.target) currentActiveInput = e.target;
                     updateAutocompleteSuggestions(e.target.value);
                 }
                 
-                // 4점 자동체크 로직
                 if (e.target.classList.contains('score-input')) {
                     const score = e.target.value.trim();
                     const scores = score.split('-').map(Number);
@@ -1615,61 +1491,48 @@
                     if (tr && scores.length === 2 && !isNaN(scores[0]) && !isNaN(scores[1])) {
                         const maxScore = Math.max(scores[0], scores[1]);
                         const minScore = Math.min(scores[0], scores[1]);
-                        
                         const isFourPointGame = (maxScore === 4 && minScore < 4);
-                        
                         const checkbox = tr.querySelector('.is-four-point');
                         if (checkbox) {
                             checkbox.checked = isFourPointGame; 
                         }
                     } else if (tr) {
                         const checkbox = tr.querySelector('.is-four-point');
-                        if (checkbox) {
-                            checkbox.checked = false;
-                        }
+                        if (checkbox) checkbox.checked = false;
                     }
                 }
             });
 
-            // 자동완성 로직 (포커스 아웃)
             scheduleContainer.addEventListener('focusout', (e) => {
                 if (e.target.classList.contains('player-input')) {
-                    // [수정 1] 스크롤 튐 방지 (보이기 타이머가 있다면 취소)
                     if (autocompleteShowTimer) { 
                         clearTimeout(autocompleteShowTimer);
                         autocompleteShowTimer = null;
                     }
-                    // 딜레이를 주어 자동완성 버튼 클릭 가능하게 함
                     autocompleteHideTimer = setTimeout(() => {
                         if(autocompleteBar) autocompleteBar.classList.remove('show');
                         autocompleteHideTimer = null;
                     }, 200); 
                     
-                    // [수정 2] 파트너 자동 섞기 트리거
-                    // 4번째 선수(player4) 칸에서 포커스가 나갔을 때
                     if (e.target.classList.contains('player4')) {
                         const tr = e.target.closest('tr');
                         const tbody = tr?.closest('tbody');
-                        
                         if (tbody) {
                             const firstRow = tbody.querySelector('tr:first-child');
-                            // 그리고 그 칸이 1게임(첫 번째 줄)의 칸일 때
                             if (tr === firstRow) {
-                                autoFillPartners(tr); // 자동 섞기 함수 호출
+                                autoFillPartners(tr); 
                             }
                         }
                     }
                 }
             });
 
-            // 자동완성 바 클릭
             autocompleteBar.addEventListener('click', (e) => {
                 if (e.target.tagName === 'BUTTON' && currentActiveInput) {
                     currentActiveInput.value = e.target.dataset.name;
                 }
             });
             
-            // 기타 리스너
             document.addEventListener('click', function(e) {
                 if (e.target.classList.contains('save-all-btn')) {
                     if (activeView !== 'current') return showToast('현재 시즌 탭에서만 저장할 수 있습니다.');
@@ -1724,7 +1587,7 @@
             
             const submitPassword = () => {
                 const passwordInput = document.getElementById('password-input');
-                if (passwordInput.value === '0718') { // 비밀번호
+                if (passwordInput.value === '0718') { 
                     closePopup('password-popup');
                     populatePlayerManagementPopup();
                     openPopup('player-management-popup');
@@ -1740,7 +1603,7 @@
             
             const submitBackupPassword = () => {
                 const passwordInput = document.getElementById('backup-password-input');
-                if (passwordInput.value === '0718') { // 비밀번호
+                if (passwordInput.value === '0718') { 
                     closePopup('backup-password-popup');
                     runRestoreLogic(); 
                 } else {
@@ -1766,15 +1629,12 @@
                 });
             });
         };
-        // --- [수정] 끝 ---
 
         document.addEventListener('DOMContentLoaded', async () => {
             setupInputListeners();
-            // 롤랑가로스 테마가 라이트 모드 기본이므로 'light'로 설정
             const savedTheme = localStorage.getItem('theme') || 'light'; 
             applyTheme(savedTheme);
 
-            // 링크들에도 시즌 버전 동적으로 할당
             document.getElementById('dashboard-link').href = `dash.html?season=${CURRENT_SEASON_VERSION}`;
             document.getElementById('hof-link').href = `hall_of_fame.html?season=${CURRENT_SEASON_VERSION}`;
             document.getElementById('partner-link').href = `partner.html?season=${CURRENT_SEASON_VERSION}`;
@@ -1783,7 +1643,7 @@
                 try {
                     await signInAnonymously(auth); 
                     console.log("Signed in anonymously.");
-                    loadViewData(); // 인증 후 'current' 탭 데이터 로드
+                    loadViewData(); 
                 } catch (error) {
                     console.error("Anonymous sign-in failed:", error);
                     showToast("DB 인증에 실패했습니다.");
