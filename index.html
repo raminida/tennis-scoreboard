@@ -12,45 +12,71 @@
         :root {
             /* [다크 모드] US 오픈 나이트 세션 (Deep Navy & Neon) */
             --bg-color: #0f172a; /* Midnight Navy */
-            --surface-color: #1e293b;
-            --primary-color: #3b82f6; /* Bright Blue */
-            --primary-variant-color: #2563eb;
-            --secondary-color: #1e293b;
-            --text-color: #f1f5f9;
+            --surface-color: #1e293b; /* Dark Slate */
+            --primary-color: #38bdf8; /* Bright Cyan Blue (For Icons/Buttons) */
+            --primary-variant-color: #93c5fd; /* Light Blue */
+            --secondary-color: #334155;
+            --text-color: #f1f5f9; /* White-ish text */
             --text-secondary-color: #94a3b8;
             --accent-gold: #ccff00; /* Tennis Ball Neon */
             --border-color: #334155;
-            --shadow-color: rgba(0, 0, 0, 0.5);
+            --shadow-color: rgba(0, 0, 0, 0.6);
             --spacing-sm: 8px;
             --spacing-md: 12px;
             --spacing-lg: 20px;
             --radius: 12px;
-            --input-bg-readonly: #1e293b;
+            --input-bg-readonly: #1e293b; 
+            
+            /* [다크 모드] 테이블 텍스트 전용 색상 (흰색 요청 반영) */
+            --table-player-color: #FFFFFF; /* 선수 이름: 완전 흰색 */
+            --table-stat-color: #FFFFFF;   /* 기록 수치: 완전 흰색 */
+            
+            /* 다크 모드 전용 변수 */
+            --news-section-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            --news-item-bg: rgba(51, 65, 85, 0.6); 
+            --news-text-color: #f1f5f9;
+            --table-header-bg: #0f172a;
+            --table-header-text: #38bdf8;
+            --table-row-hover: rgba(255, 255, 255, 0.05); /* 흰색 투명도 */
+            --summary-bg: linear-gradient(135deg, #1e293b, #334155);
         }
         html[data-theme="light"] {
             /* [라이트 모드] US 오픈 데이 세션 (Vivid Royal Blue & White) */
-            --bg-color: #F0F4F8; /* Cool Greyish White background */
+            --bg-color: #F0F4F8; 
             --surface-color: #FFFFFF;
-            --primary-color: #204CB5; /* Deep Royal Blue (US Open Brand Color) */
+            --primary-color: #204CB5; /* Deep Royal Blue */
             --primary-variant-color: #002C5F; /* Dark Navy */
-            --text-color: #102027; /* Dark Navy Text */
+            --text-color: #102027; 
             --text-secondary-color: #546E7A;
-            --accent-gold: #D4E100; /* Tennis Ball Volt (Slightly darker for text visibility) */
+            --accent-gold: #D4E100; /* Tennis Ball Volt */
             --border-color: #CFD8DC;
-            --shadow-color: rgba(32, 76, 181, 0.15); /* Blue Shadow */
-            --input-bg-readonly: #FFFFFF; /* Pure White for contrast */
+            --shadow-color: rgba(32, 76, 181, 0.15); 
+            --input-bg-readonly: #FFFFFF;
+
+            /* [라이트 모드] 테이블 텍스트 전용 색상 (기존 유지) */
+            --table-player-color: #204CB5; /* 선수 이름: 로얄 블루 */
+            --table-stat-color: #002C5F;   /* 기록 수치: 다크 네이비 */
+
+            /* 라이트 모드 전용 변수 */
+            --news-section-bg: linear-gradient(135deg, #ffffff 0%, #E8F0FE 100%);
+            --news-item-bg: rgba(255, 255, 255, 0.9);
+            --news-text-color: #102027;
+            --table-header-bg: #E8F0FE;
+            --table-header-text: #002C5F;
+            --table-row-hover: rgba(212, 225, 0, 0.15);
+            --summary-bg: linear-gradient(135deg, #ffffff, #F5F7FA);
         }
 
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
         .container { max-width: 1700px; margin: 0 auto; }
         
-        /* --- 뉴스 티커 스타일 (US 오픈 스타일) --- */
+        /* --- 뉴스 티커 스타일 --- */
         #news-ticker-section {
             display: none;
             padding: var(--spacing-lg);
             margin-bottom: 2rem;
             border: 1px solid var(--primary-color);
-            background: linear-gradient(135deg, var(--surface-color) 0%, #E8F0FE 100%); 
+            background: var(--news-section-bg); 
             border-radius: var(--radius);
             box-shadow: 0 4px 15px var(--shadow-color);
         }
@@ -78,7 +104,7 @@
             align-items: center;
             gap: 10px;
             padding: 8px;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: var(--news-item-bg);
             border-radius: 6px;
             border: 1px solid rgba(0,0,0,0.05);
         }
@@ -92,15 +118,16 @@
             flex-shrink: 0;
             text-transform: uppercase;
         }
-        /* 뉴스 카테고리 색상 */
-        .news-category[data-category="베이글"] { background-color: #d63031; } 
-        .news-category[data-category="아이스맨"] { background-color: #0984e3; } 
-        .news-category[data-category="랭킹 1위"] { background-color: var(--accent-gold); color: #2d3436; } 
+        html:not([data-theme="light"]) .news-category { color: #0f172a; }
+
+        .news-category[data-category="베이글"] { background-color: #d63031; color: #fff !important; } 
+        .news-category[data-category="아이스맨"] { background-color: #38bdf8; } 
+        .news-category[data-category="랭킹 1위"] { background-color: var(--accent-gold); color: #2d3436 !important; } 
         
         .news-link {
             font-size: 1rem;
             font-weight: 600;
-            color: var(--text-color);
+            color: var(--news-text-color);
             text-decoration: none;
             cursor: pointer;
             line-height: 1.4;
@@ -116,72 +143,70 @@
             font-weight: 900; 
             text-align: center; 
             color: var(--primary-color); 
-            /* US Open Gradient */
-            background: linear-gradient(to right, #002C5F, #204CB5); 
+            background: linear-gradient(to right, var(--primary-variant-color), var(--primary-color)); 
             -webkit-background-clip: text; 
             background-clip: text; 
             color: transparent; 
             padding-top: var(--spacing-lg); 
             margin-bottom: 2rem; 
             letter-spacing: -2px; 
-            text-shadow: 2px 2px 10px rgba(32, 76, 181, 0.2);
+            text-shadow: 2px 2px 10px rgba(56, 189, 248, 0.2);
         }
 
         .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
         h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--border-color); }
         #ranking-main-title { text-align: center; }
         
-        details { margin-bottom: 1rem; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-color); background: #fff; }
-        details summary { padding: var(--spacing-md) 15px; cursor: pointer; font-size: 1.1rem; font-weight: 700; outline: none; transition: background 0.3s ease, color 0.3s ease; background: var(--surface-color); color: var(--text-color); border-bottom: 1px solid var(--border-color); }
-        html[data-theme="light"] details summary { background: linear-gradient(135deg, #ffffff, #F5F7FA); }
+        details { margin-bottom: 1rem; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-color); background: var(--surface-color); }
+        details summary { padding: var(--spacing-md) 15px; cursor: pointer; font-size: 1.1rem; font-weight: 700; outline: none; transition: background 0.3s ease, color 0.3s ease; background: var(--summary-bg); color: var(--text-color); border-bottom: 1px solid var(--border-color); }
+        
         details[open] > summary { background: var(--primary-color); color: #FFFFFF; border-bottom-color: var(--primary-color); }
+        html:not([data-theme="light"]) details[open] > summary { color: #0f172a; }
+
         .round-group-content { padding: 15px 10px 5px 10px; background: rgba(0,0,0,0.02); border-top: 1px solid var(--border-color); }
         
         .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; max-width: 100%; -webkit-overflow-scrolling: touch; }
         table { width: 100%; min-width: 100%; border-collapse: collapse; }
         th, td { padding: var(--spacing-md) 4px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
         
-        /* 테이블 헤더 - 선명한 블루 */
-        #ranking-table thead th { position: sticky; top: 0; background: #E8F0FE; z-index: 10; cursor: pointer; color: var(--primary-variant-color); border-bottom: 2px solid var(--primary-color); }
+        #ranking-table thead th { position: sticky; top: 0; background: var(--table-header-bg); z-index: 10; cursor: pointer; color: var(--table-header-text); border-bottom: 2px solid var(--primary-color); }
         #ranking-table thead th:hover { background: var(--primary-color); color: #fff; }
         th { font-family: 'Poppins', sans-serif; font-weight: 700; }
         
         .rank-cell { font-weight: 900; color: var(--primary-color); position: relative; line-height: 1.2; font-size: 1.1rem; }
         .streak-cell { font-size: 0.7rem; white-space: nowrap; margin-left: var(--spacing-sm); }
-        .streak-win { color: #d63031; font-weight: bold; } /* 연승 Red */
-        .streak-loss { color: #0984e3; font-weight: bold; } /* 연패 Blue */
+        .streak-win { color: #ef4444; font-weight: bold; } 
+        .streak-loss { color: #3b82f6; font-weight: bold; } 
         .streak-none { color: var(--text-secondary-color); }
         
         #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; }
         
         input[type="text"], input[type="search"], input[type="password"], select { width: 100%; min-width: 70px; max-width: 100px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
-        input:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 2px rgba(32, 76, 181, 0.2); }
+        input:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
         
-        /* [수정] 칙칙한 회색 제거 및 가독성 강화 */
         .schedule-table .player-input { min-width: 80px; max-width: 110px; }
         .schedule-table .score-input { min-width: 40px; max-width: 60px; }
         input.ranking-player, input.mmr { min-width: 80px; max-width: 120px; }
         
-        /* 읽기 전용 인풋 디자인 대폭 수정 (흰색 배경 + 진한 글씨) */
+        /* [핵심 수정] 읽기 전용 인풋 색상 조정 */
         input.readonly { 
             background-color: var(--input-bg-readonly); 
-            color: var(--primary-variant-color); /* 진한 네이비 */
+            color: var(--table-stat-color); /* 다크:흰색, 라이트:네이비 */
             font-weight: 700; 
             border: 1px solid transparent; 
-            border-bottom: 1px solid #E0E0E0;
+            border-bottom: 1px solid var(--border-color);
             box-shadow: none;
         }
         
-        /* 선수 이름 강조 */
+        /* [핵심 수정] 선수 이름 색상 조정 */
         input.ranking-player {
-            color: var(--primary-color); /* 쨍한 파란색 */
+            color: var(--table-player-color); /* 다크:흰색, 라이트:블루 */
             font-weight: 900;
             font-size: 1rem;
         }
         
-        /* 랭킹 테이블 마우스 오버 효과 (형광 연두 틴트) */
         #ranking-table tbody tr:hover td {
-            background-color: rgba(212, 225, 0, 0.1); /* Tennis Ball Tint */
+            background-color: var(--table-row-hover);
         }
         #ranking-table tbody tr:hover input.readonly {
             background-color: transparent;
@@ -189,10 +214,10 @@
         
         .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: var(--spacing-lg); }
         .btn { display: inline-block; padding: var(--spacing-md) var(--spacing-lg); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; transition: transform 0.1s, box-shadow 0.1s; }
+        html:not([data-theme="light"]) .btn { color: #0f172a; }
         .btn:active { transform: scale(0.98); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        /* 업데이트 버튼 - 테니스공 색상 포인트 */
         .update-btn { width: 100%; margin-top: var(--spacing-lg); padding: 15px; background: linear-gradient(135deg, #aeea00, #64dd17); color: #263238; border: none; border-radius: var(--radius); font-size: 1.2rem; font-weight: 900; cursor: pointer; box-shadow: 0 4px 10px rgba(100, 221, 23, 0.3); }
         .btn.danger { background: linear-gradient(135deg, #ff7675, #d63031); color: #fff; }
         
@@ -201,15 +226,17 @@
         
         .championship-star { color: #ffca28; text-shadow: 0 0 2px rgba(0,0,0,0.2); font-size: 1.1rem; font-weight: 900; }
         .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; box-shadow: 0 2px 10px var(--shadow-color); }
-        .ranking-player[value$="*"] { color: #e91e63; } /* 여성 플레이어: 핫핑크로 변경하여 가독성 업 */
+        .ranking-player[value$="*"] { color: #f472b6; } 
+        html[data-theme="light"] .ranking-player[value$="*"] { color: #e91e63; } 
         
         .ranking-controls { display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-md); flex-wrap: wrap; align-items: center; }
         .ranking-filter { display: flex; gap: var(--spacing-sm); }
         #ranking-search { max-width: 200px; }
         .filter-btn { padding: var(--spacing-sm) var(--spacing-md); background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer; color: var(--text-color); font-weight: 700; transition: all 0.2s; }
         .filter-btn.active { background: var(--primary-color); color: #FFFFFF; border-color: var(--primary-color); }
+        html:not([data-theme="light"]) .filter-btn.active { color: #0f172a; }
         
-        .saved-indicator { color: var(--primary-variant-color); margin-left: 5px; font-size: 0.9rem; }
+        .saved-indicator { color: var(--primary-color); margin-left: 5px; font-size: 0.9rem; }
         .saved-info { color: var(--text-secondary-color); margin-left: 5px; font-size: 0.8rem; }
         .champion-name { color: var(--primary-color); font-weight: bold; }
         input[type="checkbox"] { margin: 0 auto; display: block; transform: scale(1.2); accent-color: var(--primary-color); }
@@ -220,8 +247,9 @@
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1999; backdrop-filter: blur(2px); }
         .overlay.show { display: block; }
         
-        /* POTW 섹션 - US 오픈 블루 그라데이션 */
-        .potw-section { background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #fff; padding: var(--spacing-lg); border-radius: var(--radius); margin-bottom: var(--spacing-lg); text-align: center; box-shadow: 0 5px 15px rgba(25, 118, 210, 0.3); }
+        .potw-section { background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #fff; padding: var(--spacing-lg); border-radius: var(--radius); margin-bottom: var(--spacing-lg); text-align: center; box-shadow: 0 5px 15px rgba(56, 189, 248, 0.3); }
+        html:not([data-theme="light"]) .potw-section { color: #0f172a; font-weight: bold; }
+        
         #player-management-list { max-height: 60vh; overflow-y: auto; margin-top: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius); }
         .player-management-item { display: flex; justify-content: space-between; align-items: center; padding: var(--spacing-md); border-bottom: 1px solid var(--border-color); }
         .season-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 0; flex-wrap: wrap; }
@@ -234,7 +262,6 @@
             .section { padding: var(--spacing-md); }
             th, td { padding: 4px 2px; font-size: 0.7rem; }
             
-            /* [롤백] 모바일 전용 입력칸 크기 복원 */
             input[type="text"], input[type="search"], input[type="password"], select { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
             input.ranking-player, input.mmr { min-width: 70px; max-width: 100px; }
             input.best-partner { min-width: 200px; max-width: 225px; }
@@ -251,41 +278,25 @@
             .popup { max-width: 90vw; width: auto; padding: var(--spacing-md); }
             .ranking-controls { flex-direction: column; align-items: stretch; }
             .tab-btn { font-size: 0.9rem; padding: 8px 12px; } 
-            #player-management-popup {
-                width: 95vw; 
-                box-sizing: border-box; 
-            }
+            #player-management-popup { width: 95vw; box-sizing: border-box; }
             .autocomplete-bar button { padding: 6px 10px; font-size: 0.8rem; }
         }
 
         .autocomplete-bar {
             display: none; 
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: var(--surface-color);
-            border-top: 1px solid var(--border-color);
-            box-shadow: 0 -5px 15px var(--shadow-color);
-            padding: 10px;
-            box-sizing: border-box;
-            white-space: nowrap;
-            overflow-x: auto; 
-            z-index: 1500; 
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background-color: var(--surface-color); border-top: 1px solid var(--border-color);
+            box-shadow: 0 -5px 15px var(--shadow-color); padding: 10px;
+            box-sizing: border-box; white-space: nowrap; overflow-x: auto; z-index: 1500; 
         }
         .autocomplete-bar.show { display: block; }
         .autocomplete-bar button {
-            display: inline-block;
-            padding: 8px 12px;
-            margin-right: 8px;
-            background-color: var(--primary-color);
-            color: #FFFFFF;
-            border: none;
-            border-radius: var(--radius);
-            font-size: 0.9rem;
-            font-weight: 700;
-            cursor: pointer;
+            display: inline-block; padding: 8px 12px; margin-right: 8px;
+            background-color: var(--primary-color); color: #FFFFFF;
+            border: none; border-radius: var(--radius);
+            font-size: 0.9rem; font-weight: 700; cursor: pointer;
         }
+        html:not([data-theme="light"]) .autocomplete-bar button { color: #0f172a; }
     </style>
 </head>
 <body>
