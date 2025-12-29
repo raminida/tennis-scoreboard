@@ -121,9 +121,11 @@
         html:not([data-theme="light"]) .news-category { color: #0f172a; }
 
         .news-category[data-category="베이글"] { background-color: #d63031; color: #fff !important; } 
-        .news-category[data-category="아이스맨"] { background-color: #38bdf8; } 
-        .news-category[data-category="랭킹 1위"] { background-color: var(--accent-gold); color: #2d3436 !important; } 
-        
+        .news-category[data-category="아이스맨"], .news-category[data-category="혈투"] { background-color: #38bdf8; } 
+        .news-category[data-category="랭킹 1위"], .news-category[data-category="추격"] { background-color: var(--accent-gold); color: #2d3436 !important; } 
+        .news-category[data-category="슬럼프"] { background-color: #636e72; color: #fff !important; }
+        .news-category[data-category="이변"] { background-color: #e17055; color: #fff !important; }
+
         .news-link {
             font-size: 1rem;
             font-weight: 600;
@@ -210,6 +212,32 @@
         }
         #ranking-table tbody tr:hover input.readonly {
             background-color: transparent;
+        }
+        
+        /* [NEW] 최근 전적 폼 스타일 */
+        .form-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .form-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .form-dot.win {
+            background-color: #2ecc71; /* Green */
+            box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
+        }
+        .form-dot.loss {
+            background-color: #e74c3c; /* Red */
+            box-shadow: 0 0 5px rgba(231, 76, 60, 0.5);
+        }
+        .form-dot.empty {
+            background-color: var(--border-color);
+            opacity: 0.3;
         }
         
         .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: var(--spacing-lg); }
@@ -350,6 +378,7 @@
                             <th data-sort="rank">순위</th>
                             <th data-sort="player">선수</th>
                             <th data-sort="mmr">MMR</th>
+                            <th>최근 전적</th> <!-- [NEW] Recent Form Header -->
                             <th data-sort="championships">우승</th>
                             <th data-sort="wins">승</th>
                             <th data-sort="losses">패</th>
@@ -522,47 +551,126 @@
             if (!newsContainer || !newsList) return;
 
             const allNews = [];
-            // [날짜 수정] 단순 타임스탬프 비교가 아니라, "오늘 포함 최근 7일" 날짜로 계산
+            // [날짜 수정] "오늘 포함 최근 7일" 날짜로 계산 (일주일 지난 뉴스 차단)
             const today = new Date();
-            today.setHours(23, 59, 59, 999); // 오늘 끝까지 포함
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(today.getDate() - 7);
-            sevenDaysAgo.setHours(0, 0, 0, 0); // 7일 전 시작시간
-
+            const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            
+            // 데이터 준비
             const sortedPlayersByMMR = [...players].sort((a, b) => (b.mmr || 0) - (a.mmr || 0));
+            const recentMatches = matches.filter(m => new Date(m.timestamp) > oneWeekAgo);
+            
+            // 최근(일주일 이내) 게임을 한 선수들만 "활성 선수"로 간주하여 뉴스에 내보냄 (슬럼프 등)
+            // (lastGameTimestamp가 문자열일 수도, Timestamp 객체일 수도 있으니 안전하게 변환)
+            const activePlayers = players.filter(p => {
+                if(!p.lastGameTimestamp) return false;
+                const lastGameDate = new Date(p.lastGameTimestamp);
+                return lastGameDate > oneWeekAgo;
+            });
 
-            // 1. 랭킹 1위
+            // 1. 랭킹 1위 (이건 상징적이라 기간 상관없이 노출하되, 2위와의 격차에 따라 다르게 표현)
             if (sortedPlayersByMMR.length > 0) {
                 const topRanker = sortedPlayersByMMR[0];
+                let title = `${topRanker.name}, MMR ${Math.round(topRanker.mmr)}점 랭킹 1위... '왕좌' 굳건`;
+                let category = '랭킹 1위';
+
+                // [신규] 2위의 추격
+                if (sortedPlayersByMMR.length > 1) {
+                    const secondRanker = sortedPlayersByMMR[1];
+                    const diff = Math.round(topRanker.mmr - secondRanker.mmr);
+                    if (diff < 50) { // 점수차 50점 미만이면 추격 뉴스로 변경
+                        title = `턱밑 추격! 2위 ${secondRanker.name}... 1위 ${topRanker.name}와 불과 ${diff}점 차`;
+                        category = '추격';
+                    }
+                }
+                allNews.push({ title, category, playerName: topRanker.name });
+            }
+
+            // 2. [신규] 슬럼프 (연패) - 최근 일주일 내 게임한 선수 중 3연패 이상
+            const slumpingPlayers = activePlayers.filter(p => !p.streakIsWin && p.streakCount >= 3)
+                                                 .sort((a, b) => b.streakCount - a.streakCount);
+            if (slumpingPlayers.length > 0) {
+                const p = slumpingPlayers[0];
                 allNews.push({
-                    title: `${topRanker.name}, MMR ${Math.round(topRanker.mmr)}점 랭킹 1위... '왕좌' 굳건`,
-                    category: '랭킹 1위',
-                    playerName: topRanker.name
+                    title: `깊어지는 부진... ${p.name}, ${p.streakCount}연패 수렁... 반등은 언제?`,
+                    category: '슬럼프',
+                    playerName: p.name
                 });
             }
 
-            // 2. 최고 연승자
-            const hottestPlayer = [...players].filter(p => p.streakIsWin && p.streakCount >= 4).sort((a, b) => b.streakCount - a.streakCount)[0];
-            if (hottestPlayer) {
+            // 3. 연승 (최근 활동 선수 중 4연승 이상)
+            const hotPlayers = activePlayers.filter(p => p.streakIsWin && p.streakCount >= 4)
+                                            .sort((a, b) => b.streakCount - a.streakCount);
+            if (hotPlayers.length > 0) {
+                const p = hotPlayers[0];
                 allNews.push({
-                    title: `'파죽지세' ${hottestPlayer.name}, ${hottestPlayer.streakCount}연승 질주... "누가 막을쏘냐"`,
+                    title: `'파죽지세' ${p.name}, ${p.streakCount}연승 질주... "누가 막을쏘냐"`,
                     category: '연승',
-                    playerName: hottestPlayer.name
+                    playerName: p.name
                 });
             }
 
-            // 3. 최근 회차 완승(3승)
-            const sortedMatches = [...matches].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            if (sortedMatches.length > 0) {
-                const lastRoundId = sortedMatches[0]?.round;
-                if (lastRoundId) {
-                    const lastRoundMatches = sortedMatches.filter(m => m.round === lastRoundId);
+            // 4. [신규] 자이언트 킬링 (언더독의 반란) - 최근 일주일 매치 중
+            // 승리팀 평균 MMR이 패배팀 평균 MMR보다 100점 이상 낮을 때
+            // 주의: 현재 MMR 기준으로 계산 (당시 MMR은 알 수 없으므로 근사치)
+            recentMatches.forEach(match => {
+                if (!match.score || !match.score.includes('-')) return;
+                const [s1, s2] = match.score.split('-').map(Number);
+                if (s1 === s2) return;
+                
+                const pNames = match.players.map(n => n.replace(/\*/g, ''));
+                const pObjs = pNames.map(n => players.find(p => p.name === n) || { mmr: 1500 }); // 없으면 기본값
+                
+                const team1MMR = (pObjs[0].mmr + pObjs[1].mmr) / 2;
+                const team2MMR = (pObjs[2].mmr + pObjs[3].mmr) / 2;
+                
+                let winnerTeam, loserTeam, winnerMMR, loserMMR;
+                if (s1 > s2) {
+                    winnerTeam = [pNames[0], pNames[1]]; winnerMMR = team1MMR;
+                    loserTeam = [pNames[2], pNames[3]]; loserMMR = team2MMR;
+                } else {
+                    winnerTeam = [pNames[2], pNames[3]]; winnerMMR = team2MMR;
+                    loserTeam = [pNames[0], pNames[1]]; loserMMR = team1MMR;
+                }
+
+                if (loserMMR - winnerMMR >= 100) { // 100점 이상 차이나는 강팀을 잡았을 때
+                    allNews.push({
+                        title: `대이변! [${winnerTeam.join(', ')}], 강호 [${loserTeam.join(', ')}] 제압... '언더독의 반란'`,
+                        category: '이변',
+                        playerName: winnerTeam[0]
+                    });
+                }
+            });
+
+            // 5. [신규] 혈투 (6-5, 5-6 승부) - 최근 일주일
+            recentMatches.forEach(match => {
+                if (!match.score) return;
+                const [s1, s2] = match.score.split('-').map(Number);
+                if ((s1 === 6 && s2 === 5) || (s1 === 5 && s2 === 6)) {
+                    const winners = (s1 > s2) ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
+                    const winnerNames = winners.map(p => p.replace(/\*/g, '')).join(', ');
+                    allNews.push({
+                        title: `치열한 혈투 끝에... [${winnerNames}], 깻잎 한 장 차이 신승`,
+                        category: '혈투',
+                        playerName: winners[0].replace(/\*/g, '')
+                    });
+                }
+            });
+
+            // 6. 퍼펙트 (최근 라운드 전승) - 라운드 날짜가 최근 일주일이어야 함
+            // matches는 이미 전체 데이터이므로, 최근 라운드를 찾아서 날짜 체크
+            if (matches.length > 0) {
+                const sortedAllMatches = [...matches].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                const lastRoundMatch = sortedAllMatches[0];
+                if (lastRoundMatch && new Date(lastRoundMatch.timestamp) > oneWeekAgo) {
+                    const lastRoundId = lastRoundMatch.round;
+                    const lastRoundMatches = sortedAllMatches.filter(m => m.round === lastRoundId);
+                    
                     const winsByPlayer = {};
                     lastRoundMatches.forEach(match => {
-                        if (match.score.includes('-')) {
+                        if (match.score && match.score.includes('-')) {
                             const [s1, s2] = match.score.split('-').map(Number);
                             const winners = (s1 > s2 ? match.players.slice(0, 2) : match.players.slice(2, 4)).map(p => p.replace(/\*/g, ''));
-                            winners.forEach(w => { winsByPlayer[w] = (winsByPlayer[w] || 0) + 1; });
+                            winners.forEach(w => { if(w) winsByPlayer[w] = (winsByPlayer[w] || 0) + 1; });
                         }
                     });
                     const perfectDayPlayers = Object.keys(winsByPlayer).filter(name => winsByPlayer[name] >= 3);
@@ -576,14 +684,13 @@
                 }
             }
 
-            // 4. [신규] 6-0 베이글 마스터 (최근 1주일 내)
-            matches.filter(m => new Date(m.timestamp) >= sevenDaysAgo).forEach(match => {
+            // 7. 베이글 (6-0) - 최근 일주일
+            recentMatches.forEach(match => {
                 if (!match.score) return;
                 const [s1, s2] = match.score.split('-').map(Number);
                 if ((s1 === 6 && s2 === 0) || (s1 === 0 && s2 === 6)) {
                     const winners = (s1 === 6) ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
                     const winnerNames = winners.map(p => p.replace(/\*/g, '')).join(', ');
-                    // 중복 뉴스 방지 위해 allNews에 비슷한 내용 있나 확인은 나중에 셔플로 처리
                     allNews.push({
                         title: `'무자비한 경기력' ${winnerNames}, 6-0 완봉승... 상대 '망연자실'`,
                         category: '베이글',
@@ -592,39 +699,14 @@
                 }
             });
 
-            // 5. [수정] 최근 7일간 최다 경기 소화 (로직 개선)
-            const recentMatches = matches.filter(m => {
-                const mDate = new Date(m.timestamp);
-                return mDate >= sevenDaysAgo && mDate <= today;
-            });
-
-            if (recentMatches.length > 0) {
-                const participation = {};
-                recentMatches.forEach(m => m.players.forEach(p => {
-                    const name = p.replace(/\*/g, '');
-                    // 공란이 아닐 경우만 카운트
-                    if(name) participation[name] = (participation[name] || 0) + 1;
-                }));
-                // 최소 4경기 이상
-                const mostActiveEntry = Object.entries(participation).filter(e => e[1] >= 4).sort((a, b) => b[1] - a[1])[0];
-                if (mostActiveEntry) {
-                    allNews.push({
-                        title: `'지치지 않는 체력' ${mostActiveEntry[0]}, 최근 7일간 ${mostActiveEntry[1]}게임 소화... '코트의 지박령'`,
-                        category: '최다참가',
-                        playerName: mostActiveEntry[0]
-                    });
-                }
-            }
-            
-            // 6. [신규] 아이스맨 (접전 승률 높은 사람)
-            // 승률 50% 이상이면서, 접전승 횟수가 2회 이상인 사람 중 최고
-            const iceMan = [...players].filter(p => {
-                const closeWins = parseInt(p.closeMatchWinRate?.match(/(\d+)승/)?.[1] || 0);
-                return closeWins >= 2;
+            // 8. 아이스맨 (접전 승률) - 조건: 이번주에 게임을 했고, 접전 승률이 60% 이상인 사람
+            const iceMan = activePlayers.filter(p => {
+                const closeWinRateStr = p.closeMatchWinRate || "0%";
+                const rate = parseInt(closeWinRateStr.split('%')[0]);
+                const wins = parseInt(closeWinRateStr.match(/(\d+)승/)?.[1] || 0);
+                return rate >= 60 && wins >= 2; 
             }).sort((a, b) => {
-                const rateA = parseInt(a.closeMatchWinRate?.split('%')[0] || 0);
-                const rateB = parseInt(b.closeMatchWinRate?.split('%')[0] || 0);
-                return rateB - rateA;
+                return parseInt(b.closeMatchWinRate) - parseInt(a.closeMatchWinRate);
             })[0];
 
             if (iceMan) {
@@ -635,51 +717,21 @@
                 });
             }
 
-            // 7. [신규] 영혼의 듀오 (최근 라운드에서 같이 이긴 파트너)
-            if (sortedMatches.length > 0) {
-                const lastRoundId = sortedMatches[0]?.round;
-                const lastRoundMatches = sortedMatches.filter(m => m.round === lastRoundId);
-                const partnerWins = {}; // "P1+P2": count
-                lastRoundMatches.forEach(m => {
-                    if(m.score && m.score.includes('-')) {
-                        const [s1, s2] = m.score.split('-').map(Number);
-                        const winners = (s1 > s2) ? [m.players[0], m.players[1]] : [m.players[2], m.players[3]];
-                        const p1 = winners[0].replace(/\*/g, '');
-                        const p2 = winners[1].replace(/\*/g, '');
-                        if(p1 && p2) {
-                            const key = [p1, p2].sort().join('&');
-                            partnerWins[key] = (partnerWins[key] || 0) + 1;
-                        }
-                    }
-                });
-                // 2승 이상 같이 한 파트너
-                const bestDuoKey = Object.keys(partnerWins).find(key => partnerWins[key] >= 2);
-                if(bestDuoKey) {
-                    const [p1, p2] = bestDuoKey.split('&');
-                    allNews.push({
-                        title: `'환상의 호흡' ${p1} & ${p2}, 오늘만 ${partnerWins[bestDuoKey]}승 합작... '영혼의 듀오'`,
-                        category: '듀오',
-                        playerName: p1
-                    });
-                }
-            }
 
-
-            // 뉴스 렌더링 (랜덤 3개)
+            // 뉴스 렌더링 (랜덤 섞어서 최대 4개 노출)
             newsList.innerHTML = '';
             if (allNews.length > 0) {
                 const uniqueNews = [];
-                const seenCategories = new Set();
+                const seenTitles = new Set();
                 
                 allNews.sort(() => 0.5 - Math.random()); 
                 
                 for (const news of allNews) {
-                    // 카테고리 중복 방지 (다양한 소식 보여주기 위해)
-                    if (!seenCategories.has(news.category)) {
+                    if (!seenTitles.has(news.title)) {
                         uniqueNews.push(news);
-                        seenCategories.add(news.category);
+                        seenTitles.add(news.title);
                     }
-                    if (uniqueNews.length >= 3) break;
+                    if (uniqueNews.length >= 4) break; // 최대 4개
                 }
                 
                 uniqueNews.forEach(news => {
@@ -881,16 +933,27 @@
             rankingBody.innerHTML = ''; 
             
             if (finalFilteredData.length === 0) {
-                 rankingBody.innerHTML = `<tr><td colspan="12">표시할 데이터가 없습니다.</td></tr>`;
+                 rankingBody.innerHTML = `<tr><td colspan="13">표시할 데이터가 없습니다.</td></tr>`;
                  return;
             }
 
             finalFilteredData.forEach((player) => {
                 const row = rankingBody.insertRow();
+                // [NEW] 최근 전적 렌더링
+                const recentForm = player.recentForm || [];
+                const formHtml = recentForm.length > 0 
+                    ? `<div class="form-container">
+                        ${recentForm.map(result => `<span class="form-dot ${result === 'W' ? 'win' : 'loss'}"></span>`).join('')}
+                       </div>`
+                    : `<div class="form-container">
+                        ${Array(5).fill('<span class="form-dot empty"></span>').join('')}
+                       </div>`;
+
                 row.innerHTML = `
                     <td class="rank-cell">${player.rank}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span></td>
                     <td><input type="text" value="${player.isFemale ? `${player.name}*` : player.name}" class="ranking-player readonly" readonly></td>
                     <td><input type="text" value="${isNaN(player.mmr) ? '1500' : Math.round(player.mmr)}" class="mmr readonly" readonly></td>
+                    <td>${formHtml}</td> <!-- Recent Form Column -->
                     <td><span class="championship-star" data-count="${player.championships || 0}">${(player.championships || 0) == 1 ? '⭐' : (player.championships || 0) > 1 ? `⭐(${player.championships})` : ''}</span></td>
                     <td><input type="text" value="${player.wins || '0'}" class="wins readonly" readonly></td>
                     <td><input type="text" value="${player.losses || '0'}" class="losses readonly" readonly></td>
@@ -919,6 +982,7 @@
                 p.wins = 0; p.losses = 0; p.totalSets = 0; 
                 p.gameDiff = 0; p.streakCount = 0; p.streakIsWin = false;
                 p.lastGameTimestamp = p.lastGameTimestamp || null; 
+                p.matchHistory = []; // [NEW] 전체 매치 기록 (W/L)
             });
 
             const matchesByRound = new Map();
@@ -929,7 +993,8 @@
                         players[cleanName] = {
                             name: cleanName, wins: 0, losses: 0, mmr: constants.BASE_MMR, championships: 0, 
                             totalSets: 0, gameDiff: 0, isFemale: pName.includes('*'), 
-                            streakCount: 0, streakIsWin: false, lastGameTimestamp: null
+                            streakCount: 0, streakIsWin: false, lastGameTimestamp: null,
+                            matchHistory: [] // [NEW]
                         };
                     }
                 });
@@ -992,6 +1057,10 @@
                         p.totalSets = (p.totalSets || 0) + 1;
                         p.gameDiff = (p.gameDiff || 0) + (isWinner ? gameDiffVal : -gameDiffVal);
                         if (timestamp) p.lastGameTimestamp = timestamp; 
+                        
+                        // [NEW] 전적 히스토리 기록
+                        p.matchHistory.push(isWinner ? 'W' : 'L');
+
                         if (isWinner) {
                             p.wins = (p.wins || 0) + 1;
                             p.streakCount = p.streakIsWin ? (p.streakCount || 0) + 1 : 1;
@@ -1087,6 +1156,9 @@
                 p.closeMatchWinRate = dStats.totalSets > 0 ? `${Math.round((dStats.closeMatchWins / dStats.totalSets) * 100)}%(${dStats.closeMatchWins}승)` : '0%';
                 p.dominantWins = dStats.totalSets > 0 ? `${Math.round((dStats.dominantWins / dStats.totalSets) * 100)}%(${dStats.dominantWins}승)` : '0%';
                 p.dominantLosses = dStats.totalSets > 0 ? `${Math.round((dStats.dominantLosses / dStats.totalSets) * 100)}%(${dStats.dominantLosses}패)` : '0%';
+                
+                // [NEW] 최근 5경기 폼 추출
+                p.recentForm = (p.matchHistory || []).slice(-5);
             });
             return allCalculatedPlayers;
         }
@@ -1125,7 +1197,8 @@
                             streakCount: 0, streakIsWin: false, 
                             winRate: 0, avgGameDiff: '0.00',
                             closeMatchWinRate: '0%', dominantWins: '0%', dominantLosses: '0%',
-                            bestPartner: '데이터 부족'
+                            bestPartner: '데이터 부족',
+                            recentForm: [] // [NEW]
                         });
                     }
                 });
