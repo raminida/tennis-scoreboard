@@ -869,20 +869,20 @@
                 }
             });
 
-            // 뉴스 렌더링 (랜덤으로 최대 6개 노출)
+            // 뉴스 렌더링 (랜덤으로 최대 6개 노출, 카테고리 중복 방지)
             newsList.innerHTML = '';
             if (allNews.length > 0) {
                 const uniqueNews = [];
-                const seenTitles = new Set();
+                const seenCategories = new Set(); // 타이틀 대신 카테고리 기준 중복 체크
                 
                 allNews.sort(() => 0.5 - Math.random()); 
                 
                 for (const news of allNews) {
-                    if (!seenTitles.has(news.title)) {
+                    if (!seenCategories.has(news.category)) {
                         uniqueNews.push(news);
-                        seenTitles.add(news.title);
+                        seenCategories.add(news.category);
                     }
-                    if (uniqueNews.length >= 6) break; // 표시 개수 6개로 증가
+                    if (uniqueNews.length >= 6) break; // 표시 개수 6개로 제한
                 }
                 
                 uniqueNews.forEach(news => {
