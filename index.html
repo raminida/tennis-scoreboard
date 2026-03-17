@@ -1,24 +1,24 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="light"> <!-- 기본 테마: US 오픈 (Light) -->
+<html lang="ko" data-theme="light"> <!-- 기본 테마: 스프링 오픈 (Light - Warm Tones) -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>호수 오픈 - US Open Season</title>
+    <title>호수 오픈 - Spring Season</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=stylesheet" rel="stylesheet">
     <style>
         :root {
-            /* [다크 모드] US 오픈 나이트 세션 (Deep Navy & Neon) */
-            --bg-color: #0f172a; /* Midnight Navy */
-            --surface-color: #1e293b; /* Dark Slate */
-            --primary-color: #38bdf8; /* Bright Cyan Blue (For Icons/Buttons) */
-            --primary-variant-color: #93c5fd; /* Light Blue */
+            /* [다크 모드] 나이트 세션 (Deep Navy & Neon) - 기존 유지 */
+            --bg-color: #0f172a; 
+            --surface-color: #1e293b; 
+            --primary-color: #38bdf8; 
+            --primary-variant-color: #93c5fd; 
             --secondary-color: #334155;
-            --text-color: #f1f5f9; /* White-ish text */
+            --text-color: #f1f5f9; 
             --text-secondary-color: #94a3b8;
-            --accent-gold: #ccff00; /* Tennis Ball Neon */
+            --accent-gold: #ccff00; 
             --border-color: #334155;
             --shadow-color: rgba(0, 0, 0, 0.6);
             --spacing-sm: 8px;
@@ -27,44 +27,40 @@
             --radius: 12px;
             --input-bg-readonly: #1e293b; 
             
-            /* [다크 모드] 테이블 텍스트 전용 색상 (흰색 요청 반영) */
-            --table-player-color: #FFFFFF; /* 선수 이름: 완전 흰색 */
-            --table-stat-color: #FFFFFF;   /* 기록 수치: 완전 흰색 */
+            --table-player-color: #FFFFFF; 
+            --table-stat-color: #FFFFFF;   
             
-            /* 다크 모드 전용 변수 */
             --news-section-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             --news-item-bg: rgba(51, 65, 85, 0.6); 
             --news-text-color: #f1f5f9;
             --table-header-bg: #0f172a;
             --table-header-text: #38bdf8;
-            --table-row-hover: rgba(255, 255, 255, 0.05); /* 흰색 투명도 */
+            --table-row-hover: rgba(255, 255, 255, 0.05); 
             --summary-bg: linear-gradient(135deg, #1e293b, #334155);
         }
         html[data-theme="light"] {
-            /* [라이트 모드] US 오픈 데이 세션 (Vivid Royal Blue & White) */
-            --bg-color: #F0F4F8; 
+            /* [라이트 모드] 스프링 테마 (Warm Coral & Sunrise - 웜톤) */
+            --bg-color: #FFF8F5; /* 따뜻한 피치 화이트 */
             --surface-color: #FFFFFF;
-            --primary-color: #204CB5; /* Deep Royal Blue */
-            --primary-variant-color: #002C5F; /* Dark Navy */
-            --text-color: #102027; 
-            --text-secondary-color: #546E7A;
-            --accent-gold: #D4E100; /* Tennis Ball Volt */
-            --border-color: #CFD8DC;
-            --shadow-color: rgba(32, 76, 181, 0.15); 
-            --input-bg-readonly: #FFFFFF;
+            --primary-color: #E64A19; /* 코랄/테라코타 오렌지 */
+            --primary-variant-color: #D84315; /* 짙은 코랄 */
+            --text-color: #3E2723; /* 부드러운 다크 브라운 */
+            --text-secondary-color: #8D6E63;
+            --accent-gold: #FFCA28; /* 따뜻한 머스타드 옐로우 */
+            --border-color: #FFCCBC;
+            --shadow-color: rgba(230, 74, 25, 0.12); 
+            --input-bg-readonly: #FFFDFD;
 
-            /* [라이트 모드] 테이블 텍스트 전용 색상 (기존 유지) */
-            --table-player-color: #204CB5; /* 선수 이름: 로얄 블루 */
-            --table-stat-color: #002C5F;   /* 기록 수치: 다크 네이비 */
+            --table-player-color: #D84315; 
+            --table-stat-color: #4E342E;   
 
-            /* 라이트 모드 전용 변수 */
-            --news-section-bg: linear-gradient(135deg, #ffffff 0%, #E8F0FE 100%);
+            --news-section-bg: linear-gradient(135deg, #ffffff 0%, #FFCCBC 100%);
             --news-item-bg: rgba(255, 255, 255, 0.9);
-            --news-text-color: #102027;
-            --table-header-bg: #E8F0FE;
-            --table-header-text: #002C5F;
-            --table-row-hover: rgba(212, 225, 0, 0.15);
-            --summary-bg: linear-gradient(135deg, #ffffff, #F5F7FA);
+            --news-text-color: #3E2723;
+            --table-header-bg: #FFE0B2; /* 봄 느낌의 따뜻한 헤더 */
+            --table-header-text: #D84315;
+            --table-row-hover: rgba(230, 74, 25, 0.06);
+            --summary-bg: linear-gradient(135deg, #ffffff, #FFF3E0);
         }
 
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
@@ -120,11 +116,24 @@
         }
         html:not([data-theme="light"]) .news-category { color: #0f172a; }
 
+        /* 기존 뉴스 카테고리 색상 */
         .news-category[data-category="베이글"] { background-color: #d63031; color: #fff !important; } 
         .news-category[data-category="아이스맨"], .news-category[data-category="혈투"] { background-color: #38bdf8; } 
         .news-category[data-category="랭킹 1위"], .news-category[data-category="추격"] { background-color: var(--accent-gold); color: #2d3436 !important; } 
         .news-category[data-category="슬럼프"] { background-color: #636e72; color: #fff !important; }
         .news-category[data-category="이변"] { background-color: #e17055; color: #fff !important; }
+
+        /* 신규 뉴스 카테고리 색상 */
+        .news-category[data-category="장기집권"] { background-color: #f39c12; color: #fff !important; } 
+        .news-category[data-category="철인"] { background-color: #8e44ad; color: #fff !important; } 
+        .news-category[data-category="잠적"] { background-color: #7f8c8d; color: #fff !important; }
+        .news-category[data-category="환상의 짝꿍"] { background-color: #e84393; color: #fff !important; }
+        .news-category[data-category="승률왕"] { background-color: #f1c40f; color: #2d3436 !important; }
+        .news-category[data-category="불운"] { background-color: #34495e; color: #fff !important; }
+        .news-category[data-category="폭격기"] { background-color: #c0392b; color: #fff !important; }
+        .news-category[data-category="올라운더"] { background-color: #00cec9; color: #fff !important; }
+        .news-category[data-category="수문장"] { background-color: #27ae60; color: #fff !important; }
+        .news-category[data-category="숙적"] { background-color: #d35400; color: #fff !important; }
 
         .news-link {
             font-size: 1rem;
@@ -152,7 +161,7 @@
             padding-top: var(--spacing-lg); 
             margin-bottom: 2rem; 
             letter-spacing: -2px; 
-            text-shadow: 2px 2px 10px rgba(56, 189, 248, 0.2);
+            text-shadow: 2px 2px 10px rgba(230, 74, 25, 0.15);
         }
 
         .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
@@ -184,25 +193,23 @@
         #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; }
         
         input[type="text"], input[type="search"], input[type="password"], select { width: 100%; min-width: 70px; max-width: 100px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
-        input:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+        input:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 2px rgba(230, 74, 25, 0.2); }
         
         .schedule-table .player-input { min-width: 80px; max-width: 110px; }
         .schedule-table .score-input { min-width: 40px; max-width: 60px; }
         input.ranking-player, input.mmr { min-width: 80px; max-width: 120px; }
         
-        /* [핵심 수정] 읽기 전용 인풋 색상 조정 */
         input.readonly { 
             background-color: var(--input-bg-readonly); 
-            color: var(--table-stat-color); /* 다크:흰색, 라이트:네이비 */
+            color: var(--table-stat-color); 
             font-weight: 700; 
             border: 1px solid transparent; 
             border-bottom: 1px solid var(--border-color);
             box-shadow: none;
         }
         
-        /* [핵심 수정] 선수 이름 색상 조정 */
         input.ranking-player {
-            color: var(--table-player-color); /* 다크:흰색, 라이트:블루 */
+            color: var(--table-player-color); 
             font-weight: 900;
             font-size: 1rem;
         }
@@ -214,31 +221,11 @@
             background-color: transparent;
         }
         
-        /* [NEW] 최근 전적 폼 스타일 */
-        .form-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-        .form-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        .form-dot.win {
-            background-color: #2ecc71; /* Green */
-            box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
-        }
-        .form-dot.loss {
-            background-color: #e74c3c; /* Red */
-            box-shadow: 0 0 5px rgba(231, 76, 60, 0.5);
-        }
-        .form-dot.empty {
-            background-color: var(--border-color);
-            opacity: 0.3;
-        }
+        .form-container { display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .form-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .form-dot.win { background-color: #2ecc71; box-shadow: 0 0 5px rgba(46, 204, 113, 0.5); }
+        .form-dot.loss { background-color: #e74c3c; box-shadow: 0 0 5px rgba(231, 76, 60, 0.5); }
+        .form-dot.empty { background-color: var(--border-color); opacity: 0.3; }
         
         .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: var(--spacing-lg); }
         .btn { display: inline-block; padding: var(--spacing-md) var(--spacing-lg); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; transition: transform 0.1s, box-shadow 0.1s; }
@@ -275,7 +262,7 @@
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1999; backdrop-filter: blur(2px); }
         .overlay.show { display: block; }
         
-        .potw-section { background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #fff; padding: var(--spacing-lg); border-radius: var(--radius); margin-bottom: var(--spacing-lg); text-align: center; box-shadow: 0 5px 15px rgba(56, 189, 248, 0.3); }
+        .potw-section { background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #fff; padding: var(--spacing-lg); border-radius: var(--radius); margin-bottom: var(--spacing-lg); text-align: center; box-shadow: 0 5px 15px rgba(230, 74, 25, 0.3); }
         html:not([data-theme="light"]) .potw-section { color: #0f172a; font-weight: bold; }
         
         #player-management-list { max-height: 60vh; overflow-y: auto; margin-top: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius); }
@@ -328,13 +315,14 @@
     </style>
 </head>
 <body>
-    <button class="theme-toggle" id="theme-toggle">🎾</button>
+    <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
 
         <!-- 뉴스 티커 -->
         <div id="news-ticker-section" class="section">
             <div class="news-header">
-                <span>🎾 호수 US 오픈 뉴스</span>
+                <!-- 형 요청대로 뉴스 타이틀 수정 -->
+                <span>🎾 호수 오픈 뉴스</span>
             </div>
             <div id="news-list-container">
                 <p>리그 데이터를 불러오는 중입니다...</p>
@@ -378,7 +366,7 @@
                             <th data-sort="rank">순위</th>
                             <th data-sort="player">선수</th>
                             <th data-sort="mmr">MMR</th>
-                            <th>최근 전적</th> <!-- [NEW] Recent Form Header -->
+                            <th>최근 전적</th> 
                             <th data-sort="championships">우승</th>
                             <th data-sort="wins">승</th>
                             <th data-sort="losses">패</th>
@@ -446,7 +434,6 @@
     <div id="autocomplete-bar" class="autocomplete-bar">
     </div>
 
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
@@ -495,7 +482,7 @@
             const validTheme = theme === 'light' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', validTheme);
             localStorage.setItem('theme', validTheme);
-            document.getElementById('theme-toggle').textContent = validTheme === 'dark' ? '☀️' : '🎾';
+            document.getElementById('theme-toggle').textContent = validTheme === 'dark' ? '🎾' : '☀️';
         };
         
         const updateRankingTitleAndCountdown = (view) => {
@@ -539,8 +526,8 @@
             }
         };
 
-        // --- [뉴스 로직 대폭 수정] ---
-        const generateLeagueNews = (matches, players) => {
+        // --- [뉴스 로직 대폭 수정] (비동기로 변경) ---
+        const generateLeagueNews = async (matches, players) => {
             if (!matches || matches.length === 0 || !players || players.length === 0) {
                 document.getElementById('news-ticker-section').style.display = 'none';
                 return;
@@ -551,43 +538,269 @@
             if (!newsContainer || !newsList) return;
 
             const allNews = [];
-            // [날짜 수정] "오늘 포함 최근 7일" 날짜로 계산 (일주일 지난 뉴스 차단)
             const today = new Date();
             const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
             
-            // 데이터 준비
             const sortedPlayersByMMR = [...players].sort((a, b) => (b.mmr || 0) - (a.mmr || 0));
             const recentMatches = matches.filter(m => new Date(m.timestamp) > oneWeekAgo);
             
-            // 최근(일주일 이내) 게임을 한 선수들만 "활성 선수"로 간주하여 뉴스에 내보냄 (슬럼프 등)
-            // (lastGameTimestamp가 문자열일 수도, Timestamp 객체일 수도 있으니 안전하게 변환)
             const activePlayers = players.filter(p => {
                 if(!p.lastGameTimestamp) return false;
                 const lastGameDate = new Date(p.lastGameTimestamp);
                 return lastGameDate > oneWeekAgo;
             });
 
-            // 1. 랭킹 1위 (이건 상징적이라 기간 상관없이 노출하되, 2위와의 격차에 따라 다르게 표현)
+            // 1. [기존+신규] 랭킹 1위 & 장기집권 (DB에서 유지 기간 산출)
             if (sortedPlayersByMMR.length > 0) {
                 const topRanker = sortedPlayersByMMR[0];
-                let title = `${topRanker.name}, MMR ${Math.round(topRanker.mmr)}점 랭킹 1위... '왕좌' 굳건`;
-                let category = '랭킹 1위';
+                let weeksAtTop = 0;
+                
+                try {
+                    const historyCol = collection(db, BASE_COLLECTION, 'data', `rankingHistory-${CURRENT_SEASON_VERSION}`);
+                    const q = query(historyCol, orderBy('createdAt', 'desc'), limit(30));
+                    const snap = await getDocs(q);
+                    let firstTime = new Date();
+                    let lastTime = new Date();
+                    let isFirst = true;
 
-                // [신규] 2위의 추격
-                if (sortedPlayersByMMR.length > 1) {
-                    const secondRanker = sortedPlayersByMMR[1];
-                    const diff = Math.round(topRanker.mmr - secondRanker.mmr);
-                    if (diff < 50) { // 점수차 50점 미만이면 추격 뉴스로 변경
-                        title = `턱밑 추격! 2위 ${secondRanker.name}... 1위 ${topRanker.name}와 불과 ${diff}점 차`;
-                        category = '추격';
+                    for (const docSnap of snap.docs) {
+                        const data = docSnap.data();
+                        let maxMmr = -1;
+                        let tPlayer = '';
+                        for (const [key, value] of Object.entries(data)) {
+                            if (key !== 'createdAt' && typeof value === 'number' && value > maxMmr) {
+                                maxMmr = value;
+                                tPlayer = key.replace(/_/g, '.');
+                            }
+                        }
+                        if (tPlayer === topRanker.name || tPlayer === topRanker.name.replace(/\*/g, '')) {
+                            if (data.createdAt) {
+                                firstTime = data.createdAt.toDate();
+                                if(isFirst) { lastTime = data.createdAt.toDate(); isFirst = false; }
+                            }
+                        } else {
+                            break;
+                        }
                     }
+                    const diffTime = Math.abs(lastTime - firstTime);
+                    weeksAtTop = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+                } catch(e) { console.error("Ranking history check error:", e); }
+
+                if (weeksAtTop >= 1) {
+                    allNews.push({
+                        title: `[대기록] ${topRanker.name}, 흔들림 없는 1위... 무려 ${weeksAtTop}주 연속 '장기집권'`,
+                        category: '장기집권',
+                        playerName: topRanker.name
+                    });
+                } else {
+                    let title = `${topRanker.name}, MMR ${Math.round(topRanker.mmr)}점 랭킹 1위... '왕좌' 굳건`;
+                    let category = '랭킹 1위';
+                    if (sortedPlayersByMMR.length > 1) {
+                        const secondRanker = sortedPlayersByMMR[1];
+                        const diff = Math.round(topRanker.mmr - secondRanker.mmr);
+                        if (diff < 50) {
+                            title = `턱밑 추격! 2위 ${secondRanker.name}... 1위 ${topRanker.name}와 불과 ${diff}점 차`;
+                            category = '추격';
+                        }
+                    }
+                    allNews.push({ title, category, playerName: topRanker.name });
                 }
-                allNews.push({ title, category, playerName: topRanker.name });
             }
 
-            // 2. [신규] 슬럼프 (연패) - 최근 일주일 내 게임한 선수 중 3연패 이상
-            const slumpingPlayers = activePlayers.filter(p => !p.streakIsWin && p.streakCount >= 3)
-                                                 .sort((a, b) => b.streakCount - a.streakCount);
+            // [신규 카테고리를 위한 통계 추출]
+            const playerStatsExt = {};
+            players.forEach(p => {
+                playerStatsExt[p.name] = { 
+                    matchesLast7Days: 0, closeLosses: 0, partners: new Set(), opponents: {} 
+                };
+            });
+
+            recentMatches.forEach(match => {
+                if(!match.score) return;
+                const pNames = match.players.map(n => n.replace(/\*/g, ''));
+                pNames.forEach(n => {
+                    if(playerStatsExt[n]) playerStatsExt[n].matchesLast7Days++;
+                });
+            });
+
+            let rivalPair = { p1: '', p2: '', count: 0 };
+            matches.forEach(match => {
+                if(!match.score) return;
+                const [s1, s2] = match.score.split('-').map(Number);
+                const pNames = match.players.map(n => n.replace(/\*/g, ''));
+                
+                if(playerStatsExt[pNames[0]]) playerStatsExt[pNames[0]].partners.add(pNames[1]);
+                if(playerStatsExt[pNames[1]]) playerStatsExt[pNames[1]].partners.add(pNames[0]);
+                if(playerStatsExt[pNames[2]]) playerStatsExt[pNames[2]].partners.add(pNames[3]);
+                if(playerStatsExt[pNames[3]]) playerStatsExt[pNames[3]].partners.add(pNames[2]);
+
+                const team1 = [pNames[0], pNames[1]];
+                const team2 = [pNames[2], pNames[3]];
+                team1.forEach(t1 => {
+                    if(!t1 || !playerStatsExt[t1]) return;
+                    team2.forEach(t2 => {
+                        if(!t2 || !playerStatsExt[t2]) return;
+                        playerStatsExt[t1].opponents[t2] = (playerStatsExt[t1].opponents[t2] || 0) + 1;
+                        playerStatsExt[t2].opponents[t1] = (playerStatsExt[t2].opponents[t1] || 0) + 1;
+                        
+                        if (playerStatsExt[t1].opponents[t2] > rivalPair.count) {
+                            rivalPair = { p1: t1, p2: t2, count: playerStatsExt[t1].opponents[t2] };
+                        }
+                    });
+                });
+
+                if((s1===5 && s2===6) || (s1===6 && s2===5)) {
+                    const losers = s1 > s2 ? team2 : team1;
+                    losers.forEach(l => {
+                        if(playerStatsExt[l]) playerStatsExt[l].closeLosses++;
+                    });
+                }
+            });
+
+            // 2. [신규] 철인
+            let ironman = null;
+            let maxMatches = 0;
+            for (const [name, stats] of Object.entries(playerStatsExt)) {
+                if (stats.matchesLast7Days > maxMatches) {
+                    maxMatches = stats.matchesLast7Days;
+                    ironman = name;
+                }
+            }
+            if (ironman && maxMatches >= 6) {
+                allNews.push({
+                    title: `'강철 체력' ${ironman}, 최근 일주일 무려 ${maxMatches}경기 소화... "쉬는 게 뭔가요?"`,
+                    category: '철인',
+                    playerName: ironman
+                });
+            }
+
+            // 3. [신규] 잠적
+            const threeWeeksAgo = new Date(today.getTime() - 21 * 24 * 60 * 60 * 1000);
+            const missingPlayers = players.filter(p => {
+                if(!p.lastGameTimestamp) return false;
+                const lastGameDate = new Date(p.lastGameTimestamp);
+                return lastGameDate < threeWeeksAgo && (p.wins + p.losses) >= 10;
+            });
+            if (missingPlayers.length > 0) {
+                const p = missingPlayers[Math.floor(Math.random() * missingPlayers.length)];
+                allNews.push({
+                    title: `${p.name} 선수를 찾습니다... 코트 떠난 지 3주 경과, "돌아와요!"`,
+                    category: '잠적',
+                    playerName: p.name
+                });
+            }
+
+            // 4. [신규] 환상의 짝꿍
+            let bestDuo = null;
+            let maxDuoWins = 0;
+            players.forEach(p => {
+                if(p.bestPartner && p.bestPartner !== '데이터 부족') {
+                    const wins = parseInt(p.bestPartner.match(/\((\d+)승/)?.[1] || 0);
+                    if (wins > maxDuoWins) {
+                        maxDuoWins = wins;
+                        const partnerName = p.bestPartner.split(' ')[0];
+                        bestDuo = `${p.name} & ${partnerName}`;
+                    }
+                }
+            });
+            if (bestDuo && maxDuoWins >= 10) {
+                allNews.push({
+                    title: `눈빛만 봐도 통하는 [${bestDuo}], 통산 ${maxDuoWins}승 합작... '영혼의 듀오'`,
+                    category: '환상의 짝꿍',
+                    playerName: bestDuo.split(' ')[0]
+                });
+            }
+
+            // 5. [신규] 승률왕
+            const veterans = players.filter(p => (p.wins + p.losses) >= 30).sort((a,b) => b.winRate - a.winRate);
+            if (veterans.length > 0) {
+                const p = veterans[0];
+                allNews.push({
+                    title: `[승률 1위] ${p.name}, 통산 승률 ${p.winRate}% 기록 중... "이기는 게 제일 쉬웠어요"`,
+                    category: '승률왕',
+                    playerName: p.name
+                });
+            }
+
+            // 6. [신규] 불운
+            let unlucky = null;
+            let maxCloseLosses = 0;
+            for (const [name, stats] of Object.entries(playerStatsExt)) {
+                if (stats.closeLosses > maxCloseLosses) {
+                    maxCloseLosses = stats.closeLosses;
+                    unlucky = name;
+                }
+            }
+            if (unlucky && maxCloseLosses >= 5) {
+                allNews.push({
+                    title: `지독한 아홉수... ${unlucky}, 5-6 역전패만 무려 ${maxCloseLosses}번 당해`,
+                    category: '불운',
+                    playerName: unlucky
+                });
+            }
+
+            // 7. [신규] 폭격기
+            const dominators = players.filter(p => (p.wins + p.losses) >= 30).map(p => {
+                const domRate = parseInt(p.dominantWins.split('%')[0]);
+                return { name: p.name, rate: domRate };
+            }).sort((a,b) => b.rate - a.rate);
+            if (dominators.length > 0 && dominators[0].rate >= 20) {
+                allNews.push({
+                    title: `'자비 없는 폭격기' ${dominators[0].name}, 압승(6-0, 6-1) 비율 무려 ${dominators[0].rate}%`,
+                    category: '폭격기',
+                    playerName: dominators[0].name
+                });
+            }
+
+            // 8. [신규] 올라운더
+            let allrounder = null;
+            let maxPartners = 0;
+            for (const [name, stats] of Object.entries(playerStatsExt)) {
+                if (stats.partners.size > maxPartners) {
+                    maxPartners = stats.partners.size;
+                    allrounder = name;
+                }
+            }
+            if (allrounder && maxPartners >= 15) {
+                allNews.push({
+                    title: `'미친 친화력' ${allrounder}, 지금까지 무려 ${maxPartners}명의 다른 파트너와 출전!`,
+                    category: '올라운더',
+                    playerName: allrounder
+                });
+            }
+
+            // 9. [신규] 수문장
+            let gatekeeper = null;
+            let minMmrDiff = Number.MAX_VALUE;
+            players.forEach(p => {
+                const games = p.wins + p.losses;
+                if (games >= 40) {
+                    const diff = Math.abs(p.mmr - 1500);
+                    if (diff < minMmrDiff) {
+                        minMmrDiff = diff;
+                        gatekeeper = p;
+                    }
+                }
+            });
+            if (gatekeeper && minMmrDiff <= 30) {
+                allNews.push({
+                    title: `'리그의 척도' ${gatekeeper.name}, ${gatekeeper.wins + gatekeeper.losses}전 치르고도 MMR 1500점대 유지 중!`,
+                    category: '수문장',
+                    playerName: gatekeeper.name
+                });
+            }
+
+            // 10. [신규] 숙적
+            if (rivalPair.count >= 8) {
+                allNews.push({
+                    title: `피할 수 없는 운명... [${rivalPair.p1} vs ${rivalPair.p2}], 네트 너머로만 무려 ${rivalPair.count}번 격돌!`,
+                    category: '숙적',
+                    playerName: rivalPair.p1
+                });
+            }
+
+            // 기존 뉴스: 슬럼프, 연승, 이변, 혈투, 베이글
+            const slumpingPlayers = activePlayers.filter(p => !p.streakIsWin && p.streakCount >= 3).sort((a, b) => b.streakCount - a.streakCount);
             if (slumpingPlayers.length > 0) {
                 const p = slumpingPlayers[0];
                 allNews.push({
@@ -597,9 +810,7 @@
                 });
             }
 
-            // 3. 연승 (최근 활동 선수 중 4연승 이상)
-            const hotPlayers = activePlayers.filter(p => p.streakIsWin && p.streakCount >= 4)
-                                            .sort((a, b) => b.streakCount - a.streakCount);
+            const hotPlayers = activePlayers.filter(p => p.streakIsWin && p.streakCount >= 4).sort((a, b) => b.streakCount - a.streakCount);
             if (hotPlayers.length > 0) {
                 const p = hotPlayers[0];
                 allNews.push({
@@ -609,16 +820,13 @@
                 });
             }
 
-            // 4. [신규] 자이언트 킬링 (언더독의 반란) - 최근 일주일 매치 중
-            // 승리팀 평균 MMR이 패배팀 평균 MMR보다 100점 이상 낮을 때
-            // 주의: 현재 MMR 기준으로 계산 (당시 MMR은 알 수 없으므로 근사치)
             recentMatches.forEach(match => {
                 if (!match.score || !match.score.includes('-')) return;
                 const [s1, s2] = match.score.split('-').map(Number);
                 if (s1 === s2) return;
                 
                 const pNames = match.players.map(n => n.replace(/\*/g, ''));
-                const pObjs = pNames.map(n => players.find(p => p.name === n) || { mmr: 1500 }); // 없으면 기본값
+                const pObjs = pNames.map(n => players.find(p => p.name === n) || { mmr: 1500 });
                 
                 const team1MMR = (pObjs[0].mmr + pObjs[1].mmr) / 2;
                 const team2MMR = (pObjs[2].mmr + pObjs[3].mmr) / 2;
@@ -632,19 +840,14 @@
                     loserTeam = [pNames[0], pNames[1]]; loserMMR = team1MMR;
                 }
 
-                if (loserMMR - winnerMMR >= 100) { // 100점 이상 차이나는 강팀을 잡았을 때
+                if (loserMMR - winnerMMR >= 100) { 
                     allNews.push({
                         title: `대이변! [${winnerTeam.join(', ')}], 강호 [${loserTeam.join(', ')}] 제압... '언더독의 반란'`,
                         category: '이변',
                         playerName: winnerTeam[0]
                     });
                 }
-            });
-
-            // 5. [신규] 혈투 (6-5, 5-6 승부) - 최근 일주일
-            recentMatches.forEach(match => {
-                if (!match.score) return;
-                const [s1, s2] = match.score.split('-').map(Number);
+                
                 if ((s1 === 6 && s2 === 5) || (s1 === 5 && s2 === 6)) {
                     const winners = (s1 > s2) ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
                     const winnerNames = winners.map(p => p.replace(/\*/g, '')).join(', ');
@@ -654,40 +857,7 @@
                         playerName: winners[0].replace(/\*/g, '')
                     });
                 }
-            });
-
-            // 6. 퍼펙트 (최근 라운드 전승) - 라운드 날짜가 최근 일주일이어야 함
-            // matches는 이미 전체 데이터이므로, 최근 라운드를 찾아서 날짜 체크
-            if (matches.length > 0) {
-                const sortedAllMatches = [...matches].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                const lastRoundMatch = sortedAllMatches[0];
-                if (lastRoundMatch && new Date(lastRoundMatch.timestamp) > oneWeekAgo) {
-                    const lastRoundId = lastRoundMatch.round;
-                    const lastRoundMatches = sortedAllMatches.filter(m => m.round === lastRoundId);
-                    
-                    const winsByPlayer = {};
-                    lastRoundMatches.forEach(match => {
-                        if (match.score && match.score.includes('-')) {
-                            const [s1, s2] = match.score.split('-').map(Number);
-                            const winners = (s1 > s2 ? match.players.slice(0, 2) : match.players.slice(2, 4)).map(p => p.replace(/\*/g, ''));
-                            winners.forEach(w => { if(w) winsByPlayer[w] = (winsByPlayer[w] || 0) + 1; });
-                        }
-                    });
-                    const perfectDayPlayers = Object.keys(winsByPlayer).filter(name => winsByPlayer[name] >= 3);
-                    if (perfectDayPlayers.length > 0) {
-                        allNews.push({
-                            title: `[${lastRoundId}회차] ${perfectDayPlayers.join(', ')}, 전승 '완벽한 하루' 달성`,
-                            category: '퍼펙트',
-                            playerName: perfectDayPlayers[0]
-                        });
-                    }
-                }
-            }
-
-            // 7. 베이글 (6-0) - 최근 일주일
-            recentMatches.forEach(match => {
-                if (!match.score) return;
-                const [s1, s2] = match.score.split('-').map(Number);
+                
                 if ((s1 === 6 && s2 === 0) || (s1 === 0 && s2 === 6)) {
                     const winners = (s1 === 6) ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
                     const winnerNames = winners.map(p => p.replace(/\*/g, '')).join(', ');
@@ -699,26 +869,7 @@
                 }
             });
 
-            // 8. 아이스맨 (접전 승률) - 조건: 이번주에 게임을 했고, 접전 승률이 60% 이상인 사람
-            const iceMan = activePlayers.filter(p => {
-                const closeWinRateStr = p.closeMatchWinRate || "0%";
-                const rate = parseInt(closeWinRateStr.split('%')[0]);
-                const wins = parseInt(closeWinRateStr.match(/(\d+)승/)?.[1] || 0);
-                return rate >= 60 && wins >= 2; 
-            }).sort((a, b) => {
-                return parseInt(b.closeMatchWinRate) - parseInt(a.closeMatchWinRate);
-            })[0];
-
-            if (iceMan) {
-                allNews.push({
-                    title: `'냉혈한 승부사' ${iceMan.name}, 접전 승률 ${iceMan.closeMatchWinRate}... "위기에 강하다"`,
-                    category: '아이스맨',
-                    playerName: iceMan.name
-                });
-            }
-
-
-            // 뉴스 렌더링 (랜덤 섞어서 최대 4개 노출)
+            // 뉴스 렌더링 (랜덤으로 최대 6개 노출)
             newsList.innerHTML = '';
             if (allNews.length > 0) {
                 const uniqueNews = [];
@@ -731,7 +882,7 @@
                         uniqueNews.push(news);
                         seenTitles.add(news.title);
                     }
-                    if (uniqueNews.length >= 4) break; // 최대 4개
+                    if (uniqueNews.length >= 6) break; // 표시 개수 6개로 증가
                 }
                 
                 uniqueNews.forEach(news => {
@@ -757,7 +908,7 @@
             const container = document.getElementById('schedule-container');
             if (!container) return showToast("스케줄 컨테이너 오류!");
             let roundsHtml = '';
-            const roundsPerCategory = 30, totalRounds = 200;
+            const roundsPerCategory = 30, totalRounds = 220;
             for (let category = 0; category < Math.ceil(totalRounds / roundsPerCategory); category++) {
                 const startRound = category * roundsPerCategory + 1;
                 const endRound = Math.min((category + 1) * roundsPerCategory, totalRounds);
@@ -939,7 +1090,6 @@
 
             finalFilteredData.forEach((player) => {
                 const row = rankingBody.insertRow();
-                // [NEW] 최근 전적 렌더링
                 const recentForm = player.recentForm || [];
                 const formHtml = recentForm.length > 0 
                     ? `<div class="form-container">
@@ -982,7 +1132,7 @@
                 p.wins = 0; p.losses = 0; p.totalSets = 0; 
                 p.gameDiff = 0; p.streakCount = 0; p.streakIsWin = false;
                 p.lastGameTimestamp = p.lastGameTimestamp || null; 
-                p.matchHistory = []; // [NEW] 전체 매치 기록 (W/L)
+                p.matchHistory = []; 
             });
 
             const matchesByRound = new Map();
@@ -994,7 +1144,7 @@
                             name: cleanName, wins: 0, losses: 0, mmr: constants.BASE_MMR, championships: 0, 
                             totalSets: 0, gameDiff: 0, isFemale: pName.includes('*'), 
                             streakCount: 0, streakIsWin: false, lastGameTimestamp: null,
-                            matchHistory: [] // [NEW]
+                            matchHistory: [] 
                         };
                     }
                 });
@@ -1058,7 +1208,6 @@
                         p.gameDiff = (p.gameDiff || 0) + (isWinner ? gameDiffVal : -gameDiffVal);
                         if (timestamp) p.lastGameTimestamp = timestamp; 
                         
-                        // [NEW] 전적 히스토리 기록
                         p.matchHistory.push(isWinner ? 'W' : 'L');
 
                         if (isWinner) {
@@ -1157,7 +1306,6 @@
                 p.dominantWins = dStats.totalSets > 0 ? `${Math.round((dStats.dominantWins / dStats.totalSets) * 100)}%(${dStats.dominantWins}승)` : '0%';
                 p.dominantLosses = dStats.totalSets > 0 ? `${Math.round((dStats.dominantLosses / dStats.totalSets) * 100)}%(${dStats.dominantLosses}패)` : '0%';
                 
-                // [NEW] 최근 5경기 폼 추출
                 p.recentForm = (p.matchHistory || []).slice(-5);
             });
             return allCalculatedPlayers;
@@ -1198,7 +1346,7 @@
                             winRate: 0, avgGameDiff: '0.00',
                             closeMatchWinRate: '0%', dominantWins: '0%', dominantLosses: '0%',
                             bestPartner: '데이터 부족',
-                            recentForm: [] // [NEW]
+                            recentForm: [] 
                         });
                     }
                 });
@@ -1453,7 +1601,7 @@
                     showToast("백업 데이터가 없거나 복구에 실패했습니다.");
                 }
             } catch (error) {
-                showToast(`복구 프로세스 전체 실패: ${error.message}`);
+                showToast(`복구 프로세 전체 실패: ${error.message}`);
             } finally {
                 btn.disabled = false; btn.textContent = '💾 오류 수정 (백업 복구)';
             }
@@ -1522,7 +1670,7 @@
                 
                 rankingUnsubscribe = onSnapshot(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION), (docSnap) => {
                     const data = docSnap.exists() ? docSnap.data() : {};
-                    updateRankingTable(data.players || [], data.potw || null); // allPlayersData가 여기서 세팅됨
+                    updateRankingTable(data.players || [], data.potw || null); 
 
                     if (allMatchesData.length > 0) {
                         generateLeagueNews(allMatchesData, allPlayersData);
