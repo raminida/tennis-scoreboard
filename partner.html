@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 호수 오픈 - 파트너 전적 & 랭킹</title>
+    <title>2026 호수 오픈 - 파트너 전적 & 랭킹</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=stylesheet" rel="stylesheet">
@@ -13,7 +13,17 @@
             --spacing-sm: 8px; --spacing-md: 12px; --spacing-lg: 20px; --radius: 8px;
         }
         html[data-theme="light"] {
-            --bg-color: #F0F4F8; --surface-color: #FFFFFF; --primary-color: #1A3C34; --primary-variant-color: #2A6B5B; --text-color: #1F2937; --text-secondary-color: #6B7280; --border-color: #E5E7EB; --shadow-color: rgba(0, 0, 0, 0.1);
+            /* 2026 여름 테마 (Ocean Blue & Sand) */
+            --bg-color: #F0F8FF; 
+            --surface-color: #FFFFFF; 
+            --primary-color: #0284c7; 
+            --primary-variant-color: #0369a1; 
+            --secondary-color: #0f172a;
+            --text-color: #1e293b; 
+            --text-secondary-color: #64748b; 
+            --accent-gold: #f59e0b; 
+            --border-color: #bae6fd; 
+            --shadow-color: rgba(2, 132, 199, 0.12);
         }
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
         .container { max-width: 1700px; margin: 0 auto; }
@@ -28,26 +38,29 @@
         th, td { padding: var(--spacing-md); text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
         thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; cursor: pointer; }
         th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
-        html[data-theme="light"] th { background-color: #F9FAFB; }
+        html[data-theme="light"] th { background-color: #e0f2fe; }
         .rank-cell { font-weight: 900; color: var(--accent-gold); }
         .win-rate { font-weight: bold; }
         .positive { color: #4CAF50; }
         .negative { color: #F44336; }
+        html[data-theme="light"] .positive { color: #059669; }
+        html[data-theme="light"] .negative { color: #dc2626; }
         .toast { position: fixed; bottom: var(--spacing-lg); left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #333, #111); color: #fff; padding: var(--spacing-md) 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 1000; }
         .toast.show { opacity: 1; }
         .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .ranking-filter { display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg); flex-wrap: wrap; }
         .filter-btn { padding: var(--spacing-sm) var(--spacing-md); background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer; color: var(--text-color); font-weight: 700; }
-        .filter-btn.active { background: var(--primary-color); color: var(--bg-color); }
+        .filter-btn.active { background: var(--primary-color); color: #FFF; }
         .input-group { display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg); flex-wrap: wrap; align-items: center; }
         input[type="text"] { width: 100%; min-width: 150px; max-width: 250px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--spacing-sm); margin: var(--spacing-lg) 0; }
         .stat-box { background: rgba(0, 0, 0, 0.2); padding: var(--spacing-md); border-radius: var(--radius); text-align: center; }
-        html[data-theme="light"] .stat-box { background: rgba(0, 0, 0, 0.05); }
+        html[data-theme="light"] .stat-box { background: rgba(2, 132, 199, 0.05); border: 1px solid var(--border-color); }
         .stat-box h3 { font-size: 1rem; margin: 0 0 var(--spacing-sm); color: var(--primary-color); }
         .stat-box p { font-size: 1.5rem; font-weight: 700; margin: 0; color: var(--accent-gold); }
         #chemistry-table tbody tr { cursor: pointer; transition: background-color 0.2s; }
         #chemistry-table tbody tr:hover { background-color: rgba(255,255,255,0.05); }
+        html[data-theme="light"] #chemistry-table tbody tr:hover { background-color: rgba(2, 132, 199, 0.06); }
         .season-tabs{display:flex;gap:10px;margin-bottom:20px;border-bottom:2px solid var(--border-color);padding-bottom:10px}
         .tab-btn{padding:10px 20px;font-size:1rem;font-weight:700;background:none;border:none;color:var(--text-secondary-color);cursor:pointer;border-bottom:3px solid transparent;transition:color .3s,border-color .3s}
         .tab-btn.active{color:var(--primary-color);border-bottom:3px solid var(--primary-color)}
@@ -65,8 +78,9 @@
     <div class="container">
         <h1 id="main-title">파트너 전적 & 랭킹</h1>
         <div class="season-tabs">
-            <button class="tab-btn active" data-view="current">2025-26 겨울시즌</button>
-            <button class="tab-btn" data-view="previous">2025 여름시즌</button>
+            <button class="tab-btn active" data-view="v3">2026 여름시즌</button>
+            <button class="tab-btn" data-view="v2">2025-26 겨울시즌</button>
+            <button class="tab-btn" data-view="v1">2025 여름시즌</button>
             <button class="tab-btn" data-view="alltime">통산 기록</button>
         </div>
         
@@ -143,16 +157,14 @@
     const auth = getAuth(app);
 
     const BASE_COLLECTION = 'league';
-    const SEASONS = {
-        'v2': { name: '2025-26 겨울시즌' },
-        'v1': { name: '2025 여름시즌' },
-    };
-    const CURRENT_SEASON_VERSION = 'v2';
-    const PREVIOUS_SEASON_VERSION = 'v1';
-
+    // 시즌 변수 업데이트
+    const SEASON_V3 = 'v3';
+    const SEASON_V2 = 'v2';
+    const SEASON_V1 = 'v1';
+    
     let sortKey = 'chemistryScore', sortOrder = 'desc';
     let currentFilter = 'all';
-    let activeView = 'current';
+    let activeView = SEASON_V3; // 기본 뷰 v3
     let allPairStats = [];
     let allMatches = [];
     const playerGenderMap = new Map();
@@ -179,17 +191,20 @@
         let scheduleDocs = [];
         let rankingDocs = [];
 
-        if (activeView === 'current') {
-            scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION)));
-            rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION)));
-        } else if (activeView === 'previous') {
-            scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION)));
-            rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION)));
-        } else { // alltime
-            scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION)));
-            scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION)));
-            rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION)));
-            rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION)));
+        if (activeView === 'alltime') {
+            scheduleDocs = [
+                getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V1)),
+                getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V2)),
+                getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V3))
+            ];
+            rankingDocs = [
+                getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V1)),
+                getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V2)),
+                getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V3))
+            ];
+        } else { 
+            scheduleDocs = [getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', activeView))];
+            rankingDocs = [getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', activeView))];
         }
 
         try {

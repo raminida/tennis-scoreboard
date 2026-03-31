@@ -3,13 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>2025 호수오픈 대시보드</title>
+    <title>2026 호수오픈 대시보드</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#121212;--surface:#1E1E1E;--primary:#4CAF50;--primary-variant:#81C784;--text:#E0E0E0;--text-sec:#A0A0A0;--gold:#FFD700;--border:#333;--shadow:rgba(0,0,0,0.5)}
-        [data-theme="light"]{--bg:#F0F4F8;--surface:#FFF;--primary:#1A3C34;--primary-variant:#2A6B5B;--text:#1F2937;--text-sec:#6B7280;--border:#E5E7EB;--shadow:rgba(0,0,0,0.1)}
-        body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:20px}
+        [data-theme="light"]{
+            /* 2026 여름 테마 (Ocean Blue & Sand) */
+            --bg:#F0F8FF;
+            --surface:#FFFFFF;
+            --primary:#0284c7;
+            --primary-variant:#0369a1;
+            --text:#1e293b;
+            --text-sec:#64748b;
+            --border:#bae6fd;
+            --shadow:rgba(2,132,199,0.12)
+        }
+        body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:20px;transition: background-color 0.3s, color 0.3s;}
         .container{max-width:960px;margin:auto}
         h1{font-family:'Poppins',sans-serif;font-size:2.8rem;text-align:center;color:transparent;background:linear-gradient(135deg,var(--primary),var(--primary-variant));-webkit-background-clip:text;background-clip:text;padding:20px 0;margin-bottom:3rem}
         .section{background:var(--surface);padding:30px;border-radius:16px;box-shadow:0 10px 30px var(--shadow);margin-bottom:3rem;border:1px solid var(--border)}
@@ -21,7 +31,7 @@
         .chart-control button{padding:8px 16px;border-radius:6px;border:1px solid var(--border);background:linear-gradient(135deg,var(--primary),var(--primary-variant));color:#FFF;cursor:pointer}
         .awards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
         .award-card{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center}
-        [data-theme="light"] .award-card{background:#F9FAFB}
+        [data-theme="light"] .award-card{background:rgba(2, 132, 199, 0.03)}
         .award-icon{font-size:3rem;margin-bottom:10px;color:var(--gold)}
         .award-title{font-family:'Poppins',sans-serif;font-size:1.3rem;color:var(--primary-variant);margin-bottom:5px}
         .award-winner{font-size:1.1rem;font-weight:700;color:var(--text)}
@@ -50,10 +60,11 @@
 <body>
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
-        <h1 id="main-title">2025-26 겨울시즌 대시보드</h1>
+        <h1 id="main-title">2026 여름시즌 대시보드</h1>
         <div class="season-tabs">
-            <button class="tab-btn active" data-view="current">2025-26 겨울 시즌</button>
-            <button class="tab-btn" data-view="previous">2025 여름시즌</button>
+            <button class="tab-btn active" data-view="v3">2026 여름시즌</button>
+            <button class="tab-btn" data-view="v2">2025-26 겨울시즌</button>
+            <button class="tab-btn" data-view="v1">2025 여름시즌</button>
             <button class="tab-btn" data-view="alltime">통산 기록</button>
         </div>
         <div class="section">
@@ -71,7 +82,7 @@
             </div>
         </div>
         <div class="section">
-            <h2 id="awards-title">🏆 2025-26 겨울시즌 어워드</h2>
+            <h2 id="awards-title">🏆 2026 여름시즌 어워드</h2>
             <div class="awards-grid"></div>
             <div style="text-align:center;margin-top:30px">
                 <a href="index.html" class="btn" id="main-link">메인으로 돌아가기</a>
@@ -99,14 +110,14 @@
 
         const BASE_COLLECTION = 'league';
         const SEASONS = {
-            'v2': { name: '2025-26 겨울 시즌' },
+            'v3': { name: '2026 여름시즌' },
+            'v2': { name: '2025-26 겨울시즌' },
             'v1': { name: '2025 여름시즌' },
         };
-        const CURRENT_SEASON_VERSION = 'v2';
-        const PREVIOUS_SEASON_VERSION = 'v1';
+        const CURRENT_SEASON_VERSION = 'v3';
 
         let mmrChart, allPlayersData = [], fullMmrHistory = [];
-        let activeView = 'current';
+        let activeView = CURRENT_SEASON_VERSION;
 
         const normalizePlayerName = name => name ? name.replace(/\*/g, '').trim() : '';
         const totalGames = player => parseInt(player.wins || 0) + parseInt(player.losses || 0);
@@ -378,7 +389,6 @@
                 }
             });
 
-
             const awardDetails = view === 'alltime' ? {
                 mvpMale: { title: "통산 MVP (남)", icon: "👑" },
                 mvpFemale: { title: "통산 MVP (여)", icon: "👑" },
@@ -422,31 +432,33 @@
         const loadDashboard = async () => {
             showToast('데이터를 불러오는 중입니다...');
             try {
-                let seasonVersion = CURRENT_SEASON_VERSION;
-                if (activeView === 'previous') seasonVersion = PREVIOUS_SEASON_VERSION;
+                let seasonVersion = activeView;
                 
                 if (activeView === 'alltime') {
                     document.getElementById('main-title').textContent = '통산 기록 대시보드';
                     document.getElementById('awards-title').textContent = '🏆 통산 기록 어워드';
                     document.getElementById('mmr-chart-title').textContent = 'MMR 히스토리 (최근 1년)';
                     
-                    const [rankingsV1, rankingsV2, scheduleV1, scheduleV2, historyV1Snap, historyV2Snap] = await Promise.all([
-                        getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', 'v1')),
-                        getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', 'v2')),
-                        getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', 'v1')),
-                        getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', 'v2')),
+                    const [rankingsV1, rankingsV2, rankingsV3, scheduleV1, scheduleV2, scheduleV3, historyV1Snap, historyV2Snap, historyV3Snap] = await Promise.all([
+                        getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V1)),
+                        getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V2)),
+                        getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V3)),
+                        getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V1)),
+                        getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V2)),
+                        getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V3)),
                         getDocs(query(collection(db, BASE_COLLECTION, 'data', `rankingHistory`), orderBy('createdAt', 'asc'))),
-                        getDocs(query(collection(db, BASE_COLLECTION, 'data', `rankingHistory-v2`), orderBy('createdAt', 'asc')))
+                        getDocs(query(collection(db, BASE_COLLECTION, 'data', `rankingHistory-${SEASON_V2}`), orderBy('createdAt', 'asc'))),
+                        getDocs(query(collection(db, BASE_COLLECTION, 'data', `rankingHistory-${SEASON_V3}`), orderBy('createdAt', 'asc')))
                     ]);
 
-                    const playersV1 = rankingsV1.exists() ? rankingsV1.data().players : [];
-                    const playersV2 = rankingsV2.exists() ? rankingsV2.data().players : [];
                     const matchesV1 = scheduleV1.exists() ? scheduleV1.data().matches : [];
                     const matchesV2 = scheduleV2.exists() ? scheduleV2.data().matches : [];
+                    const matchesV3 = scheduleV3.exists() ? scheduleV3.data().matches : [];
                     const historyDataV1 = historyV1Snap.docs.map(d => d.data());
                     const historyDataV2 = historyV2Snap.docs.map(d => d.data());
+                    const historyDataV3 = historyV3Snap.docs.map(d => d.data());
                     
-                    const allMatches = [...matchesV1, ...matchesV2];
+                    const allMatches = [...matchesV1, ...matchesV2, ...matchesV3];
                     
                     const cumulativeStats = {};
                     allMatches.forEach(match => {
@@ -466,7 +478,7 @@
                         losers.forEach(l => { if(l) cumulativeStats[l].losses++; });
                     });
                     
-                    fullMmrHistory = [...historyDataV1, ...historyDataV2].sort((a,b) => getJsDate(a.createdAt) - getJsDate(b.createdAt));
+                    fullMmrHistory = [...historyDataV1, ...historyDataV2, ...historyDataV3].sort((a,b) => getJsDate(a.createdAt) - getJsDate(b.createdAt));
                     
                     const peakMmrs = {};
                     fullMmrHistory.forEach(snapshot => {
@@ -497,10 +509,9 @@
                     const rankingsSnap = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', seasonVersion));
                     const scheduleSnap = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', seasonVersion));
                     
-                    let historyCollectionSnap;
                     let historyPath = seasonVersion === 'v1' ? `rankingHistory` : `rankingHistory-${seasonVersion}`;
                     const historyQuery = query(collection(db, BASE_COLLECTION, 'data', historyPath), orderBy('createdAt', 'asc'));
-                    historyCollectionSnap = await getDocs(historyQuery);
+                    const historyCollectionSnap = await getDocs(historyQuery);
                     
                     if (!rankingsSnap.exists()) return showToast("랭킹 데이터 없음!");
                     

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>시즌별 기록</title>
+    <title>2026 호수 오픈 - 시즌별 기록</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=stylesheet" rel="stylesheet">
@@ -13,9 +13,18 @@
             --spacing-sm: 8px; --spacing-md: 12px; --spacing-lg: 20px; --radius: 12px;
         }
         html[data-theme="light"] {
-            --bg-color: #F0F4F8; --surface-color: #FFFFFF; --primary-color: #1A3C34; --primary-variant-color: #2A6B5B; --text-color: #1F2937; --text-secondary-color: #6B7280; --border-color: #E5E7EB; --shadow-color: rgba(0, 0, 0, 0.1);
+            /* 2026 여름 테마 (Ocean Blue & Sand) */
+            --bg-color: #F0F8FF; 
+            --surface-color: #FFFFFF; 
+            --primary-color: #0284c7; 
+            --primary-variant-color: #0369a1; 
+            --text-color: #1e293b; 
+            --text-secondary-color: #64748b; 
+            --accent-gold: #f59e0b; 
+            --border-color: #bae6fd; 
+            --shadow-color: rgba(2, 132, 199, 0.12);
         }
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
         .container { max-width: 1200px; margin: auto; padding: 20px 0; }
         h1 { font-family: 'Poppins', sans-serif; font-size: 3rem; text-align: center; color: var(--primary-color); margin-bottom: 2rem; text-shadow: 2px 2px 10px var(--shadow-color); }
         .season-section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
@@ -23,7 +32,7 @@
         .season-section > h2 { color: var(--primary-color); }
         .records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
         .record-card { background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; text-align: center; }
-        html[data-theme="light"] .record-card { background: rgba(0,0,0,0.05); }
+        html[data-theme="light"] .record-card { background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); }
         .record-title { font-size: 1.1rem; color: var(--text-secondary-color); margin-bottom: 10px; font-weight: 700; }
         .record-value { font-size: 1.8rem; font-weight: 900; color: var(--accent-gold); }
         .record-player { font-size: 1.5rem; font-weight: 700; color: var(--text-color); }
@@ -98,15 +107,17 @@
         const auth = getAuth(app);
 
         const BASE_COLLECTION = 'league';
+        // v3 추가
         const SEASONS = {
+            'v3': { name: '2026 여름시즌' },
             'v2': { name: '2025-26 겨울시즌' },
             'v1': { name: '2025 여름시즌' },
         };
-        const SEASON_VERSIONS = ['v2', 'v1']; // 최신순으로 정렬
+        const SEASON_VERSIONS = ['v3', 'v2', 'v1']; // 최신순으로 정렬
 
         const getSeasonIdFromURL = () => {
             const params = new URLSearchParams(window.location.search);
-            return params.get('season') || 'v2'; // 기본값을 현재 시즌으로
+            return params.get('season') || 'v3'; // 기본값을 v3로 업데이트
         };
 
         const calculateSeasonRecords = (players) => {
