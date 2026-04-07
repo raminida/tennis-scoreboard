@@ -259,6 +259,10 @@
         .close-btn { position: absolute; top: var(--spacing-sm); right: var(--spacing-sm); background: none; border: none; color: var(--text-color); font-size: 1.5rem; cursor: pointer; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1999; backdrop-filter: blur(2px); }
         .overlay.show { display: block; }
+
+        /* [수정] 팝업 버튼 터치 면적 극대화 */
+        .popup-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 25px; }
+        .popup-buttons .btn { width: 100%; padding: 16px; font-size: 1.2rem; font-weight: 900; border-radius: var(--radius); }
         
         .potw-section { background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #fff; padding: var(--spacing-lg); border-radius: var(--radius); margin-bottom: var(--spacing-lg); text-align: center; box-shadow: 0 5px 15px rgba(2, 132, 199, 0.3); }
         html:not([data-theme="light"]) .potw-section { color: #0f172a; font-weight: bold; }
@@ -1115,7 +1119,8 @@
             }));
         };
 
-        const calculateRankingFromMatches = (allMatches, initialPlayers = {}) => {
+        // [수정] globalGenderMap 파라미터 추가 (과거 데이터 참조용)
+        const calculateRankingFromMatches = (allMatches, initialPlayers = {}, globalGenderMap = {}) => {
             const constants = {
                 BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6
             };
@@ -1127,8 +1132,8 @@
                 p.gameDiff = 0; p.streakCount = 0; p.streakIsWin = false;
                 p.lastGameTimestamp = p.lastGameTimestamp || null; 
                 p.matchHistory = []; 
-                p.currentPartner = null; // [신규] 동일 파트너 연승 체크용
-                p.partnerWinStreak = 0;  // [신규] 동일 파트너 연승 횟수
+                p.currentPartner = null; 
+                p.partnerWinStreak = 0;  
             });
 
             const matchesByRound = new Map();
@@ -1138,12 +1143,18 @@
                     if (cleanName && !players[cleanName]) {
                         players[cleanName] = {
                             name: cleanName, wins: 0, losses: 0, mmr: constants.BASE_MMR, championships: 0, 
-                            totalSets: 0, gameDiff: 0, isFemale: pName.includes('*'), 
+                            totalSets: 0, gameDiff: 0, 
+                            isFemale: pName.includes('*') || globalGenderMap[cleanName] === true, // [신규] 글로벌 젠더 맵 참조
                             streakCount: 0, streakIsWin: false, lastGameTimestamp: null,
                             matchHistory: [],
-                            currentPartner: null, // [신규]
-                            partnerWinStreak: 0   // [신규]
+                            currentPartner: null, 
+                            partnerWinStreak: 0   
                         };
+                    } else if (cleanName && players[cleanName]) {
+                        // 중간에 *를 달고 오거나, 과거 시즌 기록에 여성으로 되어있다면 업데이트
+                        if (pName.includes('*') || globalGenderMap[cleanName] === true) {
+                            players[cleanName].isFemale = true;
+                        }
                     }
                 });
                 if (!matchesByRound.has(match.round)) matchesByRound.set(match.round, []);
@@ -1156,39 +1167,36 @@
                 return timestampA - timestampB;
             });
 
-            // [신규] MMR 산정 로직 개선 (혼성 경기 페널티, 파트너 독식 페널티 적용)
+            // [신규] MMR 산정 로직 (혼성 경기 페널티, 파트너 독식 페널티)
             const calculateMMRChange = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight, isMixedMatch, partnerWinStreak, isSamePartner) => {
                 if (!player) return 0;
                 let K = constants.BASE_K;
                 const gamesPlayed = (player.wins || 0) + (player.losses || 0);
-                if (gamesPlayed < 6) K = constants.BASE_K * 1.5; // 배치고사 룰
+                if (gamesPlayed < 6) K = constants.BASE_K * 1.5; 
                 
                 let playerMMR = player.mmr || constants.BASE_MMR;
                 const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
                 let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
                 if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
                 
-                // 1. 혼성 경기 페널티 (신체적 차이로 인한 변별력 부족 -> 변동폭 50% 축소)
                 if (isMixedMatch) {
                     mmrChange *= 0.5; 
                 } else {
                     mmrChange *= isWinner ? constants.WIN_BONUS : constants.LOSS_REDUCTION;
                 }
 
-                // 2. 동일 파트너 연속 승리 페널티 (독식 방지)
                 if (isWinner && isSamePartner) {
-                    if (partnerWinStreak === 1) mmrChange *= 0.7; // 2연승째는 30% 깎임
-                    else if (partnerWinStreak >= 2) mmrChange *= 0.4; // 3연승 이상은 60% 깎임
+                    if (partnerWinStreak === 1) mmrChange *= 0.7; 
+                    else if (partnerWinStreak >= 2) mmrChange *= 0.4; 
                 }
 
                 let finalChange = Math.round(mmrChange);
 
-                // 페널티 적용된 게임은 이겼을 때의 '최소 보장 점수(10점)' 조건 완화
                 if (isWinner) {
                      if (isMixedMatch || (isSamePartner && partnerWinStreak >= 1)) {
-                         if (finalChange < 4) finalChange = 4; // 페널티 시 최소 4점
+                         if (finalChange < 4) finalChange = 4; 
                      } else {
-                         if (finalChange < 10) finalChange = 10; // 일반적인 경우 최소 10점
+                         if (finalChange < 10) finalChange = 10; 
                      }
                 }
                 
@@ -1210,7 +1218,6 @@
                     const gameDiffVal = Math.abs(s1 - s2);
                     const scoreWeight = 0.8 + (gameDiffVal / 6) * 0.7;
 
-                    // [신규] 혼성 경기 여부 파악 (남성 1명 이상 AND 여성 1명 이상)
                     const hasMale = [p1, p2, p3, p4].some(p => !p.isFemale);
                     const hasFemale = [p1, p2, p3, p4].some(p => p.isFemale);
                     const isMixedMatch = hasMale && hasFemale;
@@ -1240,7 +1247,6 @@
                             p.streakCount = p.streakIsWin ? (p.streakCount || 0) + 1 : 1;
                             p.streakIsWin = true;
 
-                            // [신규] 동일 파트너 연승 카운트
                             if (p.currentPartner === partnerName) {
                                 p.partnerWinStreak++;
                             } else {
@@ -1252,7 +1258,6 @@
                             p.streakCount = !p.streakIsWin ? (p.streakCount || 0) + 1 : 1;
                             p.streakIsWin = false;
 
-                            // [신규] 패배 시 파트너 연승 초기화
                             p.currentPartner = partnerName;
                             p.partnerWinStreak = 0;
                         }
@@ -1357,23 +1362,37 @@
             updateRankingBtn.disabled = true; updateRankingBtn.textContent = '계산 중...';
             showToast('전체 순위를 다시 계산합니다. 잠시만 기다려주세요...');
             return new Promise(async (resolve) => {
-                const scheduleDoc = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION));
+                const [scheduleDoc, rankingsDoc, rankV1, rankV2] = await Promise.all([
+                    getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION)),
+                    getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION)),
+                    getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V1)),
+                    getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V2))
+                ]);
+
+                // [신규] 과거 시즌 데이터를 전부 모아서 글로벌 성별 맵을 제작
+                const globalGenderMap = {};
+                [rankV1, rankV2, rankingsDoc].forEach(snap => {
+                    if (snap.exists() && snap.data().players) {
+                        snap.data().players.forEach(p => {
+                            if (p.isFemale) globalGenderMap[p.name] = true;
+                        });
+                    }
+                });
+
                 const allMatchesFromDB = scheduleDoc.exists() ? scheduleDoc.data().matches : [];
-                
-                const rankingsDoc = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION));
                 const currentRankingPlayers = (rankingsDoc.exists() && rankingsDoc.data().players) ? rankingsDoc.data().players : [];
                 
                 const initialPlayersMap = {};
                 currentRankingPlayers.forEach(p => {
                     initialPlayersMap[p.name] = { 
                         name: p.name, 
-                        isFemale: p.isFemale, 
+                        isFemale: p.isFemale || globalGenderMap[p.name] || false, 
                         championships: p.championships || 0,
                         lastGameTimestamp: p.lastGameTimestamp || null 
                     };
                 });
 
-                const allCalculatedPlayers = calculateRankingFromMatches(allMatchesFromDB, initialPlayersMap); 
+                const allCalculatedPlayers = calculateRankingFromMatches(allMatchesFromDB, initialPlayersMap, globalGenderMap); 
 
                 Object.values(initialPlayersMap).forEach(initialPlayer => {
                     if (!allCalculatedPlayers.some(p => p.name === initialPlayer.name)) {
@@ -1725,12 +1744,18 @@
                         
                         const scheduleData = (schedSnap.exists() && schedSnap.data().matches) ? schedSnap.data().matches : [];
                         const rankData = rankSnap.exists() ? rankSnap.data() : {};
-                        const initialPlayers = rankData.players || [];
+                        
+                        const globalGenderMapPast = {};
+                        if (rankData.players) {
+                            rankData.players.forEach(p => { if (p.isFemale) globalGenderMapPast[p.name] = true; });
+                        }
+
                         const initialPlayersMap = {};
-                        initialPlayers.forEach(p => {
+                        (rankData.players || []).forEach(p => {
                             initialPlayersMap[p.name] = { name: p.name, isFemale: p.isFemale, championships: p.championships || 0 };
                         });
-                        const previousRankings = calculateRankingFromMatches(scheduleData, initialPlayersMap);
+                        
+                        const previousRankings = calculateRankingFromMatches(scheduleData, initialPlayersMap, globalGenderMapPast);
                         allMatchesData = scheduleData; 
                         allPlayersData = previousRankings; 
                         processAndRenderSchedule(scheduleData);
@@ -1756,10 +1781,15 @@
                         const playersV2 = (rankSnapV2.exists() && rankSnapV2.data().players) ? rankSnapV2.data().players : [];
                         const playersV3 = (rankSnapV3.exists() && rankSnapV3.data().players) ? rankSnapV3.data().players : [];
                         
+                        const globalGenderMapAllTime = {};
+                        [...playersV1, ...playersV2, ...playersV3].forEach(p => {
+                            if (p.isFemale) globalGenderMapAllTime[p.name] = true;
+                        });
+
                         const initialPlayersMap = {};
                         [...playersV1, ...playersV2, ...playersV3].forEach(p => {
                             if (!initialPlayersMap[p.name]) {
-                                initialPlayersMap[p.name] = { name: p.name, isFemale: p.isFemale, championships: 0 };
+                                initialPlayersMap[p.name] = { name: p.name, isFemale: p.isFemale || globalGenderMapAllTime[p.name] || false, championships: 0 };
                             }
                             if (playersV3.find(p3 => p3.name === p.name)) {
                                 initialPlayersMap[p.name].isFemale = playersV3.find(p3 => p3.name === p.name).isFemale;
@@ -1776,7 +1806,7 @@
                             initialPlayersMap[name].championships = champCounts[name] || 0;
                         });
                         
-                        const allTimeRankings = calculateRankingFromMatches(allMatches, initialPlayersMap);
+                        const allTimeRankings = calculateRankingFromMatches(allMatches, initialPlayersMap, globalGenderMapAllTime);
                         allTimeRankings.forEach(p => {
                             p.championships = initialPlayersMap[p.name]?.championships || p.championships;
                         });
