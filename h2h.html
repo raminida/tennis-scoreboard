@@ -219,15 +219,15 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const analytics = getAnalytics(app); 
+        const analytics = getAnalytics(app);
 
         const BASE_COLLECTION = 'league';
         const SEASON_V3 = 'v3';
         const SEASON_V2 = 'v2';
         const SEASON_V1 = 'v1';
-        let activeView = SEASON_V3; // 최신 시즌
+        let activeView = SEASON_V3; 
         
-        let mmrChartInstance = null; 
+        let mmrChartInstance = null;
 
         const getParams = () => {
             const params = new URLSearchParams(window.location.search);
@@ -240,14 +240,13 @@
             BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6
         };
 
-        const calculateMMRChangeForMatch = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight) => {
+        // [수정] index.html의 로직과 완벽하게 동일한 MMR 산정 함수
+        const calculateMMRChangeForMatch = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight, isMixedMatch, partnerWinStreak, isSamePartner) => {
             if (!player || !partner) return 0;
             let K = constants.BASE_K;
             
             const gamesPlayed = (player.wins || 0) + (player.losses || 0);
-            if (gamesPlayed < 6) { 
-                K = constants.BASE_K * 1.5; 
-            }
+            if (gamesPlayed < 6) K = constants.BASE_K * 1.5; 
             
             let playerMMR = player.mmr || constants.BASE_MMR;
             const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
@@ -255,18 +254,28 @@
 
             if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
 
-            const isPlayerEffectivelyFemale = player.isFemale && player.mmr < 1850;
-            const isPartnerEffectivelyFemale = partner.isFemale && partner.mmr < 1850;
-            const isPlayerTeamMixed = (isPlayerEffectivelyFemale && !isPartnerEffectivelyFemale) || (!isPlayerEffectivelyFemale && isPartnerEffectivelyFemale);
-            
-            if (isWinner) {
-                mmrChange *= isPlayerTeamMixed ? 1.5 : constants.WIN_BONUS;
+            // 1. 혼성 경기 페널티 (50% 감소)
+            if (isMixedMatch) {
+                mmrChange *= 0.5;
             } else {
-                mmrChange *= isPlayerTeamMixed ? 0.3 : constants.LOSS_REDUCTION;
+                mmrChange *= isWinner ? constants.WIN_BONUS : constants.LOSS_REDUCTION;
+            }
+
+            // 2. 파트너 연승 페널티
+            if (isWinner && isSamePartner) {
+                if (partnerWinStreak === 1) mmrChange *= 0.7; 
+                else if (partnerWinStreak >= 2) mmrChange *= 0.4; 
             }
 
             let finalChange = Math.round(mmrChange);
-            if (isWinner && finalChange < 10) finalChange = 10;
+
+            if (isWinner) {
+                 if (isMixedMatch || (isSamePartner && partnerWinStreak >= 1)) {
+                     if (finalChange < 4) finalChange = 4;
+                 } else {
+                     if (finalChange < 10) finalChange = 10;
+                 }
+            }
             
             return finalChange;
         };
@@ -281,8 +290,10 @@
                     name: p.name, 
                     mmr: constants.BASE_MMR, 
                     isFemale: p.isFemale,
-                    wins: isAllTime ? 0 : (p.wins || 0), 
-                    losses: isAllTime ? 0 : (p.losses || 0) 
+                    wins: isAllTime ? 0 : (p.wins || 0),
+                    losses: isAllTime ? 0 : (p.losses || 0),
+                    currentPartner: null, // [신규] 동일 파트너 트래킹
+                    partnerWinStreak: 0
                 };
             });
 
@@ -300,7 +311,9 @@
                             mmr: constants.BASE_MMR, 
                             isFemale: match.players[idx].includes('*'),
                             wins: 0,
-                            losses: 0
+                            losses: 0,
+                            currentPartner: null,
+                            partnerWinStreak: 0
                         };
                     }
                 });
@@ -317,11 +330,18 @@
                 const gameDiff = Math.abs(s1 - s2);
                 const scoreWeight = 0.8 + (gameDiff / 6) * 0.7;
 
+                // [신규] 혼성 경기 여부 및 파트너 연속 확인
+                const hasMale = [team1P1, team1P2, team2P1, team2P2].some(p => !p.isFemale);
+                const hasFemale = [team1P1, team1P2, team2P1, team2P2].some(p => p.isFemale);
+                const isMixedMatch = hasMale && hasFemale;
+
+                const isSamePartner = (p, partnerName) => p.currentPartner === partnerName && p.partnerWinStreak > 0;
+
                 const mmrChanges = {
-                    [playerNames[0]]: calculateMMRChangeForMatch(team1P1, team2MMR, team1Won, team1P2, match.isFourPoint, scoreWeight),
-                    [playerNames[1]]: calculateMMRChangeForMatch(team1P2, team2MMR, team1Won, team1P1, match.isFourPoint, scoreWeight),
-                    [playerNames[2]]: calculateMMRChangeForMatch(team2P1, team1MMR, !team1Won, team2P2, match.isFourPoint, scoreWeight),
-                    [playerNames[3]]: calculateMMRChangeForMatch(team2P2, team1MMR, !team1Won, team2P1, match.isFourPoint, scoreWeight),
+                    [playerNames[0]]: calculateMMRChangeForMatch(team1P1, team2MMR, team1Won, team1P2, match.isFourPoint, scoreWeight, isMixedMatch, team1P1.partnerWinStreak, isSamePartner(team1P1, playerNames[1])),
+                    [playerNames[1]]: calculateMMRChangeForMatch(team1P2, team2MMR, team1Won, team1P1, match.isFourPoint, scoreWeight, isMixedMatch, team1P2.partnerWinStreak, isSamePartner(team1P2, playerNames[0])),
+                    [playerNames[2]]: calculateMMRChangeForMatch(team2P1, team1MMR, !team1Won, team2P2, match.isFourPoint, scoreWeight, isMixedMatch, team2P1.partnerWinStreak, isSamePartner(team2P1, playerNames[3])),
+                    [playerNames[3]]: calculateMMRChangeForMatch(team2P2, team1MMR, !team1Won, team2P1, match.isFourPoint, scoreWeight, isMixedMatch, team2P2.partnerWinStreak, isSamePartner(team2P2, playerNames[2])),
                 };
 
                 if (playerNames.includes(mainPlayerName)) {
@@ -347,10 +367,38 @@
                 playerNames.forEach((name, idx) => {
                     if (playersState[name]) {
                         playersState[name].mmr += mmrChanges[name];
+                        
+                        // 파트너 찾기 로직
+                        const partnerNameResolved = (idx === 0) ? playerNames[1] : (idx === 1) ? playerNames[0] : (idx === 2) ? playerNames[3] : playerNames[2];
+
                         if (idx < 2) { 
-                            if (team1Won) playersState[name].wins++; else playersState[name].losses++;
+                            if (team1Won) {
+                                playersState[name].wins++;
+                                if (playersState[name].currentPartner === partnerNameResolved) {
+                                    playersState[name].partnerWinStreak++;
+                                } else {
+                                    playersState[name].currentPartner = partnerNameResolved;
+                                    playersState[name].partnerWinStreak = 1;
+                                }
+                            } else {
+                                playersState[name].losses++;
+                                playersState[name].currentPartner = partnerNameResolved;
+                                playersState[name].partnerWinStreak = 0;
+                            }
                         } else { 
-                            if (!team1Won) playersState[name].wins++; else playersState[name].losses++;
+                            if (!team1Won) {
+                                playersState[name].wins++;
+                                if (playersState[name].currentPartner === partnerNameResolved) {
+                                    playersState[name].partnerWinStreak++;
+                                } else {
+                                    playersState[name].currentPartner = partnerNameResolved;
+                                    playersState[name].partnerWinStreak = 1;
+                                }
+                            } else {
+                                playersState[name].losses++;
+                                playersState[name].currentPartner = partnerNameResolved;
+                                playersState[name].partnerWinStreak = 0;
+                            }
                         }
                     }
                 });

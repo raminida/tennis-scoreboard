@@ -1127,6 +1127,8 @@
                 p.gameDiff = 0; p.streakCount = 0; p.streakIsWin = false;
                 p.lastGameTimestamp = p.lastGameTimestamp || null; 
                 p.matchHistory = []; 
+                p.currentPartner = null; // [신규] 동일 파트너 연승 체크용
+                p.partnerWinStreak = 0;  // [신규] 동일 파트너 연승 횟수
             });
 
             const matchesByRound = new Map();
@@ -1138,7 +1140,9 @@
                             name: cleanName, wins: 0, losses: 0, mmr: constants.BASE_MMR, championships: 0, 
                             totalSets: 0, gameDiff: 0, isFemale: pName.includes('*'), 
                             streakCount: 0, streakIsWin: false, lastGameTimestamp: null,
-                            matchHistory: [] 
+                            matchHistory: [],
+                            currentPartner: null, // [신규]
+                            partnerWinStreak: 0   // [신규]
                         };
                     }
                 });
@@ -1152,25 +1156,42 @@
                 return timestampA - timestampB;
             });
 
-            const calculateMMRChange = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight) => {
+            // [신규] MMR 산정 로직 개선 (혼성 경기 페널티, 파트너 독식 페널티 적용)
+            const calculateMMRChange = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight, isMixedMatch, partnerWinStreak, isSamePartner) => {
                 if (!player) return 0;
                 let K = constants.BASE_K;
                 const gamesPlayed = (player.wins || 0) + (player.losses || 0);
-                if (gamesPlayed < 5) K = constants.BASE_K * 1.5; 
+                if (gamesPlayed < 6) K = constants.BASE_K * 1.5; // 배치고사 룰
+                
                 let playerMMR = player.mmr || constants.BASE_MMR;
                 const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
                 let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
                 if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
-                const isPlayerEffectivelyFemale = player.isFemale && player.mmr < 1850;
-                const isPartnerEffectivelyFemale = partner?.isFemale && partner?.mmr < 1850;
-                const isPlayerTeamMixed = (isPlayerEffectivelyFemale && !isPartnerEffectivelyFemale) || (!isPlayerEffectivelyFemale && isPartnerEffectivelyFemale);
-                if (isWinner) {
-                    mmrChange *= isPlayerTeamMixed ? 1.5 : constants.WIN_BONUS;
+                
+                // 1. 혼성 경기 페널티 (신체적 차이로 인한 변별력 부족 -> 변동폭 50% 축소)
+                if (isMixedMatch) {
+                    mmrChange *= 0.5; 
                 } else {
-                    mmrChange *= isPlayerTeamMixed ? 0.3 : constants.LOSS_REDUCTION;
+                    mmrChange *= isWinner ? constants.WIN_BONUS : constants.LOSS_REDUCTION;
                 }
+
+                // 2. 동일 파트너 연속 승리 페널티 (독식 방지)
+                if (isWinner && isSamePartner) {
+                    if (partnerWinStreak === 1) mmrChange *= 0.7; // 2연승째는 30% 깎임
+                    else if (partnerWinStreak >= 2) mmrChange *= 0.4; // 3연승 이상은 60% 깎임
+                }
+
                 let finalChange = Math.round(mmrChange);
-                if (isWinner && finalChange < 10) finalChange = 10;
+
+                // 페널티 적용된 게임은 이겼을 때의 '최소 보장 점수(10점)' 조건 완화
+                if (isWinner) {
+                     if (isMixedMatch || (isSamePartner && partnerWinStreak >= 1)) {
+                         if (finalChange < 4) finalChange = 4; // 페널티 시 최소 4점
+                     } else {
+                         if (finalChange < 10) finalChange = 10; // 일반적인 경우 최소 10점
+                     }
+                }
+                
                 return finalChange;
             };
 
@@ -1181,21 +1202,31 @@
                     const playerNames = match.players.map(p => p.replace(/\*/g, ''));
                     const [p1, p2, p3, p4] = playerNames.map(name => players[name]);
                     if (!p1 || !p2 || !p3 || !p4 || !match.score || !match.score.includes('-')) return; 
+                    
                     let team1MMR = (p1.mmr + p2.mmr) / 2;
                     let team2MMR = (p3.mmr + p4.mmr) / 2;
                     const [s1, s2] = match.score.split('-').map(Number);
                     const isTeam1Winner = s1 > s2;
                     const gameDiffVal = Math.abs(s1 - s2);
                     const scoreWeight = 0.8 + (gameDiffVal / 6) * 0.7;
+
+                    // [신규] 혼성 경기 여부 파악 (남성 1명 이상 AND 여성 1명 이상)
+                    const hasMale = [p1, p2, p3, p4].some(p => !p.isFemale);
+                    const hasFemale = [p1, p2, p3, p4].some(p => p.isFemale);
+                    const isMixedMatch = hasMale && hasFemale;
+
+                    const isSamePartner = (p, partnerName) => p.currentPartner === partnerName && p.partnerWinStreak > 0;
+
                     const mmrChanges = [
-                        calculateMMRChange(p1, team2MMR, isTeam1Winner, p2, match.isFourPoint, scoreWeight),
-                        calculateMMRChange(p2, team2MMR, isTeam1Winner, p1, match.isFourPoint, scoreWeight),
-                        calculateMMRChange(p3, team1MMR, !isTeam1Winner, p4, match.isFourPoint, scoreWeight),
-                        calculateMMRChange(p4, team1MMR, !isTeam1Winner, p3, match.isFourPoint, scoreWeight)
+                        calculateMMRChange(p1, team2MMR, isTeam1Winner, p2, match.isFourPoint, scoreWeight, isMixedMatch, p1.partnerWinStreak, isSamePartner(p1, p2.name)),
+                        calculateMMRChange(p2, team2MMR, isTeam1Winner, p1, match.isFourPoint, scoreWeight, isMixedMatch, p2.partnerWinStreak, isSamePartner(p2, p1.name)),
+                        calculateMMRChange(p3, team1MMR, !isTeam1Winner, p4, match.isFourPoint, scoreWeight, isMixedMatch, p3.partnerWinStreak, isSamePartner(p3, p4.name)),
+                        calculateMMRChange(p4, team1MMR, !isTeam1Winner, p3, match.isFourPoint, scoreWeight, isMixedMatch, p4.partnerWinStreak, isSamePartner(p4, p3.name))
                     ];
 
                     const matchTimestamp = match.timestamp || roundTimestamp;
-                    const updatePlayerStats_NO_MMR = (name, isWinner, gameDiffVal, timestamp) => {
+                    
+                    const updatePlayerStats_NO_MMR = (name, isWinner, gameDiffVal, timestamp, partnerName) => {
                         const p = players[name];
                         if (!p) return;
                         p.totalSets = (p.totalSets || 0) + 1;
@@ -1208,16 +1239,29 @@
                             p.wins = (p.wins || 0) + 1;
                             p.streakCount = p.streakIsWin ? (p.streakCount || 0) + 1 : 1;
                             p.streakIsWin = true;
+
+                            // [신규] 동일 파트너 연승 카운트
+                            if (p.currentPartner === partnerName) {
+                                p.partnerWinStreak++;
+                            } else {
+                                p.currentPartner = partnerName;
+                                p.partnerWinStreak = 1;
+                            }
                         } else {
                             p.losses = (p.losses || 0) + 1;
                             p.streakCount = !p.streakIsWin ? (p.streakCount || 0) + 1 : 1;
                             p.streakIsWin = false;
+
+                            // [신규] 패배 시 파트너 연승 초기화
+                            p.currentPartner = partnerName;
+                            p.partnerWinStreak = 0;
                         }
                     };
-                    updatePlayerStats_NO_MMR(playerNames[0], isTeam1Winner, gameDiffVal, matchTimestamp);
-                    updatePlayerStats_NO_MMR(playerNames[1], isTeam1Winner, gameDiffVal, matchTimestamp);
-                    updatePlayerStats_NO_MMR(playerNames[2], !isTeam1Winner, gameDiffVal, matchTimestamp);
-                    updatePlayerStats_NO_MMR(playerNames[3], !isTeam1Winner, gameDiffVal, matchTimestamp);
+                    
+                    updatePlayerStats_NO_MMR(playerNames[0], isTeam1Winner, gameDiffVal, matchTimestamp, playerNames[1]);
+                    updatePlayerStats_NO_MMR(playerNames[1], isTeam1Winner, gameDiffVal, matchTimestamp, playerNames[0]);
+                    updatePlayerStats_NO_MMR(playerNames[2], !isTeam1Winner, gameDiffVal, matchTimestamp, playerNames[3]);
+                    updatePlayerStats_NO_MMR(playerNames[3], !isTeam1Winner, gameDiffVal, matchTimestamp, playerNames[2]);
 
                     playerNames.forEach((name, idx) => {
                         if (name) netMmrChanges.set(name, (netMmrChanges.get(name) || 0) + mmrChanges[idx]);
