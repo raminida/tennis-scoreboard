@@ -345,7 +345,6 @@
             <h2 id="ranking-main-title">순위표</h2>
             
             <div class="season-tabs" id="season-tabs-container">
-                <!-- v3 추가 (26 여름시즌) -->
                 <button class="tab-btn active" data-view="v3">2026 여름시즌</button>
                 <button class="tab-btn" data-view="v2">2025/26 겨울시즌</button>
                 <button class="tab-btn" data-view="v1">2025 여름시즌</button>
@@ -460,23 +459,27 @@
         
         const BASE_COLLECTION = 'league';
         
-        // 시즌 변수 세분화 (v1, v2, v3)
-        const SEASON_V3 = 'v3'; // 2026 여름시즌 (새 시즌)
-        const SEASON_V2 = 'v2'; // 2025/26 겨울시즌
-        const SEASON_V1 = 'v1'; // 2025 여름시즌
+        const SEASON_V3 = 'v3'; 
+        const SEASON_V2 = 'v2'; 
+        const SEASON_V1 = 'v1'; 
         const CURRENT_SEASON_VERSION = SEASON_V3; 
 
         let currentFilter = 'all', sortKey = 'mmr', sortOrder = 'desc';
         let allPlayersData = [];
         let allMatchesData = [];
         let currentPotw = null;
-        let activeView = 'v3'; // 기본 뷰는 최신 시즌
+        let activeView = 'v3'; 
         let scheduleUnsubscribe = null;
         let rankingUnsubscribe = null;
         let currentActiveInput = null; 
         
         let autocompleteShowTimer = null;
         let autocompleteHideTimer = null;
+        
+        // [신규 추가] 뉴스 티커 중복 호출 및 DB 과부하 방지용 변수
+        let newsDebounceTimer = null;
+        let cachedRankingHistory = null;
+        let lastHistoryFetchTime = 0;
 
         const showToast = (message) => {
             const toast = document.getElementById('toast');
@@ -561,43 +564,62 @@
 
             if (sortedPlayersByMMR.length > 0) {
                 const topRanker = sortedPlayersByMMR[0];
-                let weeksAtTop = 0;
+                let daysAtTop = 0;
                 
                 try {
-                    const seasonParam = (activeView === 'alltime') ? CURRENT_SEASON_VERSION : activeView;
-                    const historyCol = collection(db, BASE_COLLECTION, 'data', `rankingHistory-${seasonParam}`);
-                    const q = query(historyCol, orderBy('createdAt', 'desc'), limit(30));
-                    const snap = await getDocs(q);
-                    let firstTime = new Date();
-                    let lastTime = new Date();
-                    let isFirst = true;
+                    const nowMs = Date.now();
+                    let snapDocs = [];
+                    
+                    // [최적화] 1분 이내면 DB 재호출 없이 기존 캐시 사용
+                    if (cachedRankingHistory && (nowMs - lastHistoryFetchTime < 60000)) {
+                        snapDocs = cachedRankingHistory;
+                    } else {
+                        const seasonParam = (activeView === 'alltime') ? CURRENT_SEASON_VERSION : activeView;
+                        const historyCol = collection(db, BASE_COLLECTION, 'data', `rankingHistory-${seasonParam}`);
+                        const q = query(historyCol, orderBy('createdAt', 'desc'), limit(150));
+                        const snap = await getDocs(q);
+                        snapDocs = snap.docs.map(doc => doc.data());
+                        cachedRankingHistory = snapDocs;
+                        lastHistoryFetchTime = nowMs;
+                    }
+                    
+                    let firstTime = null;
+                    let lastTime = null;
 
-                    for (const docSnap of snap.docs) {
-                        const data = docSnap.data();
+                    for (const data of snapDocs) {
                         let maxMmr = -1;
-                        let tPlayer = '';
+                        let topPlayersInHistory = [];
+                        
                         for (const [key, value] of Object.entries(data)) {
-                            if (key !== 'createdAt' && typeof value === 'number' && value > maxMmr) {
-                                maxMmr = value;
-                                tPlayer = key.replace(/_/g, '.');
+                            if (key !== 'createdAt' && typeof value === 'number') {
+                                if (value > maxMmr) {
+                                    maxMmr = value;
+                                    topPlayersInHistory = [key.replace(/_/g, '.')];
+                                } else if (value === maxMmr) {
+                                    topPlayersInHistory.push(key.replace(/_/g, '.'));
+                                }
                             }
                         }
-                        if (tPlayer === topRanker.name || tPlayer === topRanker.name.replace(/\*/g, '')) {
-                            if (data.createdAt) {
-                                firstTime = data.createdAt.toDate();
-                                if(isFirst) { lastTime = data.createdAt.toDate(); isFirst = false; }
-                            }
+                        
+                        if (topPlayersInHistory.includes(topRanker.name)) {
+                            const docTime = data.createdAt ? data.createdAt.toDate() : new Date();
+                            firstTime = docTime;
+                            if (!lastTime) lastTime = docTime; 
                         } else {
-                            break;
+                            break; 
                         }
                     }
-                    const diffTime = Math.abs(lastTime - firstTime);
-                    weeksAtTop = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+                    
+                    if (firstTime && lastTime) {
+                        const diffTime = Math.abs(lastTime - firstTime);
+                        daysAtTop = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    }
                 } catch(e) { console.error("Ranking history check error:", e); }
 
-                if (weeksAtTop >= 1) {
+                if (daysAtTop >= 7) {
+                    const displayStr = daysAtTop >= 14 ? `${Math.floor(daysAtTop / 7)}주` : `${daysAtTop}일`;
                     allNews.push({
-                        title: `[대기록] ${topRanker.name}, 흔들림 없는 1위... 무려 ${weeksAtTop}주 연속 '장기집권'`,
+                        title: `[대기록] ${topRanker.name}, 흔들림 없는 1위... 무려 ${displayStr} 연속 '장기집권'`,
                         category: '장기집권',
                         playerName: topRanker.name
                     });
@@ -901,24 +923,36 @@
             }
         };
 
+        // [신규 추가] 뉴스 티커 지연(Debounce) 호출 함수
+        const triggerNewsGeneration = (matches, players) => {
+            if (newsDebounceTimer) clearTimeout(newsDebounceTimer);
+            newsDebounceTimer = setTimeout(() => {
+                generateLeagueNews(matches, players);
+            }, 300);
+        };
+
+        // [최적화] 지연 렌더링(Lazy Loading)을 적용한 스케줄 회차 생성
         const createScheduleRounds = (savedRounds = new Map()) => {
             const container = document.getElementById('schedule-container');
             if (!container) return showToast("스케줄 컨테이너 오류!");
             let roundsHtml = '';
             const roundsPerCategory = 30;
-            const totalRounds = 250; // 요청사항 적용 (250회차)
+            const totalRounds = 250; 
             for (let category = 0; category < Math.ceil(totalRounds / roundsPerCategory); category++) {
                 const startRound = category * roundsPerCategory + 1;
                 const endRound = Math.min((category + 1) * roundsPerCategory, totalRounds);
-                roundsHtml += `<details class="round-group"><summary>회차 ${startRound} ~ ${endRound}</summary><div class="round-group-content">`;
+                // 첫 번째 묶음만 기본으로 열어둠
+                const isFirstGroup = category === 0;
+                roundsHtml += `<details class="round-group" ${isFirstGroup ? 'open' : ''}><summary>회차 ${startRound} ~ ${endRound}</summary><div class="round-group-content">`;
                 for (let i = startRound; i <= endRound; i++) {
                     const roundData = savedRounds.get(i);
                     const isSaved = !!roundData;
                     const savedDate = roundData?.timestamp ? new Date(roundData.timestamp).toLocaleDateString('ko-KR') : '';
                     const champions = roundData?.champions?.map(name => `<span class="champion-name">${name}</span>`).join(', ') || '없음';
-                    roundsHtml += `
-                    <details class="${isSaved ? 'saved-round' : ''}">
-                        <summary>${i}회${isSaved ? `<span class="saved-indicator">💾</span><span class="saved-info">[${savedDate}, 우승: ${champions}]</span>` : ''}</summary>
+                    
+                    let tableContent = '';
+                    if (isSaved) {
+                        tableContent = `
                         <div class="table-wrapper">
                             <table class="schedule-table" data-round-id="${i}">
                                 <thead><tr><th>P1</th><th>P2</th><th>vs</th><th>P3</th><th>P4</th><th>Score</th><th>4점</th></tr></thead>
@@ -935,7 +969,16 @@
                                     </tr>`).join('')}
                                 </tbody>
                             </table>
-                        </div>
+                        </div>`;
+                    } else {
+                        // 빈 회차는 껍데기(Lazy Container)만 렌더링해서 초기 로딩 속도 극강으로 단축
+                        tableContent = `<div class="lazy-table-container" data-round-id="${i}"><p style="text-align:center; color:var(--text-secondary-color); padding: 10px;">클릭하면 입력창이 열립니다...</p></div>`;
+                    }
+
+                    roundsHtml += `
+                    <details class="${isSaved ? 'saved-round' : 'empty-round lazy-round'}">
+                        <summary>${i}회${isSaved ? `<span class="saved-indicator">💾</span><span class="saved-info">[${savedDate}, 우승: ${champions}]</span>` : ''}</summary>
+                        ${tableContent}
                         <button class="btn save-all-btn admin-btn" style="margin: 10px 15px;">저장하기</button>
                     </details>`;
                 }
@@ -987,6 +1030,7 @@
                 }
                 const batch = writeBatch(db);
                 const scheduleData = [];
+                // 화면에 그려진(Lazy load 풀린) 테이블들만 찾아서 데이터 저장
                 document.querySelectorAll('.schedule-table').forEach(table => {
                     const roundId = parseInt(table.getAttribute('data-round-id'));
                     const roundTimestamp = existingTimestamps.get(roundId) || new Date().toISOString();
@@ -1007,6 +1051,9 @@
                 }
                 await batch.commit();
                 showToast("경기 일정 저장 및 백업 완료!");
+                
+                // 새로운 경기를 저장했으므로, 랭킹 히스토리 캐시 초기화
+                cachedRankingHistory = null; 
             } catch (e) {
                 showToast(`일정 저장 실패: ${e.message || '알 수 없는 오류'}`);
                 console.error("Save error:", e);
@@ -1101,7 +1148,7 @@
                     <td class="rank-cell">${player.rank}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span></td>
                     <td><input type="text" value="${player.isFemale ? `${player.name}*` : player.name}" class="ranking-player readonly" readonly></td>
                     <td><input type="text" value="${isNaN(player.mmr) ? '1500' : Math.round(player.mmr)}" class="mmr readonly" readonly></td>
-                    <td>${formHtml}</td> <!-- Recent Form Column -->
+                    <td>${formHtml}</td>
                     <td><span class="championship-star" data-count="${player.championships || 0}">${(player.championships || 0) == 1 ? '⭐' : (player.championships || 0) > 1 ? `⭐(${player.championships})` : ''}</span></td>
                     <td><input type="text" value="${player.wins || '0'}" class="wins readonly" readonly></td>
                     <td><input type="text" value="${player.losses || '0'}" class="losses readonly" readonly></td>
@@ -1119,7 +1166,6 @@
             }));
         };
 
-        // [수정] globalGenderMap 파라미터 추가 (과거 데이터 참조용)
         const calculateRankingFromMatches = (allMatches, initialPlayers = {}, globalGenderMap = {}) => {
             const constants = {
                 BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6
@@ -1144,14 +1190,13 @@
                         players[cleanName] = {
                             name: cleanName, wins: 0, losses: 0, mmr: constants.BASE_MMR, championships: 0, 
                             totalSets: 0, gameDiff: 0, 
-                            isFemale: pName.includes('*') || globalGenderMap[cleanName] === true, // [신규] 글로벌 젠더 맵 참조
+                            isFemale: pName.includes('*') || globalGenderMap[cleanName] === true,
                             streakCount: 0, streakIsWin: false, lastGameTimestamp: null,
                             matchHistory: [],
                             currentPartner: null, 
                             partnerWinStreak: 0   
                         };
                     } else if (cleanName && players[cleanName]) {
-                        // 중간에 *를 달고 오거나, 과거 시즌 기록에 여성으로 되어있다면 업데이트
                         if (pName.includes('*') || globalGenderMap[cleanName] === true) {
                             players[cleanName].isFemale = true;
                         }
@@ -1167,7 +1212,6 @@
                 return timestampA - timestampB;
             });
 
-            // [신규] MMR 산정 로직 (혼성 경기 페널티, 파트너 독식 페널티)
             const calculateMMRChange = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight, isMixedMatch, partnerWinStreak, isSamePartner) => {
                 if (!player) return 0;
                 let K = constants.BASE_K;
@@ -1179,8 +1223,14 @@
                 let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
                 if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
                 
+                // [수정] 여자 선수는 혼복에서도 정상적인 승패 점수 획득 보장
                 if (isMixedMatch) {
-                    mmrChange *= 0.5; 
+                    if (player.isFemale) {
+                        mmrChange *= isWinner ? constants.WIN_BONUS : constants.LOSS_REDUCTION;
+                    } else {
+                        // 남자는 혼복에서 얻는 이득/손실 50% 반토막 (양학 방지)
+                        mmrChange *= 0.5; 
+                    }
                 } else {
                     mmrChange *= isWinner ? constants.WIN_BONUS : constants.LOSS_REDUCTION;
                 }
@@ -1193,9 +1243,11 @@
                 let finalChange = Math.round(mmrChange);
 
                 if (isWinner) {
-                     if (isMixedMatch || (isSamePartner && partnerWinStreak >= 1)) {
+                     // 혼복에서 남자가 이겼거나 연승 파트너인 경우 최소 4점 보장
+                     if ((isMixedMatch && !player.isFemale) || (isSamePartner && partnerWinStreak >= 1)) {
                          if (finalChange < 4) finalChange = 4; 
                      } else {
+                         // 여자 선수이거나 일반 동성 복식인 경우 최소 10점 보장
                          if (finalChange < 10) finalChange = 10; 
                      }
                 }
@@ -1369,7 +1421,6 @@
                     getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V2))
                 ]);
 
-                // [신규] 과거 시즌 데이터를 전부 모아서 글로벌 성별 맵을 제작
                 const globalGenderMap = {};
                 [rankV1, rankV2, rankingsDoc].forEach(snap => {
                     if (snap.exists() && snap.data().players) {
@@ -1452,6 +1503,9 @@
 
                     await batch.commit();
                     showToast('순위 업데이트 및 저장 완료!');
+                    
+                    // 랭킹 업데이트 시 최신 뉴스를 위해 캐시도 비워줌
+                    cachedRankingHistory = null;
                 } catch (e) {
                     showToast(`랭킹 저장 실패: ${e.message || '알 수 없는 오류'}`);
                     console.error("Rankings save error:", e);
@@ -1690,6 +1744,7 @@
                 }
             });
             createScheduleRounds(savedRounds);
+            // Lazy load가 적용되었으므로 화면에 열려있는(랜더링된) 테이블에만 값을 채워 넣음
             document.querySelectorAll('.schedule-table').forEach(table => {
                 const roundId = parseInt(table.getAttribute('data-round-id'));
                 const roundData = savedRounds.get(roundId);
@@ -1721,7 +1776,7 @@
                     processAndRenderSchedule(scheduleData);
                     
                     if (allPlayersData.length > 0) {
-                        generateLeagueNews(allMatchesData, allPlayersData);
+                        triggerNewsGeneration(allMatchesData, allPlayersData);
                     }
                 }, (error) => console.error("Schedule onSnapshot failed:", error));
                 
@@ -1730,7 +1785,7 @@
                     updateRankingTable(data.players || [], data.potw || null); 
 
                     if (allMatchesData.length > 0) {
-                        generateLeagueNews(allMatchesData, allPlayersData);
+                        triggerNewsGeneration(allMatchesData, allPlayersData);
                     }
                 }, (error) => console.error("Ranking onSnapshot failed:", error));
 
@@ -1760,7 +1815,7 @@
                         allPlayersData = previousRankings; 
                         processAndRenderSchedule(scheduleData);
                         updateRankingTable(previousRankings, rankData.potw || null); 
-                        generateLeagueNews(allMatchesData, allPlayersData); 
+                        triggerNewsGeneration(allMatchesData, allPlayersData); 
 
                     } else if (activeView === 'alltime') {
                         // v1, v2, v3 모두 병합
@@ -1815,7 +1870,7 @@
                         allPlayersData = allTimeRankings; 
                         processAndRenderSchedule(allMatches);
                         updateRankingTable(allTimeRankings, null);
-                        generateLeagueNews(allMatchesData, allPlayersData); 
+                        triggerNewsGeneration(allMatchesData, allPlayersData); 
                     }
                 } catch (error) {
                     showToast("과거 데이터 로딩 실패: " + error.message);
@@ -1827,6 +1882,38 @@
         const setupInputListeners = () => {
             const scheduleContainer = document.getElementById('schedule-container');
             const autocompleteBar = document.getElementById('autocomplete-bar');
+            
+            // [최적화 핵심] 비어있는 회차(lazy-round)를 열 때만 테이블의 HTML을 삽입해주는 글로벌 이벤트 (레이아웃 스래싱 방지)
+            document.addEventListener('toggle', (e) => {
+                if (e.target && e.target.classList && e.target.classList.contains('lazy-round') && e.target.open) {
+                    const container = e.target.querySelector('.lazy-table-container');
+                    if (container) {
+                        const roundId = container.dataset.roundId;
+                        container.innerHTML = `
+                            <div class="table-wrapper">
+                                <table class="schedule-table" data-round-id="${roundId}">
+                                    <thead><tr><th>P1</th><th>P2</th><th>vs</th><th>P3</th><th>P4</th><th>Score</th><th>4점</th></tr></thead>
+                                    <tbody>
+                                        ${Array(3).fill().map(() => `
+                                        <tr>
+                                            <td><input type="text" placeholder="이름" class="player1 player-input"></td>
+                                            <td><input type="text" placeholder="이름" class="player2 player-input"></td>
+                                            <td>vs</td>
+                                            <td><input type="text" placeholder="이름" class="player3 player-input"></td>
+                                            <td><input type="text" placeholder="이름" class="player4 player-input"></td>
+                                            <td><input type="text" placeholder="6-4" class="score score-input"></td>
+                                            <td><input type="checkbox" class="is-four-point"></td>
+                                        </tr>`).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                        // 렌더링 끝났으니 lazy 클래스 제거
+                        container.classList.remove('lazy-table-container');
+                        e.target.classList.remove('lazy-round');
+                    }
+                }
+            }, true);
 
             scheduleContainer.addEventListener('focusin', (e) => {
                 if (e.target.classList.contains('player-input')) {
