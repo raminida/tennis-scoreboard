@@ -260,7 +260,6 @@
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1999; backdrop-filter: blur(2px); }
         .overlay.show { display: block; }
 
-        /* [수정] 팝업 버튼 터치 면적 극대화 */
         .popup-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 25px; }
         .popup-buttons .btn { width: 100%; padding: 16px; font-size: 1.2rem; font-weight: 900; border-radius: var(--radius); }
         
@@ -320,7 +319,6 @@
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
 
-        <!-- 뉴스 티커 -->
         <div id="news-ticker-section" class="section">
             <div class="news-header">
                 <span>🎾 호수 오픈 뉴스</span>
@@ -464,8 +462,10 @@
         const SEASON_V1 = 'v1'; 
         const CURRENT_SEASON_VERSION = SEASON_V3; 
 
+        // 글로벌 변수 재설정 (동적 필터링을 위한 데이터 보존)
         let currentFilter = 'all', sortKey = 'mmr', sortOrder = 'desc';
-        let allPlayersData = [];
+        let allPlayersData = [];       // DB에 저장된 '통합(ALL)' 기준 플레이어 데이터 원본
+        let currentRenderedData = [];  // 현재 화면/필터에 맞게 동적으로 계산되어 렌더링된 데이터
         let allMatchesData = [];
         let currentPotw = null;
         let activeView = 'v3'; 
@@ -473,10 +473,12 @@
         let rankingUnsubscribe = null;
         let currentActiveInput = null; 
         
+        let currentInitialPlayersMap = {};
+        let currentGlobalGenderMap = {};
+
         let autocompleteShowTimer = null;
         let autocompleteHideTimer = null;
         
-        // [신규 추가] 뉴스 티커 중복 호출 및 DB 과부하 방지용 변수
         let newsDebounceTimer = null;
         let cachedRankingHistory = null;
         let lastHistoryFetchTime = 0;
@@ -570,7 +572,6 @@
                     const nowMs = Date.now();
                     let snapDocs = [];
                     
-                    // [최적화] 1분 이내면 DB 재호출 없이 기존 캐시 사용
                     if (cachedRankingHistory && (nowMs - lastHistoryFetchTime < 60000)) {
                         snapDocs = cachedRankingHistory;
                     } else {
@@ -923,7 +924,6 @@
             }
         };
 
-        // [신규 추가] 뉴스 티커 지연(Debounce) 호출 함수
         const triggerNewsGeneration = (matches, players) => {
             if (newsDebounceTimer) clearTimeout(newsDebounceTimer);
             newsDebounceTimer = setTimeout(() => {
@@ -931,19 +931,28 @@
             }, 300);
         };
 
-        // [최적화] 지연 렌더링(Lazy Loading)을 적용한 스케줄 회차 생성
         const createScheduleRounds = (savedRounds = new Map()) => {
             const container = document.getElementById('schedule-container');
             if (!container) return showToast("스케줄 컨테이너 오류!");
+            
+            // [버그 해결 1] 가장 최근에 저장된 회차를 추적하여 해당 회차가 포함된 폴더를 자동으로 엶
+            let latestSavedRound = 1;
+            if (savedRounds.size > 0) {
+                latestSavedRound = Math.max(...Array.from(savedRounds.keys()));
+            }
+            
             let roundsHtml = '';
             const roundsPerCategory = 30;
             const totalRounds = 250; 
+            const targetCategoryIndex = Math.floor((latestSavedRound - 1) / roundsPerCategory);
+            
             for (let category = 0; category < Math.ceil(totalRounds / roundsPerCategory); category++) {
                 const startRound = category * roundsPerCategory + 1;
                 const endRound = Math.min((category + 1) * roundsPerCategory, totalRounds);
-                // 첫 번째 묶음만 기본으로 열어둠
-                const isFirstGroup = category === 0;
-                roundsHtml += `<details class="round-group" ${isFirstGroup ? 'open' : ''}><summary>회차 ${startRound} ~ ${endRound}</summary><div class="round-group-content">`;
+                // 최신 데이터가 있는 그룹만 열어둠
+                const isOpenGroup = category === targetCategoryIndex;
+                
+                roundsHtml += `<details class="round-group" ${isOpenGroup ? 'open' : ''}><summary>회차 ${startRound} ~ ${endRound}</summary><div class="round-group-content">`;
                 for (let i = startRound; i <= endRound; i++) {
                     const roundData = savedRounds.get(i);
                     const isSaved = !!roundData;
@@ -971,7 +980,6 @@
                             </table>
                         </div>`;
                     } else {
-                        // 빈 회차는 껍데기(Lazy Container)만 렌더링해서 초기 로딩 속도 극강으로 단축
                         tableContent = `<div class="lazy-table-container" data-round-id="${i}"><p style="text-align:center; color:var(--text-secondary-color); padding: 10px;">클릭하면 입력창이 열립니다...</p></div>`;
                     }
 
@@ -1030,7 +1038,6 @@
                 }
                 const batch = writeBatch(db);
                 const scheduleData = [];
-                // 화면에 그려진(Lazy load 풀린) 테이블들만 찾아서 데이터 저장
                 document.querySelectorAll('.schedule-table').forEach(table => {
                     const roundId = parseInt(table.getAttribute('data-round-id'));
                     const roundTimestamp = existingTimestamps.get(roundId) || new Date().toISOString();
@@ -1052,7 +1059,6 @@
                 await batch.commit();
                 showToast("경기 일정 저장 및 백업 완료!");
                 
-                // 새로운 경기를 저장했으므로, 랭킹 히스토리 캐시 초기화
                 cachedRankingHistory = null; 
             } catch (e) {
                 showToast(`일정 저장 실패: ${e.message || '알 수 없는 오류'}`);
@@ -1069,8 +1075,12 @@
             }
         };
         
-        const updateRankingTable = (rankingData, potw) => {
-            allPlayersData = rankingData; 
+        const updateRankingTable = (rankingData, potw, isInitialLoad = false) => {
+            if (isInitialLoad) {
+                allPlayersData = rankingData; 
+            }
+            // 현재 화면에 렌더링될 데이터를 추적 (정렬/검색 시 남녀 필터 풀림 방지)
+            currentRenderedData = rankingData;
             
             if (currentActiveInput && document.getElementById('autocomplete-bar').classList.contains('show')) {
                 updateAutocompleteSuggestions(currentActiveInput.value);
@@ -1092,9 +1102,10 @@
             
             let genderFilteredData;
             if (currentFilter === 'male') {
-                genderFilteredData = rankingData.filter(p => !p.isFemale);
+                // 성별 필터링 + 해당 조건의 경기를 최소 1게임이라도 치른 사람만 노출
+                genderFilteredData = rankingData.filter(p => !p.isFemale && (p.wins + p.losses > 0));
             } else if (currentFilter === 'female') {
-                genderFilteredData = rankingData.filter(p => p.isFemale);
+                genderFilteredData = rankingData.filter(p => p.isFemale && (p.wins + p.losses > 0));
             } else {
                 genderFilteredData = [...rankingData];
             }
@@ -1129,7 +1140,7 @@
             rankingBody.innerHTML = ''; 
             
             if (finalFilteredData.length === 0) {
-                 rankingBody.innerHTML = `<tr><td colspan="13">표시할 데이터가 없습니다.</td></tr>`;
+                 rankingBody.innerHTML = `<tr><td colspan="13" style="padding: 20px;">표시할 데이터가 없습니다. (해당 성별만의 경기 기록이 부족합니다)</td></tr>`;
                  return;
             }
 
@@ -1166,7 +1177,8 @@
             }));
         };
 
-        const calculateRankingFromMatches = (allMatches, initialPlayers = {}, globalGenderMap = {}) => {
+        // [버그 해결 2] filterType 변수를 받아서 남자 복식, 여자 복식만 따로 동적으로 연산하도록 업그레이드 
+        const calculateRankingFromMatches = (allMatches, initialPlayers = {}, globalGenderMap = {}, filterType = 'all') => {
             const constants = {
                 BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6
             };
@@ -1184,24 +1196,40 @@
 
             const matchesByRound = new Map();
             allMatches.forEach(match => {
+                let isAllMale = true;
+                let isAllFemale = true;
+                let validPlayersCount = 0;
+
                 match.players.forEach((pName, idx) => {
                     const cleanName = pName.replace(/\*/g, '');
-                    if (cleanName && !players[cleanName]) {
-                        players[cleanName] = {
-                            name: cleanName, wins: 0, losses: 0, mmr: constants.BASE_MMR, championships: 0, 
-                            totalSets: 0, gameDiff: 0, 
-                            isFemale: pName.includes('*') || globalGenderMap[cleanName] === true,
-                            streakCount: 0, streakIsWin: false, lastGameTimestamp: null,
-                            matchHistory: [],
-                            currentPartner: null, 
-                            partnerWinStreak: 0   
-                        };
-                    } else if (cleanName && players[cleanName]) {
-                        if (pName.includes('*') || globalGenderMap[cleanName] === true) {
-                            players[cleanName].isFemale = true;
+                    if (cleanName) {
+                        validPlayersCount++;
+                        const isFemale = pName.includes('*') || globalGenderMap[cleanName] === true;
+                        if (isFemale) isAllMale = false;
+                        if (!isFemale) isAllFemale = false;
+                        
+                        if (!players[cleanName]) {
+                            players[cleanName] = {
+                                name: cleanName, wins: 0, losses: 0, mmr: constants.BASE_MMR, championships: 0, 
+                                totalSets: 0, gameDiff: 0, 
+                                isFemale: isFemale,
+                                streakCount: 0, streakIsWin: false, lastGameTimestamp: null,
+                                matchHistory: [],
+                                currentPartner: null, 
+                                partnerWinStreak: 0   
+                            };
+                        } else {
+                            if (isFemale) players[cleanName].isFemale = true;
                         }
                     }
                 });
+
+                if (validPlayersCount < 4) return;
+                
+                // 필터(남자/여자)가 켜져 있으면, 순수 남복/여복 경기가 아닌 것은 계산에서 아예 제외!
+                if (filterType === 'male' && !isAllMale) return;
+                if (filterType === 'female' && !isAllFemale) return;
+
                 if (!matchesByRound.has(match.round)) matchesByRound.set(match.round, []);
                 matchesByRound.get(match.round).push(match);
             });
@@ -1223,13 +1251,12 @@
                 let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
                 if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
                 
-                // [수정] 여자 선수는 혼복에서도 정상적인 승패 점수 획득 보장
+                // 여자 선수는 혼복에서도 정상적인 승패 점수 획득 보장
                 if (isMixedMatch) {
                     if (player.isFemale) {
                         mmrChange *= isWinner ? constants.WIN_BONUS : constants.LOSS_REDUCTION;
                     } else {
-                        // 남자는 혼복에서 얻는 이득/손실 50% 반토막 (양학 방지)
-                        mmrChange *= 0.5; 
+                        mmrChange *= 0.5; // 남자는 혼복 승리시 50% 페널티
                     }
                 } else {
                     mmrChange *= isWinner ? constants.WIN_BONUS : constants.LOSS_REDUCTION;
@@ -1243,11 +1270,9 @@
                 let finalChange = Math.round(mmrChange);
 
                 if (isWinner) {
-                     // 혼복에서 남자가 이겼거나 연승 파트너인 경우 최소 4점 보장
                      if ((isMixedMatch && !player.isFemale) || (isSamePartner && partnerWinStreak >= 1)) {
                          if (finalChange < 4) finalChange = 4; 
                      } else {
-                         // 여자 선수이거나 일반 동성 복식인 경우 최소 10점 보장
                          if (finalChange < 10) finalChange = 10; 
                      }
                 }
@@ -1334,6 +1359,20 @@
 
             allMatches.forEach(match => {
                 if (!match.score || !match.score.includes('-')) return;
+                
+                let isAllMale = true;
+                let isAllFemale = true;
+                match.players.forEach((pName) => {
+                    const cleanName = pName.replace(/\*/g, '');
+                    const isFemale = pName.includes('*') || globalGenderMap[cleanName] === true;
+                    if (isFemale) isAllMale = false;
+                    if (!isFemale) isAllFemale = false;
+                });
+                
+                // 파트너 및 세부 승률 통계도 남녀 필터에 맞춰서 계산 무시 처리
+                if (filterType === 'male' && !isAllMale) return;
+                if (filterType === 'female' && !isAllFemale) return;
+
                 const playerNames = match.players.map(p => p.replace(/\*/g, ''));
                 const [s1, s2] = match.score.split('-').map(Number);
                 const actual1 = s1 > s2;
@@ -1406,6 +1445,31 @@
             return allCalculatedPlayers;
         }
 
+        // MMR 장기 미참석 페널티(Decay) 계산을 공통 함수로 분리
+        const applyDecayToRankings = (playersArray) => {
+            const now = new Date();
+            const eightWeeksInMs = 8 * 7 * 24 * 60 * 60 * 1000;
+            const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
+            const baseMMR = 1500;
+            const decayAmount = 20;
+
+            playersArray.forEach(p => {
+                if (p.lastGameTimestamp) { 
+                    const lastGameDate = new Date(p.lastGameTimestamp);
+                    const inactiveTime = now.getTime() - lastGameDate.getTime();
+                    if (inactiveTime > eightWeeksInMs) {
+                        const penaltyTime = inactiveTime - eightWeeksInMs;
+                        const weeksToPenalize = Math.floor(penaltyTime / oneWeekInMs);
+                        if (weeksToPenalize > 0) {
+                            const totalPenalty = weeksToPenalize * decayAmount;
+                            const newMMR = (p.mmr || baseMMR) - totalPenalty;
+                            p.mmr = Math.max(baseMMR, newMMR); 
+                        }
+                    }
+                }
+            });
+        };
+
         const updateRanking = async () => {
             if (activeView !== CURRENT_SEASON_VERSION) {
                 showToast('현재 시즌 탭에서만 순위를 업데이트할 수 있습니다.'); return;
@@ -1443,7 +1507,8 @@
                     };
                 });
 
-                const allCalculatedPlayers = calculateRankingFromMatches(allMatchesFromDB, initialPlayersMap, globalGenderMap); 
+                // DB에 저장되는 기준은 무조건 'all(통합)' 기록입니다.
+                const allCalculatedPlayers = calculateRankingFromMatches(allMatchesFromDB, initialPlayersMap, globalGenderMap, 'all'); 
 
                 Object.values(initialPlayersMap).forEach(initialPlayer => {
                     if (!allCalculatedPlayers.some(p => p.name === initialPlayer.name)) {
@@ -1459,29 +1524,7 @@
                     }
                 });
 
-                const now = new Date();
-                const eightWeeksInMs = 8 * 7 * 24 * 60 * 60 * 1000;
-                const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
-                const baseMMR = 1500;
-                const decayAmount = 20;
-
-                allCalculatedPlayers.forEach(p => {
-                    if (p.lastGameTimestamp) { 
-                        const lastGameDate = new Date(p.lastGameTimestamp);
-                        const inactiveTime = now.getTime() - lastGameDate.getTime();
-
-                        if (inactiveTime > eightWeeksInMs) {
-                            const penaltyTime = inactiveTime - eightWeeksInMs;
-                            const weeksToPenalize = Math.floor(penaltyTime / oneWeekInMs);
-                            
-                            if (weeksToPenalize > 0) {
-                                const totalPenalty = weeksToPenalize * decayAmount;
-                                const newMMR = (p.mmr || baseMMR) - totalPenalty;
-                                p.mmr = Math.max(baseMMR, newMMR); 
-                            }
-                        }
-                    }
-                });
+                applyDecayToRankings(allCalculatedPlayers);
                 
                 const latestProcessedRound = Math.max(...allMatchesFromDB.map(m => m.round), 0);
                 
@@ -1504,7 +1547,6 @@
                     await batch.commit();
                     showToast('순위 업데이트 및 저장 완료!');
                     
-                    // 랭킹 업데이트 시 최신 뉴스를 위해 캐시도 비워줌
                     cachedRankingHistory = null;
                 } catch (e) {
                     showToast(`랭킹 저장 실패: ${e.message || '알 수 없는 오류'}`);
@@ -1744,7 +1786,6 @@
                 }
             });
             createScheduleRounds(savedRounds);
-            // Lazy load가 적용되었으므로 화면에 열려있는(랜더링된) 테이블에만 값을 채워 넣음
             document.querySelectorAll('.schedule-table').forEach(table => {
                 const roundId = parseInt(table.getAttribute('data-round-id'));
                 const roundData = savedRounds.get(roundId);
@@ -1782,7 +1823,29 @@
                 
                 rankingUnsubscribe = onSnapshot(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION), (docSnap) => {
                     const data = docSnap.exists() ? docSnap.data() : {};
-                    updateRankingTable(data.players || [], data.potw || null); 
+                    const dbPlayers = data.players || [];
+                    
+                    currentGlobalGenderMap = {};
+                    currentInitialPlayersMap = {};
+                    dbPlayers.forEach(p => {
+                        if (p.isFemale) currentGlobalGenderMap[p.name] = true;
+                        currentInitialPlayersMap[p.name] = { 
+                            name: p.name, 
+                            isFemale: p.isFemale, 
+                            championships: p.championships || 0,
+                            lastGameTimestamp: p.lastGameTimestamp || null 
+                        };
+                    });
+
+                    // 현재 필터 상태에 맞춰서 순위표 동적 렌더링 유지
+                    if (currentFilter === 'all') {
+                        updateRankingTable(dbPlayers, data.potw || null, true); 
+                    } else {
+                        allPlayersData = dbPlayers; 
+                        const dynamicRankings = calculateRankingFromMatches(allMatchesData, currentInitialPlayersMap, currentGlobalGenderMap, currentFilter);
+                        applyDecayToRankings(dynamicRankings);
+                        updateRankingTable(dynamicRankings, data.potw || null, false);
+                    }
 
                     if (allMatchesData.length > 0) {
                         triggerNewsGeneration(allMatchesData, allPlayersData);
@@ -1810,15 +1873,28 @@
                             initialPlayersMap[p.name] = { name: p.name, isFemale: p.isFemale, championships: p.championships || 0 };
                         });
                         
-                        const previousRankings = calculateRankingFromMatches(scheduleData, initialPlayersMap, globalGenderMapPast);
+                        currentGlobalGenderMap = globalGenderMapPast;
+                        currentInitialPlayersMap = initialPlayersMap;
+
+                        const previousRankings = calculateRankingFromMatches(scheduleData, initialPlayersMap, currentGlobalGenderMap, 'all');
+                        applyDecayToRankings(previousRankings);
+
                         allMatchesData = scheduleData; 
                         allPlayersData = previousRankings; 
+                        
                         processAndRenderSchedule(scheduleData);
-                        updateRankingTable(previousRankings, rankData.potw || null); 
+                        
+                        if (currentFilter === 'all') {
+                            updateRankingTable(previousRankings, rankData.potw || null, true); 
+                        } else {
+                            const dynamicRankings = calculateRankingFromMatches(allMatchesData, currentInitialPlayersMap, currentGlobalGenderMap, currentFilter);
+                            applyDecayToRankings(dynamicRankings);
+                            updateRankingTable(dynamicRankings, rankData.potw || null, false);
+                        }
+                        
                         triggerNewsGeneration(allMatchesData, allPlayersData); 
 
                     } else if (activeView === 'alltime') {
-                        // v1, v2, v3 모두 병합
                         const schedSnapV1 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V1));
                         const schedSnapV2 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V2));
                         const schedSnapV3 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V3));
@@ -1861,15 +1937,28 @@
                             initialPlayersMap[name].championships = champCounts[name] || 0;
                         });
                         
-                        const allTimeRankings = calculateRankingFromMatches(allMatches, initialPlayersMap, globalGenderMapAllTime);
+                        currentGlobalGenderMap = globalGenderMapAllTime;
+                        currentInitialPlayersMap = initialPlayersMap;
+
+                        const allTimeRankings = calculateRankingFromMatches(allMatches, initialPlayersMap, currentGlobalGenderMap, 'all');
                         allTimeRankings.forEach(p => {
                             p.championships = initialPlayersMap[p.name]?.championships || p.championships;
                         });
+                        applyDecayToRankings(allTimeRankings);
                         
                         allMatchesData = allMatches; 
                         allPlayersData = allTimeRankings; 
+                        
                         processAndRenderSchedule(allMatches);
-                        updateRankingTable(allTimeRankings, null);
+                        
+                        if (currentFilter === 'all') {
+                            updateRankingTable(allTimeRankings, null, true);
+                        } else {
+                            const dynamicRankings = calculateRankingFromMatches(allMatchesData, currentInitialPlayersMap, currentGlobalGenderMap, currentFilter);
+                            applyDecayToRankings(dynamicRankings);
+                            updateRankingTable(dynamicRankings, null, false);
+                        }
+                        
                         triggerNewsGeneration(allMatchesData, allPlayersData); 
                     }
                 } catch (error) {
@@ -1883,7 +1972,6 @@
             const scheduleContainer = document.getElementById('schedule-container');
             const autocompleteBar = document.getElementById('autocomplete-bar');
             
-            // [최적화 핵심] 비어있는 회차(lazy-round)를 열 때만 테이블의 HTML을 삽입해주는 글로벌 이벤트 (레이아웃 스래싱 방지)
             document.addEventListener('toggle', (e) => {
                 if (e.target && e.target.classList && e.target.classList.contains('lazy-round') && e.target.open) {
                     const container = e.target.querySelector('.lazy-table-container');
@@ -1908,7 +1996,6 @@
                                 </table>
                             </div>
                         `;
-                        // 렌더링 끝났으니 lazy 클래스 제거
                         container.classList.remove('lazy-table-container');
                         e.target.classList.remove('lazy-round');
                     }
@@ -2003,23 +2090,35 @@
             document.querySelectorAll('.close-btn').forEach(btn => {
                 btn.addEventListener('click', () => closePopup(btn.dataset.target));
             });
+            
+            // [버그 해결 2] 필터 버튼 클릭 시 동적으로 랭킹 연산 실행
             document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentFilter = btn.dataset.filter;
-                updateRankingTable(allPlayersData, currentPotw);
+                
+                if (currentFilter === 'all') {
+                    updateRankingTable(allPlayersData, currentPotw, false);
+                } else {
+                    const dynamicRankings = calculateRankingFromMatches(allMatchesData, currentInitialPlayersMap, currentGlobalGenderMap, currentFilter);
+                    applyDecayToRankings(dynamicRankings);
+                    updateRankingTable(dynamicRankings, currentPotw, false);
+                }
             }));
+            
             document.querySelectorAll('#ranking-table thead th[data-sort]').forEach(th => th.addEventListener('click', () => {
                 const newSortKey = th.dataset.sort;
                 sortOrder = (sortKey === newSortKey && sortOrder === 'desc') ? 'asc' : 'desc';
                 sortKey = newSortKey;
-                updateRankingTable(allPlayersData, currentPotw);
+                // 정렬할 때는 원래 할당된 currentRenderedData를 활용하여 다른 탭의 데이터로 풀리는 것을 방지
+                updateRankingTable(currentRenderedData, currentPotw, false);
             }));
+            
             document.getElementById('theme-toggle')?.addEventListener('click', () => {
                 const currentTheme = document.documentElement.getAttribute('data-theme');
                 applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
             });
-            document.getElementById('ranking-search')?.addEventListener('input', () => updateRankingTable(allPlayersData, currentPotw));
+            document.getElementById('ranking-search')?.addEventListener('input', () => updateRankingTable(currentRenderedData, currentPotw, false));
             
             document.getElementById('restore-backup-btn')?.addEventListener('click', (e) => {
                 if (activeView !== CURRENT_SEASON_VERSION) {
@@ -2089,7 +2188,6 @@
             const savedTheme = localStorage.getItem('theme') || 'light'; 
             applyTheme(savedTheme);
 
-            // 다른 페이지 이동 링크에도 현재 시즌 변수 적용
             document.getElementById('dashboard-link').href = `dash.html?season=${CURRENT_SEASON_VERSION}`;
             document.getElementById('hof-link').href = `hall_of_fame.html?season=${CURRENT_SEASON_VERSION}`;
             document.getElementById('partner-link').href = `partner.html?season=${CURRENT_SEASON_VERSION}`;
