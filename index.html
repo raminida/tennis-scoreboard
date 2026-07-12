@@ -935,7 +935,6 @@
             const container = document.getElementById('schedule-container');
             if (!container) return showToast("스케줄 컨테이너 오류!");
             
-            // [버그 해결 1] 가장 최근에 저장된 회차를 추적하여 해당 회차가 포함된 폴더를 자동으로 엶
             let latestSavedRound = 1;
             if (savedRounds.size > 0) {
                 latestSavedRound = Math.max(...Array.from(savedRounds.keys()));
@@ -949,7 +948,6 @@
             for (let category = 0; category < Math.ceil(totalRounds / roundsPerCategory); category++) {
                 const startRound = category * roundsPerCategory + 1;
                 const endRound = Math.min((category + 1) * roundsPerCategory, totalRounds);
-                // 최신 데이터가 있는 그룹만 열어둠
                 const isOpenGroup = category === targetCategoryIndex;
                 
                 roundsHtml += `<details class="round-group" ${isOpenGroup ? 'open' : ''}><summary>회차 ${startRound} ~ ${endRound}</summary><div class="round-group-content">`;
@@ -1102,7 +1100,6 @@
             
             let genderFilteredData;
             if (currentFilter === 'male') {
-                // 성별 필터링 + 해당 조건의 경기를 최소 1게임이라도 치른 사람만 노출
                 genderFilteredData = rankingData.filter(p => !p.isFemale && (p.wins + p.losses > 0));
             } else if (currentFilter === 'female') {
                 genderFilteredData = rankingData.filter(p => p.isFemale && (p.wins + p.losses > 0));
@@ -1177,7 +1174,6 @@
             }));
         };
 
-        // [버그 해결 2] filterType 변수를 받아서 남자 복식, 여자 복식만 따로 동적으로 연산하도록 업그레이드 
         const calculateRankingFromMatches = (allMatches, initialPlayers = {}, globalGenderMap = {}, filterType = 'all') => {
             const constants = {
                 BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6
@@ -1226,7 +1222,6 @@
 
                 if (validPlayersCount < 4) return;
                 
-                // 필터(남자/여자)가 켜져 있으면, 순수 남복/여복 경기가 아닌 것은 계산에서 아예 제외!
                 if (filterType === 'male' && !isAllMale) return;
                 if (filterType === 'female' && !isAllFemale) return;
 
@@ -1251,12 +1246,11 @@
                 let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
                 if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
                 
-                // 여자 선수는 혼복에서도 정상적인 승패 점수 획득 보장
                 if (isMixedMatch) {
                     if (player.isFemale) {
                         mmrChange *= isWinner ? constants.WIN_BONUS : constants.LOSS_REDUCTION;
                     } else {
-                        mmrChange *= 0.5; // 남자는 혼복 승리시 50% 페널티
+                        mmrChange *= 0.5; 
                     }
                 } else {
                     mmrChange *= isWinner ? constants.WIN_BONUS : constants.LOSS_REDUCTION;
@@ -1369,7 +1363,6 @@
                     if (!isFemale) isAllFemale = false;
                 });
                 
-                // 파트너 및 세부 승률 통계도 남녀 필터에 맞춰서 계산 무시 처리
                 if (filterType === 'male' && !isAllMale) return;
                 if (filterType === 'female' && !isAllFemale) return;
 
@@ -1445,7 +1438,6 @@
             return allCalculatedPlayers;
         }
 
-        // MMR 장기 미참석 페널티(Decay) 계산을 공통 함수로 분리
         const applyDecayToRankings = (playersArray) => {
             const now = new Date();
             const eightWeeksInMs = 8 * 7 * 24 * 60 * 60 * 1000;
@@ -1507,7 +1499,6 @@
                     };
                 });
 
-                // DB에 저장되는 기준은 무조건 'all(통합)' 기록입니다.
                 const allCalculatedPlayers = calculateRankingFromMatches(allMatchesFromDB, initialPlayersMap, globalGenderMap, 'all'); 
 
                 Object.values(initialPlayersMap).forEach(initialPlayer => {
@@ -1837,7 +1828,6 @@
                         };
                     });
 
-                    // 현재 필터 상태에 맞춰서 순위표 동적 렌더링 유지
                     if (currentFilter === 'all') {
                         updateRankingTable(dbPlayers, data.potw || null, true); 
                     } else {
@@ -1972,10 +1962,11 @@
             const scheduleContainer = document.getElementById('schedule-container');
             const autocompleteBar = document.getElementById('autocomplete-bar');
             
+            // [방어 코드 추가] 이미 렌더링된 테이블은 무시하도록 'is-rendered' 속성 활용
             document.addEventListener('toggle', (e) => {
                 if (e.target && e.target.classList && e.target.classList.contains('lazy-round') && e.target.open) {
                     const container = e.target.querySelector('.lazy-table-container');
-                    if (container) {
+                    if (container && !container.classList.contains('is-rendered')) {
                         const roundId = container.dataset.roundId;
                         container.innerHTML = `
                             <div class="table-wrapper">
@@ -1996,6 +1987,7 @@
                                 </table>
                             </div>
                         `;
+                        container.classList.add('is-rendered'); // 렌더링 완료 마커 추가
                         container.classList.remove('lazy-table-container');
                         e.target.classList.remove('lazy-round');
                     }
@@ -2044,6 +2036,7 @@
                 }
             });
 
+            // [수정] onblur 이벤트를 처리하던 focusout을 개선하여, 렌더링과 충돌하지 않게 조치
             scheduleContainer.addEventListener('focusout', (e) => {
                 if (e.target.classList.contains('player-input')) {
                     if (autocompleteShowTimer) { 
@@ -2060,8 +2053,9 @@
                         const tbody = tr?.closest('tbody');
                         if (tbody) {
                             const firstRow = tbody.querySelector('tr:first-child');
+                            // setTimeout으로 DOM 업데이트 시점을 아주 약간 지연시켜서 브라우저 엔진 충돌(리페인팅 증발) 회피
                             if (tr === firstRow) {
-                                autoFillPartners(tr); 
+                                setTimeout(() => { autoFillPartners(tr); }, 50);
                             }
                         }
                     }
@@ -2071,6 +2065,15 @@
             autocompleteBar.addEventListener('click', (e) => {
                 if (e.target.tagName === 'BUTTON' && currentActiveInput) {
                     currentActiveInput.value = e.target.dataset.name;
+                    // 클릭하여 이름을 넣은 후 다시 입력창에 포커스를 주거나 자동채우기를 트리거할 수 있게 함
+                    currentActiveInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    
+                    if (currentActiveInput.classList.contains('player4')) {
+                        const tr = currentActiveInput.closest('tr');
+                        if (tr && tr === tr.closest('tbody').querySelector('tr:first-child')) {
+                             setTimeout(() => { autoFillPartners(tr); }, 50);
+                        }
+                    }
                 }
             });
             
@@ -2091,7 +2094,6 @@
                 btn.addEventListener('click', () => closePopup(btn.dataset.target));
             });
             
-            // [버그 해결 2] 필터 버튼 클릭 시 동적으로 랭킹 연산 실행
             document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
@@ -2110,7 +2112,6 @@
                 const newSortKey = th.dataset.sort;
                 sortOrder = (sortKey === newSortKey && sortOrder === 'desc') ? 'asc' : 'desc';
                 sortKey = newSortKey;
-                // 정렬할 때는 원래 할당된 currentRenderedData를 활용하여 다른 탭의 데이터로 풀리는 것을 방지
                 updateRankingTable(currentRenderedData, currentPotw, false);
             }));
             
