@@ -50,11 +50,24 @@
             .record-title { font-size: 0.9rem; }
             .btn { padding: 10px 20px; }
         }
-    </style>
+    
+
+.growth-cta{border:1px solid var(--border-color);border-radius:16px;padding:23px;margin:0 0 25px;background:var(--surface-color);display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;box-shadow:0 8px 24px var(--shadow-color)}
+.growth-cta h2{margin:0 0 7px;font-size:1.35rem;border:0;padding:0;color:var(--primary-color)}
+.growth-cta p{margin:0;font-size:.95rem;line-height:1.65;color:var(--text-secondary-color)}
+.growth-link{display:inline-block;padding:12px 20px;background:var(--primary-color);color:white!important;text-decoration:none;border-radius:10px;font-weight:800;white-space:nowrap}
+.growth-legacy-note{color:var(--text-secondary-color);font-size:.9rem;line-height:1.7;margin-bottom:14px}
+.growth-mini-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.growth-mini-card{background:var(--surface-color);border:1px solid var(--border-color);border-radius:10px;padding:16px}
+.growth-mini-card span{display:block;font-size:.8rem;color:var(--text-secondary-color)}
+.growth-mini-card strong{font-size:1.3rem;display:block;padding-top:4px;color:var(--primary-color)}
+
+</style>
 </head>
 <body>
     <div class="container">
-        <h1>📜 시즌별 기록 📜</h1>
+        <h1>📜 시즌별 기록 보존함 📜</h1>
+        <div class="growth-cta"><div><h2>🏅 결과와 순위는 역사로, 새로운 목표는 성장으로</h2><p>역대 최다 우승, 최고 MMR, 시즌 MVP는 이곳에 보존합니다. 지금의 테니스 여정은 점수 차와 파트너 성장으로 살펴보세요.</p></div><a class="growth-link" href="growth.html?season=all">나의 성장 이야기</a></div>
 
         <div class="season-section">
             <h2>👑 통산 기록 (All-Time)</h2>
@@ -109,15 +122,16 @@
         const BASE_COLLECTION = 'league';
         // v3 추가
         const SEASONS = {
+            'v4': { name: '2026/27 겨울시즌' },
             'v3': { name: '2026 여름시즌' },
             'v2': { name: '2025-26 겨울시즌' },
             'v1': { name: '2025 여름시즌' },
         };
-        const SEASON_VERSIONS = ['v3', 'v2', 'v1']; // 최신순으로 정렬
+        const SEASON_VERSIONS = ['v4', 'v3', 'v2', 'v1']; // 최신순으로 정렬
 
         const getSeasonIdFromURL = () => {
             const params = new URLSearchParams(window.location.search);
-            return params.get('season') || 'v3'; // 기본값을 v3로 업데이트
+            return params.get('season') || 'v4'; // 기본값을 v3로 업데이트
         };
 
         const calculateSeasonRecords = (players) => {
@@ -135,7 +149,11 @@
 
         const renderSeasonSection = (season, container) => {
             const players = season.data.players || [];
-            if (players.length === 0) return;
+            const played = players.some(p => ((p.wins||0)+(p.losses||0))>0);
+            if (!played) {
+                container.insertAdjacentHTML('beforeend', `<div class="season-section"><h2>${season.name} 결산</h2><p>새 시즌 기록이 아직 없습니다. 1회차 결과 입력과 순위 업데이트 후 표시됩니다.</p></div>`);
+                return;
+            }
 
             const records = calculateSeasonRecords(players);
             if (!records) return;
@@ -184,7 +202,7 @@
                     cumulativeStats[p.name].losses += (p.losses || 0);
                     cumulativeStats[p.name].championships += (p.championships || 0);
                     
-                    if(p.mmr > allTimeHighestMmr.mmr) {
+                    if(((p.wins||0)+(p.losses||0))>0 && p.mmr > allTimeHighestMmr.mmr) {
                         allTimeHighestMmr = { player: p.name, mmr: p.mmr };
                     }
                 });

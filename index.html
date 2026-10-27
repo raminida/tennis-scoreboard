@@ -313,22 +313,80 @@
             font-size: 0.9rem; font-weight: 700; cursor: pointer;
         }
         html:not([data-theme="light"]) .autocomplete-bar button { color: #0f172a; }
-    </style>
+    
+
+.round-date-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 15px;margin:7px 0 2px;color:var(--text-secondary-color);font-weight:700;font-size:.85rem}
+.round-date-row input[type=date]{max-width:170px;min-width:145px;font-size:.9rem;padding:7px 9px;border-radius:8px;background:var(--surface-color);border:1px solid var(--border-color);color:var(--text-color)}
+.round-date-row span{font-size:.75rem;font-weight:400}
+.growth-cta{border:1px solid var(--border-color);border-radius:16px;padding:23px;margin:0 0 25px;background:var(--surface-color);display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;box-shadow:0 8px 24px var(--shadow-color)}
+.growth-cta h2{margin:0 0 7px;font-size:1.35rem;border:0;padding:0;color:var(--primary-color)}
+.growth-cta p{margin:0;font-size:.95rem;line-height:1.65;color:var(--text-secondary-color)}
+.growth-link{display:inline-block;padding:12px 20px;background:var(--primary-color);color:white!important;text-decoration:none;border-radius:10px;font-weight:800;white-space:nowrap}
+.growth-legacy-note{color:var(--text-secondary-color);font-size:.9rem;line-height:1.7;margin-bottom:14px}
+.growth-mini-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.growth-mini-card{background:var(--surface-color);border:1px solid var(--border-color);border-radius:10px;padding:16px}
+.growth-mini-card span{display:block;font-size:.8rem;color:var(--text-secondary-color)}
+.growth-mini-card strong{font-size:1.3rem;display:block;padding-top:4px;color:var(--primary-color)}
+
+#legacy-panel{margin-bottom:2.5rem;padding:0;background:var(--surface-color);border-radius:14px;border:1px solid var(--border-color);overflow:hidden}
+#legacy-panel>summary{font-size:1.15rem;display:block;padding:20px;color:var(--primary-color);cursor:pointer;font-weight:900}
+#legacy-panel>.legacy-content{padding:17px 20px 25px}
+
+
+/* mobile v4 - mobile legibility without changing competition records */
+.mobile-dock{display:none}
+@media(max-width:700px){
+ html{-webkit-text-size-adjust:100%}body{overflow-x:hidden}
+ body>.container{max-width:100%}.container{max-width:100%;padding:0 9px calc(100px + env(safe-area-inset-bottom,0px))}
+ .container>h1{font-size:clamp(26px,7vw,33px);margin:10px 0 14px;padding-top:12px}
+ .growth-cta{padding:17px 15px;display:block;margin-bottom:13px;border-radius:14px}
+ .growth-cta h2{font-size:1.2rem;margin-bottom:8px}.growth-cta p{font-size:.83rem;line-height:1.6}
+ .growth-link{display:block;text-align:center;padding:13px;margin-top:13px;font-size:.93rem;border-radius:11px;min-height:46px}
+ .section{padding:13px 9px;margin-bottom:16px;border-radius:13px}.section h2{font-size:1.35rem}
+ #schedule-section .input-group{margin-bottom:9px}#schedule-section .btn{min-height:44px}
+ #schedule-container .round-group-content{padding:10px 5px 4px;max-width:100%;overflow:hidden}
+ #schedule-container details summary{padding:13px 10px;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+ .round-date-row{padding:9px 7px;display:grid;grid-template-columns:auto minmax(145px,1fr);gap:7px;align-items:center;font-size:12px}
+ .round-date-row label{white-space:nowrap}.round-date-row input[type=date]{width:100%;min-width:0;max-width:none;min-height:44px;font-size:16px}
+ .round-date-row span{grid-column:1/-1;font-size:11px;line-height:1.4}
+ #schedule-container .table-wrapper{max-height:none;width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+ #schedule-container table.schedule-table{min-width:630px;width:630px;table-layout:fixed}
+ #schedule-container table.schedule-table th,#schedule-container table.schedule-table td{padding:8px 4px;font-size:13px;white-space:nowrap}
+ #schedule-container table.schedule-table input.player-input{width:94px;max-width:none;min-width:94px;height:42px;font-size:16px;padding:7px 6px;border-radius:7px}
+ #schedule-container table.schedule-table input.score-input{width:66px;max-width:none;min-width:66px;height:42px;font-size:16px;padding:7px 2px}
+ #schedule-container .schedule-table input[type=checkbox]{width:19px;height:19px;margin:auto}
+ #schedule-container .table-wrapper:before{content:'↔ 표를 좌우로 밀면 이름과 스코어를 모두 볼 수 있어요';display:block;position:sticky;left:0;width:max-content;max-width:100%;font-size:11px;font-weight:700;color:var(--text-secondary-color);margin:5px 0 6px}
+ #ranking-table{width:max-content;min-width:900px}#ranking-table td,#ranking-table th{padding:10px 8px;font-size:12px}
+ #ranking-table input.ranking-player{min-width:96px;max-width:140px;font-size:13px}
+ #ranking-table input.readonly{font-size:12px}
+ #ranking-search{max-width:none;width:100%;min-height:43px;font-size:16px}
+ .ranking-controls{gap:10px}.ranking-filter{width:100%;display:flex;gap:6px}.ranking-filter .filter-btn{flex:1;min-width:0;font-size:12px;padding:9px 5px}
+ .season-tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;gap:5px;padding-bottom:6px}
+ .season-tabs .tab-btn{flex:0 0 auto;min-height:43px;white-space:nowrap;font-size:12px;padding:9px 11px}
+ .growth-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #legacy-panel>summary{font-size:14px;line-height:1.6;padding:14px}#legacy-panel>.legacy-content{padding:10px 8px 14px}
+ .theme-toggle{top:9px;right:11px;width:44px;height:44px}
+ .popup{max-height:85dvh;overflow-y:auto}.autocomplete-bar{bottom:calc(62px + env(safe-area-inset-bottom,0px));padding:9px;z-index:4600}
+ .autocomplete-bar button{min-height:42px;font-size:14px}
+ .mobile-dock{position:fixed;z-index:4500;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));bottom:0;left:0;right:0;padding:6px 8px calc(7px + env(safe-area-inset-bottom,0px));gap:4px;background:var(--surface-color);border-top:1px solid var(--border-color);box-shadow:0 -6px 22px rgba(0,0,0,.06)}
+ .mobile-dock a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:52px;border-radius:10px;color:var(--text-secondary-color);font-size:11px;white-space:nowrap;text-decoration:none}
+ .mobile-dock a span{font-size:20px;line-height:1.25}.mobile-dock a b{font-size:10.5px;font-weight:800}
+ .mobile-dock a.current{color:var(--primary-color);background:var(--summary-bg)}
+}
+
+.profile-editor{margin:20px 0 5px;padding:16px;border:1px solid var(--border-color);border-radius:12px;text-align:left;background:var(--surface-color)}
+.profile-editor h3{margin:0 0 7px;color:var(--primary-color)}.profile-editor>label,.profile-fields label{display:block;font-size:13px;font-weight:700;margin-top:10px}
+.profile-editor select{width:100%;max-width:none;min-width:0;padding:11px;font-size:16px;text-align:left;border-radius:8px;min-height:46px}
+.profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.profile-editor button{width:100%;margin-top:13px;min-height:46px}
+@media(max-width:500px){.profile-fields{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
 
-        <div id="news-ticker-section" class="section">
-            <div class="news-header">
-                <span>🎾 호수 오픈 뉴스</span>
-            </div>
-            <div id="news-list-container">
-                <p>리그 데이터를 불러오는 중입니다...</p>
-            </div>
-        </div>
-
         <h1>호수 오픈</h1>
+        <div class="growth-cta"><div><h2>🎾 호수오픈 · 성장 스토리</h2><p>누가 1등인지보다, 같은 상대에게 얼마나 따라붙었는지 · 같은 파트너와 얼마나 좋아졌는지를 기록합니다.<br>기존 경기 입력과 MMR, 지난 시즌 기록은 그대로 보존합니다.</p></div><a class="growth-link" href="growth.html?season=all">내 성장 기록 보기</a></div>
         <div class="section" id="schedule-section">
             <h2 id="schedule-title">경기 일정</h2>
             <div class="input-group">
@@ -339,8 +397,21 @@
             <button id="update-ranking" class="btn update-btn admin-btn">순위 업데이트</button>
             <button id="restore-backup-btn" class="btn danger admin-btn" style="margin-top: 10px;">💾 오류 수정 (백업 복구)</button>
         </div>
-        <div class="section">
-            <h2 id="ranking-main-title">순위표</h2>
+        <details id="legacy-panel">
+          <summary>📚 이전 방식의 기록 · MMR / 시즌 순위 / 승률 (클릭하여 보기)</summary>
+          <div class="legacy-content">
+        <div id="news-ticker-section" class="section">
+            <div class="news-header">
+                <span>🎾 호수 오픈 뉴스</span>
+            </div>
+            <div id="news-list-container">
+                <p>리그 데이터를 불러오는 중입니다...</p>
+            </div>
+        </div>
+
+
+            <h2 id="ranking-main-title">기존 순위표</h2>
+            <p class="growth-legacy-note">순위표는 삭제하지 않습니다. 지난 기록 확인과 데이터 호환을 위한 보존 영역이며, 새로운 메인 평가는 개인 성장 기록입니다.</p>
             
             <div class="season-tabs" id="season-tabs-container">
                 <button class="tab-btn active" data-view="v3">2026 여름시즌</button>
@@ -382,13 +453,16 @@
                 </table>
             </div>
             <div class="btn-group">
+                <a href="growth.html?season=all" class="btn">성장 스토리로 이동</a>
                 <a href="dash.html" class="btn" id="dashboard-link">통계 대시보드</a>
                 <button id="download-csv" class="btn">CSV 다운로드</button>
                 <a href="hall_of_fame.html" class="btn" id="hof-link">시즌별 기록</a>
                 <a href="partner.html" class="btn" id="partner-link">파트너 전적 & 랭킹</a> 
             </div>
-        </div>
+          </div>
+        </details>
     </div>
+    <nav class="mobile-dock" aria-label="모바일 바로가기"><a href="index.html" class="current" aria-current="page"><span aria-hidden="true">🎾</span><b>경기 입력</b></a><a href="growth.html"><span aria-hidden="true">📈</span><b>성장</b></a><a href="h2h.html"><span aria-hidden="true">👤</span><b>개인 기록</b></a><a href="partner.html"><span aria-hidden="true">🤝</span><b>파트너</b></a></nav>
     <div id="toast" class="toast"></div>
     <div id="overlay" class="overlay"></div>
     
@@ -402,6 +476,11 @@
         <h3>선수 관리</h3>
         <p style="font-size: 0.8rem; color: var(--text-secondary-color);">잘못된 선수 삭제 또는 성별(*)을 수정합니다. <br><strong>※주의:</strong> 선수를 삭제한 후에는, 경기 일정표에서 해당 선수 이름을 직접 모두 지우고 저장해야 순위표에서 완전히 사라집니다.</p>
         <div id="player-management-list"></div>
+        <section class="profile-editor"><h3>🎾 선수 플레이 스타일</h3><p style="font-size:12px;color:var(--text-secondary-color)">주손·백핸드 형태는 성장 분석의 상대 유형 통계에만 사용하며, MMR에는 영향을 주지 않습니다.</p>
+          <label for="profile-player">선수 선택</label><select id="profile-player"><option value="">선수를 선택하세요</option></select>
+          <div class="profile-fields"><label for="profile-hand">주손<select id="profile-hand"><option value="unknown">미등록</option><option value="right">오른손잡이</option><option value="left">왼손잡이</option></select></label><label for="profile-backhand">백핸드<select id="profile-backhand"><option value="unknown">미등록</option><option value="one">한손 백핸드</option><option value="two">양손 백핸드</option></select></label></div>
+          <button id="profile-save" class="btn" type="button">플레이 스타일 저장</button><div id="profile-status" style="font-size:12px;margin-top:7px" aria-live="polite"></div>
+        </section>
         <div class="popup-buttons">
             <button id="save-player-changes-btn" class="btn">변경사항 저장</button>
         </div>
@@ -955,6 +1034,7 @@
                     const roundData = savedRounds.get(i);
                     const isSaved = !!roundData;
                     const savedDate = roundData?.timestamp ? new Date(roundData.timestamp).toLocaleDateString('ko-KR') : '';
+                    const actualDate = /^\d{4}-\d{2}-\d{2}$/.test(roundData?.playedAt || '') ? roundData.playedAt : '';
                     const champions = roundData?.champions?.map(name => `<span class="champion-name">${name}</span>`).join(', ') || '없음';
                     
                     let tableContent = '';
@@ -984,6 +1064,7 @@
                     roundsHtml += `
                     <details class="${isSaved ? 'saved-round' : 'empty-round lazy-round'}">
                         <summary>${i}회${isSaved ? `<span class="saved-indicator">💾</span><span class="saved-info">[${savedDate}, 우승: ${champions}]</span>` : ''}</summary>
+                        <div class="round-date-row"><label for="round-played-${i}">📅 실제 경기일</label><input type="date" id="round-played-${i}" class="round-played-at" value="${actualDate}" aria-label="${i}회 실제 경기일"><span>선택 입력 · 주간 성장 분석용 · 기존 저장일 유지</span></div>
                         ${tableContent}
                         <button class="btn save-all-btn admin-btn" style="margin: 10px 15px;">저장하기</button>
                     </details>`;
@@ -1029,9 +1110,11 @@
                 const scheduleDocRef = doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION);
                 const scheduleDoc = await getDoc(scheduleDocRef);
                 const existingTimestamps = new Map();
+                const existingPlayedDates = new Map();
                 if (scheduleDoc.exists()) {
                     (scheduleDoc.data().matches || []).forEach(match => {
                         if (!existingTimestamps.has(match.round)) existingTimestamps.set(match.round, match.timestamp);
+                        if (match.playedAt && !existingPlayedDates.has(match.round)) existingPlayedDates.set(match.round, match.playedAt);
                     });
                 }
                 const batch = writeBatch(db);
@@ -1039,12 +1122,15 @@
                 document.querySelectorAll('.schedule-table').forEach(table => {
                     const roundId = parseInt(table.getAttribute('data-round-id'));
                     const roundTimestamp = existingTimestamps.get(roundId) || new Date().toISOString();
+                    const input = table.closest('details')?.querySelector('.round-played-at');
+                    const enteredDate = input ? input.value : (existingPlayedDates.get(roundId) || null);
+                    const playedAt = enteredDate && /^\d{4}-\d{2}-\d{2}$/.test(enteredDate) ? enteredDate : null;
                     table.querySelectorAll('tbody tr').forEach(row => {
                         const players = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
                         const score = row.querySelector('.score').value.trim();
                         const isFourPoint = row.querySelector('.is-four-point').checked;
                         if (players.every(p => p)) {
-                            scheduleData.push({ round: roundId, players, score, isFourPoint, timestamp: roundTimestamp });
+                            scheduleData.push({ round: roundId, players, score, isFourPoint, timestamp: roundTimestamp, playedAt });
                         }
                     });
                 });
@@ -1638,6 +1724,42 @@
             document.getElementById('overlay').classList.remove('show');
         };
 
+        // Player handedness & backhand form are stored separately from rankings/schedules.
+        // Front-end admin password is a UI gate, not a replacement for Firestore write rules.
+        let profileCache = {};
+        const profileDocRef = () => doc(db,'league','data','playerProfiles','global');
+        const profileStatus = message => { document.getElementById('profile-status').textContent = message; };
+        const fillProfileFields = () => {
+          const name=document.getElementById('profile-player').value;
+          const p=profileCache[name]||{};
+          document.getElementById('profile-hand').value=['left','right'].includes(p.hand)?p.hand:'unknown';
+          document.getElementById('profile-backhand').value=['one','two'].includes(p.backhand)?p.backhand:'unknown';
+        };
+        const loadPlayerProfiles = async () => {
+          const select=document.getElementById('profile-player');
+          const old=select.value;
+          select.replaceChildren(new Option('선수를 선택하세요',''),...allPlayersData.slice().sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(p=>new Option(p.name,p.name)));
+          if([...select.options].some(o=>o.value===old))select.value=old;
+          profileStatus('선수 스타일 정보를 읽는 중...');
+          try { const snap=await getDoc(profileDocRef());profileCache=snap.exists()?(snap.data().profiles||{}):{};profileStatus('기존 등록값을 불러왔습니다.'); }
+          catch(e){profileCache={};profileStatus('스타일 데이터 조회 실패: '+e.message);}
+          fillProfileFields();
+        };
+        document.getElementById('profile-player').addEventListener('change',fillProfileFields);
+        document.getElementById('profile-save').addEventListener('click',async()=>{
+          if(activeView!==CURRENT_SEASON_VERSION)return profileStatus('현재 시즌에서만 수정할 수 있습니다.');
+          if(!document.getElementById('player-management-popup').classList.contains('show'))return;
+          const name=document.getElementById('profile-player').value;
+          if(!name || !allPlayersData.some(p=>p.name===name))return profileStatus('선수를 먼저 선택하세요.');
+          const hand=document.getElementById('profile-hand').value,backhand=document.getElementById('profile-backhand').value;
+          const button=document.getElementById('profile-save');button.disabled=true;profileStatus('저장 중...');
+          try {
+            const value={hand,backhand};
+            await setDoc(profileDocRef(),{profiles:{[name]:value}},{merge:true});
+            profileCache[name]=value;profileStatus(name+' 선수의 플레이 스타일 저장 완료. 성장 페이지 새로고침 시 반영됩니다.');
+          }catch(e){profileStatus('저장 실패: '+e.message);}
+          finally{button.disabled=false;}
+        });
         const populatePlayerManagementPopup = () => {
             const listContainer = document.getElementById('player-management-list');
             listContainer.innerHTML = '';
@@ -1756,9 +1878,10 @@
             const roundWins = {};
             scheduleData.forEach(match => {
                 if (!savedRounds.has(match.round)) {
-                    savedRounds.set(match.round, { timestamp: match.timestamp, champions: [], matches: [] });
+                    savedRounds.set(match.round, { timestamp: match.timestamp, playedAt: match.playedAt || null, champions: [], matches: [] });
                 }
                 savedRounds.get(match.round).matches.push(match);
+                if (match.playedAt && !savedRounds.get(match.round).playedAt) savedRounds.get(match.round).playedAt = match.playedAt;
             });
             scheduleData.forEach(match => {
                 const roundId = match.round;
@@ -2145,6 +2268,7 @@
                     closePopup('password-popup');
                     populatePlayerManagementPopup();
                     openPopup('player-management-popup');
+                    loadPlayerProfiles();
                 } else {
                     showToast('비밀번호가 틀렸습니다.'); passwordInput.focus();
                 }

@@ -55,14 +55,33 @@
             .awards-grid{grid-template-columns:1fr}
             .tab-btn{padding:8px 10px;font-size:.9rem}
         }
-    </style>
+    
+
+.growth-cta{border:1px solid var(--border-color);border-radius:16px;padding:23px;margin:0 0 25px;background:var(--surface-color);display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;box-shadow:0 8px 24px var(--shadow-color)}
+.growth-cta h2{margin:0 0 7px;font-size:1.35rem;border:0;padding:0;color:var(--primary-color)}
+.growth-cta p{margin:0;font-size:.95rem;line-height:1.65;color:var(--text-secondary-color)}
+.growth-link{display:inline-block;padding:12px 20px;background:var(--primary-color);color:white!important;text-decoration:none;border-radius:10px;font-weight:800;white-space:nowrap}
+.growth-legacy-note{color:var(--text-secondary-color);font-size:.9rem;line-height:1.7;margin-bottom:14px}
+.growth-mini-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.growth-mini-card{background:var(--surface-color);border:1px solid var(--border-color);border-radius:10px;padding:16px}
+.growth-mini-card span{display:block;font-size:.8rem;color:var(--text-secondary-color)}
+.growth-mini-card strong{font-size:1.3rem;display:block;padding-top:4px;color:var(--primary-color)}
+
+
+/* 대시보드는 옛 CSS 변수명을 사용하므로 성장 안내 카드에 매핑 */
+.growth-cta{background:var(--surface);border-color:var(--border);box-shadow:0 8px 24px var(--shadow)}
+.growth-cta h2{color:var(--primary)}.growth-cta p{color:var(--text-sec)}
+.growth-link{background:var(--primary);color:#fff!important}
+</style>
 </head>
 <body>
     <button class="theme-toggle" id="theme-toggle">☀️</button>
     <div class="container">
-        <h1 id="main-title">2026 여름시즌 대시보드</h1>
+        <h1 id="main-title">2026/27 겨울시즌 대시보드</h1>
+        <div class="growth-cta"><div><h2>📈 MMR 곡선에서 경기력 성장 곡선으로</h2><p>예전 MMR 그래프와 시즌 어워드는 여기서 계속 확인할 수 있습니다. 새 분석 화면에서는 실제 게임 득실차·상대 재대결·파트너 호흡을 봅니다.</p></div><a class="growth-link" href="growth.html?season=all">성장 분석 보기</a></div>
         <div class="season-tabs">
-            <button class="tab-btn active" data-view="v3">2026 여름시즌</button>
+            <button class="tab-btn active" data-view="v4">2026/27 겨울시즌</button>
+            <button class="tab-btn" data-view="v3">2026 여름시즌</button>
             <button class="tab-btn" data-view="v2">2025-26 겨울시즌</button>
             <button class="tab-btn" data-view="v1">2025 여름시즌</button>
             <button class="tab-btn" data-view="alltime">통산 기록</button>
@@ -82,7 +101,7 @@
             </div>
         </div>
         <div class="section">
-            <h2 id="awards-title">🏆 2026 여름시즌 어워드</h2>
+            <h2 id="awards-title">🏆 2026/27 겨울시즌 어워드</h2>
             <div class="awards-grid"></div>
             <div style="text-align:center;margin-top:30px">
                 <a href="index.html" class="btn" id="main-link">메인으로 돌아가기</a>
@@ -110,11 +129,12 @@
 
         const BASE_COLLECTION = 'league';
         const SEASONS = {
+            'v4': { name: '2026/27 겨울시즌' },
             'v3': { name: '2026 여름시즌' },
             'v2': { name: '2025-26 겨울시즌' },
             'v1': { name: '2025 여름시즌' },
         };
-        const CURRENT_SEASON_VERSION = 'v3';
+        const CURRENT_SEASON_VERSION = 'v4';
 
         let mmrChart, allPlayersData = [], fullMmrHistory = [];
         let activeView = CURRENT_SEASON_VERSION;
@@ -439,27 +459,18 @@
                     document.getElementById('awards-title').textContent = '🏆 통산 기록 어워드';
                     document.getElementById('mmr-chart-title').textContent = 'MMR 히스토리 (최근 1년)';
                     
-                    const [rankingsV1, rankingsV2, rankingsV3, scheduleV1, scheduleV2, scheduleV3, historyV1Snap, historyV2Snap, historyV3Snap] = await Promise.all([
-                        getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V1)),
-                        getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V2)),
-                        getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V3)),
-                        getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V1)),
-                        getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V2)),
-                        getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V3)),
-                        getDocs(query(collection(db, BASE_COLLECTION, 'data', `rankingHistory`), orderBy('createdAt', 'asc'))),
-                        getDocs(query(collection(db, BASE_COLLECTION, 'data', `rankingHistory-${SEASON_V2}`), orderBy('createdAt', 'asc'))),
-                        getDocs(query(collection(db, BASE_COLLECTION, 'data', `rankingHistory-${SEASON_V3}`), orderBy('createdAt', 'asc')))
+                    const seasonIds = ['v1','v2','v3','v4'];
+                    const [rankSnaps, scheduleSnaps, historySnaps] = await Promise.all([
+                        Promise.all(seasonIds.map(id => getDoc(doc(db,BASE_COLLECTION,'data','rankings',id)))),
+                        Promise.all(seasonIds.map(id => getDoc(doc(db,BASE_COLLECTION,'data','schedule',id)))),
+                        Promise.all(seasonIds.map(id => getDocs(query(
+                            collection(db,BASE_COLLECTION,'data',id==='v1'?'rankingHistory':`rankingHistory-${id}`),
+                            orderBy('createdAt','asc')))))
                     ]);
+                    const allMatches = scheduleSnaps.flatMap(snap => snap.exists() ? (snap.data().matches || []) : []);
+                    fullMmrHistory = historySnaps.flatMap(snap => snap.docs.map(d=>d.data()))
+                        .sort((a,b)=>getJsDate(a.createdAt)-getJsDate(b.createdAt));
 
-                    const matchesV1 = scheduleV1.exists() ? scheduleV1.data().matches : [];
-                    const matchesV2 = scheduleV2.exists() ? scheduleV2.data().matches : [];
-                    const matchesV3 = scheduleV3.exists() ? scheduleV3.data().matches : [];
-                    const historyDataV1 = historyV1Snap.docs.map(d => d.data());
-                    const historyDataV2 = historyV2Snap.docs.map(d => d.data());
-                    const historyDataV3 = historyV3Snap.docs.map(d => d.data());
-                    
-                    const allMatches = [...matchesV1, ...matchesV2, ...matchesV3];
-                    
                     const cumulativeStats = {};
                     allMatches.forEach(match => {
                         if (!match.score || !match.players || match.players.length < 4) return;
@@ -513,7 +524,13 @@
                     const historyQuery = query(collection(db, BASE_COLLECTION, 'data', historyPath), orderBy('createdAt', 'asc'));
                     const historyCollectionSnap = await getDocs(historyQuery);
                     
-                    if (!rankingsSnap.exists()) return showToast("랭킹 데이터 없음!");
+                    if (!rankingsSnap.exists()) {
+                        allPlayersData=[];fullMmrHistory=[];
+                        document.querySelector('.awards-grid').innerHTML = '<p>2026/27 겨울시즌 개막 전입니다. 첫 경기를 저장하고 메인에서 순위를 업데이트하면 통계가 나타납니다.</p>';
+                        document.getElementById('mmr-player-select').innerHTML='';
+                        if (mmrChart) {mmrChart.destroy();mmrChart=null;}
+                        return;
+                    }
                     
                     allPlayersData = rankingsSnap.data().players || [];
                     const scheduleMatches = scheduleSnap.exists() ? scheduleSnap.data().matches || [] : [];
@@ -544,6 +561,11 @@
             const savedTheme = localStorage.getItem('theme') || 'dark';
             applyTheme(savedTheme);
             
+            const requestedSeason=new URLSearchParams(location.search).get('season');
+            if ([...Object.keys(SEASONS),'alltime'].includes(requestedSeason)) {
+                activeView=requestedSeason;
+                document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===activeView));
+            }
             try {
                 await signInAnonymously(auth);
                 loadDashboard();

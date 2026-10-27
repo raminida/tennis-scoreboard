@@ -126,7 +126,38 @@
         @media screen and (max-width: 600px) {
             #mmrChart { min-height: 250px; }
         }
-    </style>
+    
+
+.growth-cta{border:1px solid var(--border-color);border-radius:16px;padding:23px;margin:0 0 25px;background:var(--surface-color);display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;box-shadow:0 8px 24px var(--shadow-color)}
+.growth-cta h2{margin:0 0 7px;font-size:1.35rem;border:0;padding:0;color:var(--primary-color)}
+.growth-cta p{margin:0;font-size:.95rem;line-height:1.65;color:var(--text-secondary-color)}
+.growth-link{display:inline-block;padding:12px 20px;background:var(--primary-color);color:white!important;text-decoration:none;border-radius:10px;font-weight:800;white-space:nowrap}
+.growth-legacy-note{color:var(--text-secondary-color);font-size:.9rem;line-height:1.7;margin-bottom:14px}
+.growth-mini-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.growth-mini-card{background:var(--surface-color);border:1px solid var(--border-color);border-radius:10px;padding:16px}
+.growth-mini-card span{display:block;font-size:.8rem;color:var(--text-secondary-color)}
+.growth-mini-card strong{font-size:1.3rem;display:block;padding-top:4px;color:var(--primary-color)}
+
+/* 2026/27 모바일 표 및 차트 최적화 */
+.container,.section,.profile-header{min-width:0;max-width:100%}
+.table-wrapper{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.season-tabs{max-width:100%;overflow-x:auto;scrollbar-width:thin;flex-wrap:nowrap}
+.season-tabs .tab-btn{flex:0 0 auto;white-space:nowrap;min-height:44px}
+#mmrChart{display:block;max-width:100%!important;width:100%!important}
+@media(max-width:600px){
+ body{padding:10px;overflow-x:hidden}
+ .container{width:100%;max-width:100%;overflow-x:hidden}
+ .section{padding:15px;margin-bottom:20px}
+ .profile-header{padding:20px 12px;margin-bottom:18px}
+ .player-name{font-size:clamp(25px,8vw,37px)}
+ .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:15px}
+ .stat-card{padding:11px 6px;min-width:0}
+ .stat-value{font-size:clamp(17px,5.2vw,25px);overflow-wrap:anywhere}
+ .h2h-controls{flex-wrap:wrap}
+ #opponent-select{min-width:0;max-width:100%;min-height:44px}
+ #mmrChart{min-height:200px}
+}
+</style>
 </head>
 <body>
     <div class="container">
@@ -137,7 +168,8 @@
             </div>
         </div>
         <div class="season-tabs">
-            <button class="tab-btn active" data-view="v3">2026 여름시즌</button>
+            <button class="tab-btn active" data-view="v4">2026/27 겨울시즌</button>
+            <button class="tab-btn" data-view="v3">2026 여름시즌</button>
             <button class="tab-btn" data-view="v2">2025-26 겨울시즌</button>
             <button class="tab-btn" data-view="v1">2025 여름시즌</button>
             <button class="tab-btn" data-view="alltime">통산 기록</button>
@@ -152,6 +184,8 @@
             <div class="stat-card"><div class="stat-title">최고 파트너</div><div id="stat-partner" class="stat-value">-</div></div>
         </div>
 
+        <div class="growth-cta"><div><h2>내 경기력이 어떻게 변했을까?</h2><p>상대와 다시 만난 경기, 파트너 호흡, 점수 차 변화를 보고 싶은 경우</p></div><a id="growth-profile-link" class="growth-link" href="growth.html">상세 성장 스토리 보기</a></div>
+        <div class="section" id="profile-growth-section"><h2>🌱 개인 성장 스냅샷 (6게임 기준)</h2><p class="growth-legacy-note">동일 경기 방식에서 초반과 최근 득실차를 비교합니다. 승패와 MMR의 대체 지표가 아닙니다.</p><div id="profile-growth-summary" class="growth-mini-grid"><div>경기를 불러오는 중...</div></div></div>
         <div class="section">
             <h2>상대전적 (H2H)</h2>
             <div class="h2h-controls">
@@ -221,18 +255,148 @@
         const auth = getAuth(app);
         const analytics = getAnalytics(app);
 
+// 성장 분석 핵심 함수는 페이지 자체에 포함합니다. 별도 JS 파일 불필요.
+/* 호수오픈 성장 분석 공통 로직. Firestore 쓰기 없음. */
+const SEASONS = [
+  { id: 'v1', label: '2025 여름시즌' },
+  { id: 'v2', label: '2025–26 겨울시즌' },
+  { id: 'v3', label: '2026 여름시즌' },
+  { id: 'v4', label: '2026–27 겨울시즌' }
+];
+const coreCleanName = name => String(name ?? '').replace(/\*/g, '').trim();
+const parseDate = value => {
+  if (!value) return null;
+  const d = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
+  return Number.isFinite(d.getTime()) ? d : null;
+};
+function normalizeMatches(seasonEntries) {
+  const out = [];
+  let excluded = 0;
+  for (const { season, matches = [] } of seasonEntries) {
+    matches.forEach((m, seq) => {
+      const names = Array.isArray(m?.players) ? m.players.map(coreCleanName) : [];
+      const found = String(m?.score ?? '').trim().match(/^(\d+)\s*-\s*(\d+)$/);
+      if (names.length !== 4 || names.some(n => !n) || new Set(names).size !== 4 || !found) { excluded++; return; }
+      const a = Number(found[1]), b = Number(found[2]);
+      if (a === b || Math.max(a,b) > 7 || Math.min(a,b) < 0) { excluded++; return; }
+      const format = m.isFourPoint === true || Math.max(a,b) <= 4 ? '4' : '6';
+      // 4게임 체크와 실제 점수가 불일치하면 통계에서 제외한다.
+      if ((format === '4' && Math.max(a,b) !== 4) || (format === '6' && Math.max(a,b) < 5)) { excluded++; return; }
+      const date = parseDate(m.playedAt || m.timestamp);
+      out.push({ season, round: Number(m.round) || 0, seq, date,
+        timestamp: date ? date.getTime() : null, players: names, a, b, format,
+        score: `${a}-${b}`, isFourPoint: format === '4' });
+    });
+  }
+  const seasonRank = Object.fromEntries(SEASONS.map((s,i) => [s.id,i]));
+  out.sort((x,y) => {
+    const s = (seasonRank[x.season] ?? 99) - (seasonRank[y.season] ?? 99);
+    if (s) return s;
+    if (x.date && y.date && x.timestamp !== y.timestamp) return x.timestamp - y.timestamp;
+    if (x.round !== y.round) return x.round - y.round;
+    return x.seq - y.seq;
+  });
+  return {matches:out,excluded};
+}
+const scoreFor = (m,player) => {
+  const i = m.players.indexOf(player);
+  if (i < 0) return null;
+  const own = i < 2 ? m.a : m.b, opp = i < 2 ? m.b : m.a;
+  return { ...m, player, partner:m.players[i<2?(i===0?1:0):(i===2?3:2)],
+    opponents:i<2?m.players.slice(2):m.players.slice(0,2), own, opp,
+    margin:own-opp, win:own>opp,
+    ownScore:`${own}-${opp}` };
+};
+const playerMatches = (matches, player, format='6') => matches
+  .filter(m=>m.format===format && m.players.includes(player))
+  .map(m=>scoreFor(m,player));
+const uniquePlayers = matches => [...new Set(matches.flatMap(m=>m.players))].sort((a,b)=>a.localeCompare(b,'ko'));
+const avg = (arr, f = x => x) => arr.length ? arr.reduce((s,x)=>s+f(x),0)/arr.length : 0;
+const summary = arr => ({n:arr.length, wins:arr.filter(m=>m.win).length,
+  margin:avg(arr,m=>m.margin), own:avg(arr,m=>m.own), opp:avg(arr,m=>m.opp),
+  winRate:arr.length ? 100*arr.filter(m=>m.win).length/arr.length : 0});
+function splitGrowth(arr) {
+  if (arr.length < 6) return null;
+  const n = Math.min(5,Math.floor(arr.length/2));
+  const first=summary(arr.slice(0,n)),last=summary(arr.slice(-n));
+  return { first,last,delta:last.margin-first.margin, window:n };
+}
+const opponentPairKey = x=>x.opponents.slice().sort().join('|');
+function rematchGroups(arr, type='individual') {
+  const groups=new Map();
+  const add=(key, m) => { if (!groups.has(key)) groups.set(key,[]); groups.get(key).push(m); };
+  arr.forEach(m=>{
+    if(type==='pair') add(opponentPairKey(m),m);
+    else if(type==='exact') add(`${opponentPairKey(m)}|${m.partner}`,m);
+    else m.opponents.forEach(opponent=>add(opponent,m));
+  });
+  return [...groups.entries()].map(([key,items])=>({
+    key,label:type==='pair'?key.replace('|',' · '):type==='exact'?key.split('|').slice(0,2).join(' · ')+' / 파트너 '+key.split('|')[2]:key,
+    items, first:items[0],last:items[items.length-1],
+    delta:items.length>1?items[items.length-1].margin-items[0].margin:null,
+    pairControlled:type==='exact'||(items.length>1&&items[0].partner===items[items.length-1].partner&&opponentPairKey(items[0])===opponentPairKey(items[items.length-1])),
+    separateRound:items.length>1 && items.some(m=>m.season!==items[0].season||m.round!==items[0].round),
+    distinctDates:items.length>1 && items[0].date && items[items.length-1].date && items[0].date.toDateString() !== items[items.length-1].date.toDateString()
+  })).filter(g=>g.items.length>=2).sort((a,b)=>b.items.length-a.items.length||a.label.localeCompare(b.label,'ko'));
+}
+function partnerGroups(arr) {
+  const groups=new Map();
+  arr.forEach(m=>{if(!groups.has(m.partner))groups.set(m.partner,[]);groups.get(m.partner).push(m);});
+  return [...groups.entries()].map(([name,items])=>({name,items,
+    first:items[0],last:items[items.length-1],
+    overall:summary(items), early:summary(items.slice(0,Math.floor(items.length/2))),
+    late:summary(items.slice(Math.ceil(items.length/2))),
+    delta:items.length>=2?items[items.length-1].margin-items[0].margin:null,
+    splitDelta:items.length>=4?summary(items.slice(Math.ceil(items.length/2))).margin-summary(items.slice(0,Math.floor(items.length/2))).margin:null
+  })).sort((a,b)=>b.items.length-a.items.length||a.name.localeCompare(b.name,'ko'));
+}
+const fmtDelta = (n,d=1)=> Number.isFinite(n) ? `${n>0?'+':''}${n.toFixed(d)}`:'—';
+const dateLabel = m => m?.date ? `${m.date.getFullYear()}.${String(m.date.getMonth()+1).padStart(2,'0')}.${String(m.date.getDate()).padStart(2,'0')}` : '날짜 미상';
+const periodLabel = m => `${dateLabel(m)} · ${m.round || '?'}회차`;
+const escapeHTML = v => String(v ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function narrative(player,arr) {
+  if (!arr.length) return `${player} 선수의 선택한 조건에 맞는 경기 기록이 없습니다.`;
+  const g=splitGrowth(arr), rms=rematchGroups(arr,'pair'), pairs=partnerGroups(arr);
+  const parts = [`${player} 선수는 이 조건에서 ${arr.length}경기를 치렀고, 평균 득실차는 ${fmtDelta(summary(arr).margin)}게임입니다.`];
+  if(g) parts.push(`초반 ${g.window}경기와 최근 ${g.window}경기의 평균 득실차는 ${fmtDelta(g.first.margin)} → ${fmtDelta(g.last.margin)}로 ${Math.abs(g.delta).toFixed(1)}게임 ${g.delta>0?'개선':g.delta<0?'하락':'유지'}됐습니다.`);
+  else parts.push('초기·최근 구간 비교는 최소 6경기가 필요합니다.');
+  const rem = rms.find(r=>r.separateRound);
+  if(rem) parts.push(`같은 상대 2인 조합(${rem.label})과 재대결한 ${rem.items.length}경기 중 첫 경기와 최근 경기의 득실차는 ${fmtDelta(rem.first.margin,0)} → ${fmtDelta(rem.last.margin,0)}입니다.`);
+  if(pairs.length) parts.push(`가장 자주 함께 뛴 파트너는 ${pairs[0].name} 선수(${pairs[0].items.length}경기)입니다.`);
+  parts.push('점수 변화는 경기력의 단서이지 개인 실력 향상의 확정 판정은 아닙니다. 상대 조합과 파트너, 경기 방식의 영향을 함께 살펴보세요.');
+  return parts.join(' ');
+}
+function sampleMatches() {
+  const raws=[];
+  const put=(round,p,score,day,isFourPoint=false)=>raws.push({round,players:p,score,isFourPoint,timestamp:`2026-09-${String(day).padStart(2,'0')}T18:00:00+09:00`});
+  put(1,['가람','보라','다온','현우'],'1-6',1);
+  put(1,['가람','지호','현우','민서'],'2-6',1);
+  put(2,['가람','보라','다온','현우'],'3-6',5);
+  put(2,['가람','보라','민서','지호'],'3-6',5);
+  put(3,['가람','보라','다온','현우'],'4-6',10);
+  put(3,['가람','지호','현우','민서'],'6-4',10);
+  put(4,['가람','보라','다온','현우'],'6-4',15);
+  put(4,['가람','보라','민서','지호'],'6-3',15);
+  put(5,['가람','지호','현우','민서'],'6-2',20);
+  put(5,['가람','보라','다온','현우'],'6-2',20);
+  put(6,['가람','보라','민서','지호'],'4-6',25);
+  put(6,['가람','보라','현우','다온'],'4-2',25,true);
+  return normalizeMatches([{season:'v3',matches:raws}]).matches;
+}
+
         const BASE_COLLECTION = 'league';
+        const SEASON_V4 = 'v4';
         const SEASON_V3 = 'v3';
         const SEASON_V2 = 'v2';
         const SEASON_V1 = 'v1';
-        let activeView = SEASON_V3; 
+        let activeView = SEASON_V4; 
         
         let mmrChartInstance = null;
 
         const getParams = () => {
             const params = new URLSearchParams(window.location.search);
             return {
-                mainPlayerName: decodeURIComponent(params.get('player'))
+                mainPlayerName: params.get('player') || ''
             };
         };
 
@@ -741,7 +905,7 @@
         const loadProfileData = async () => {
             const { mainPlayerName } = getParams();
             if (!mainPlayerName) {
-                document.getElementById('player-name').textContent = "선수를 찾을 수 없음";
+                document.getElementById('player-name').textContent = "선수를 선택하세요 · 순위표에서 이름을 눌러 주세요";
                 return;
             }
             
@@ -753,10 +917,12 @@
             if (activeView === 'alltime') {
                 rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V1))); 
                 rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V2))); 
-                rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V3))); 
+                rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V3)));
+                rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V4))); 
                 scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V1))); 
                 scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V2))); 
-                scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V3))); 
+                scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V3)));
+                scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V4))); 
             } else { 
                 rankingDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', activeView)));
                 scheduleDocs.push(getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', activeView)));
@@ -768,6 +934,23 @@
 
                 const allPlayers = rankingSnaps.flatMap(snap => snap.exists() ? snap.data().players : []);
                 const allMatches = scheduleSnaps.flatMap(snap => snap.exists() ? snap.data().matches : []);
+                // 기존 H2H 계산과 독립적인 읽기 전용 성장 요약.
+                const seasonIds = activeView === 'alltime' ? ['v1','v2','v3','v4'] : [activeView];
+                const sourceBySeason = scheduleSnaps.map((snap,i)=>({season:seasonIds[i],matches:snap.exists()?(snap.data().matches||[]):[]}));
+                const normForGrowth = normalizeMatches(sourceBySeason).matches;
+                const growthRows = playerMatches(normForGrowth,mainPlayerName,'6');
+                const growthComparison = splitGrowth(growthRows);
+                const repeatedOpp = rematchGroups(growthRows,'pair');
+                const growthPartners = partnerGroups(growthRows);
+                const growthRoot = document.getElementById('profile-growth-summary');
+                const viewGrowthLink = document.getElementById('growth-profile-link');
+                viewGrowthLink.href = `growth.html?season=${activeView}&player=${encodeURIComponent(mainPlayerName)}`;
+                growthRoot.innerHTML = `
+                    <div class="growth-mini-card"><span>6게임 경기 수</span><strong>${growthRows.length}경기</strong></div>
+                    <div class="growth-mini-card"><span>초반 → 최근 평균 득실차</span><strong>${growthComparison?`${fmtDelta(growthComparison.first.margin)} → ${fmtDelta(growthComparison.last.margin)}`:'기록 부족'}</strong></div>
+                    <div class="growth-mini-card"><span>재대결한 동일 상대팀</span><strong>${repeatedOpp.length}조합</strong></div>
+                    <div class="growth-mini-card"><span>가장 자주 뛴 파트너</span><strong>${growthPartners.length?`${escapeHTML(growthPartners[0].name)} (${growthPartners[0].items.length}경기)`:'기록 부족'}</strong></div>`;
+
                 
                 let playerData;
                 let playerHistory = []; 
@@ -807,33 +990,15 @@
                             .filter(p => p.name === mainPlayerName)
                             .reduce((acc, p) => acc + (p.championships || 0), 0);
 
-                        const v1Players = rankingSnaps[0].exists() ? rankingSnaps[0].data().players : [];
-                        const v2Players = rankingSnaps[1].exists() ? rankingSnaps[1].data().players : [];
-                        const v3Players = rankingSnaps[2].exists() ? rankingSnaps[2].data().players : [];
-
-                        const v1PlayerData = v1Players.find(p => p.name === mainPlayerName);
-                        const v2PlayerData = v2Players.find(p => p.name === mainPlayerName);
-                        const v3PlayerData = v3Players.find(p => p.name === mainPlayerName);
-
-                        const v1MMR = v1PlayerData?.mmr || 0; 
-                        const v2MMR = v2PlayerData?.mmr || 0;
-                        const v3MMR = v3PlayerData?.mmr || 0;
-                        const highestMMR = Math.max(v1MMR, v2MMR, v3MMR);
-                        playerData.mmr = highestMMR > 0 ? Math.round(highestMMR) : 1500; 
-
-                        const v1Sorted = [...v1Players].sort((a,b) => (b.mmr || 0) - (a.mmr || 0));
-                        const v1Rank = v1Sorted.findIndex(p => p.name === mainPlayerName) + 1;
-                        
-                        const v2Sorted = [...v2Players].sort((a,b) => (b.mmr || 0) - (a.mmr || 0));
-                        const v2Rank = v2Sorted.findIndex(p => p.name === mainPlayerName) + 1;
-
-                        const v3Sorted = [...v3Players].sort((a,b) => (b.mmr || 0) - (a.mmr || 0));
-                        const v3Rank = v3Sorted.findIndex(p => p.name === mainPlayerName) + 1;
-
-                        const validRanks = [];
-                        if (v1Rank > 0) validRanks.push(v1Rank);
-                        if (v2Rank > 0) validRanks.push(v2Rank);
-                        if (v3Rank > 0) validRanks.push(v3Rank);
+                        const playerSets = rankingSnaps.map(snap => snap.exists() ? (snap.data().players || []) : []);
+                        const highestMMR = Math.max(0, ...playerSets.map(players =>
+                            players.find(p => p.name === mainPlayerName)?.mmr || 0));
+                        playerData.mmr = highestMMR > 0 ? Math.round(highestMMR) : 1500;
+                        const validRanks = playerSets.map(players => {
+                            const rank = [...players].sort((a,b) => (b.mmr||0)-(a.mmr||0))
+                                .findIndex(p => p.name === mainPlayerName) + 1;
+                            return rank;
+                        }).filter(rank=>rank>0);
 
                         const highestRank = validRanks.length > 0 ? Math.min(...validRanks) : 0;
                         
@@ -896,6 +1061,7 @@
 
             } catch (e) {
                 console.error("Profile data load failed:", e);
+                document.getElementById('player-name').textContent = `기록 로딩 실패 · ${e.message || '네트워크를 확인하세요'}`;
             }
         };
         
@@ -932,6 +1098,11 @@
 
 
         document.addEventListener('DOMContentLoaded', async () => {
+             const desiredSeason = new URLSearchParams(location.search).get('season');
+             if ([SEASON_V1,SEASON_V2,SEASON_V3,SEASON_V4,'alltime'].includes(desiredSeason)) {
+                 activeView = desiredSeason;
+                 document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===desiredSeason));
+             }
              const savedTheme = localStorage.getItem('theme') || 'light';
              document.documentElement.setAttribute('data-theme', savedTheme);
              

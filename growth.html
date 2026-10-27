@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>호수오픈 | 나의 테니스 성장 스토리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f7fa;--card:#fff;--ink:#112b44;--muted:#6b7e90;--line:#e0e8ee;--navy:#092f51;--blue:#147cbb;--teal:#009f8f;--green:#087f67;--red:#b95060;--tint:#eef8fb;--shadow:0 8px 34px rgba(18,60,94,.055)}
+[data-theme=dark]{--bg:#0c1826;--card:#142638;--ink:#edf6fc;--muted:#9db3c6;--line:#294255;--navy:#113e5d;--blue:#69c7f7;--teal:#4be0c6;--green:#60d8b9;--red:#ff9dab;--tint:#152f3e;--shadow:none}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',sans-serif;line-height:1.5}button,select,input{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}.container{max-width:1160px;margin:0 auto;padding:16px 20px 76px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:15px;padding-bottom:16px;border-bottom:1px solid var(--line)}.brand{font-size:18px;font-weight:900;letter-spacing:-.04em;white-space:nowrap}.brand span{color:var(--teal)}.nav{display:flex;align-items:center;gap:16px;font-size:12px;color:var(--muted);font-weight:800}.nav a:hover{color:var(--blue)}.nav .active{color:var(--blue)}.theme{border:1px solid var(--line);color:var(--ink);background:var(--card);border-radius:50%;padding:8px 11px}
+.intro{margin:28px 0 20px;display:flex;justify-content:space-between;align-items:center;gap:12px}.eyebrow{font-size:11px;font-weight:900;letter-spacing:.14em;color:var(--teal)}h1{font-size:clamp(26px,3vw,36px);letter-spacing:-.05em;line-height:1.28;margin:5px 0}p{margin:0}.intro p{color:var(--muted);font-size:13px}.status{font-size:11px;color:var(--muted);text-align:right;max-width:230px}.status.error{color:var(--red)}
+.identity{background:linear-gradient(115deg,#093653 0%,#087fa1 65%,#09aa98 100%);color:#fff;border-radius:22px;padding:26px 29px;box-shadow:0 16px 35px rgba(5,97,124,.12);display:grid;grid-template-columns:minmax(250px,1fr) auto;align-items:center;gap:20px;overflow:hidden;position:relative}.identity:after{content:'↗';position:absolute;right:22px;top:-59px;font-size:220px;color:#fff;opacity:.045;pointer-events:none}.identity label{font-weight:800;font-size:12px;letter-spacing:.07em;display:block;opacity:.85;margin-bottom:6px}.identity select{position:relative;z-index:2;appearance:none;-webkit-appearance:none;color:#fff;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.5);border-radius:12px;padding:9px 45px 9px 14px;width:min(100%,420px);height:64px;font-size:31px;letter-spacing:-.04em;font-weight:900;outline:none;cursor:pointer}.identity select option{color:#18334a;background:#fff;font-size:17px}.selector-wrap{position:relative;max-width:420px}.selector-wrap:after{content:'▾';position:absolute;right:20px;bottom:19px;font-size:18px;pointer-events:none}.identity .lead{position:relative;z-index:1;font-size:15px;font-weight:700;max-width:350px}.identity .lead small{display:block;color:#b5fff3;font-size:11px;font-weight:700;letter-spacing:.08em;margin-bottom:7px}.identity .lead strong{font-size:20px;line-height:1.45}
+.filterbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:17px 0 20px}.filterbar label{font-size:12px;font-weight:800;color:var(--muted)}select.compact{border:1px solid var(--line);border-radius:10px;padding:10px 30px 10px 12px;background:var(--card);color:var(--ink);font-size:13px;font-weight:700;min-width:130px}.more{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--ink);font-size:12px;font-weight:700}.filters-panel{margin:-8px 0 19px;padding:16px;background:var(--card);border:1px solid var(--line);border-radius:14px}.filters-panel[hidden]{display:none}.gridfilters{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.filter{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);font-weight:700}.filter select,.filter input{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:10px;min-width:0;width:100%}.actionrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.btn{border:0;border-radius:10px;padding:10px 13px;background:var(--navy);color:#fff;font-size:12px;font-weight:800}.btn.secondary{border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:19px 20px;min-width:0}.kpi .tag{font-size:12px;font-weight:800;color:var(--muted)}.kpi strong{font-size:30px;display:block;letter-spacing:-.06em;line-height:1.5;margin:6px 0 2px;white-space:nowrap}.kpi small{font-size:11px;display:block;color:var(--muted)}.up{color:var(--green)!important}.down{color:var(--red)!important}
+.surface{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:var(--shadow);margin-bottom:18px}.section-top{display:flex;align-items:flex-start;justify-content:space-between;gap:13px;flex-wrap:wrap;margin-bottom:18px}h2{margin:0;font-size:20px;letter-spacing:-.04em}.subtitle{font-size:12px;color:var(--muted);margin-top:4px}.segmented{display:inline-flex;background:var(--bg);padding:4px;border-radius:10px;gap:2px}.segmented button{background:transparent;color:var(--muted);border:0;border-radius:8px;padding:9px 13px;font-size:12px;font-weight:800}.segmented button.active{color:var(--ink);background:var(--card);box-shadow:0 2px 8px rgba(30,55,80,.1)}.chartbox{min-height:315px}.chartbox svg{width:100%;height:auto;display:block;overflow:visible}.chartbox svg .plot-point{cursor:pointer;outline:none}.chartbox svg .plot-point:hover circle:last-of-type,.chartbox svg .plot-point:focus circle:last-of-type{r:8}.chartnotes{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:7px;font-size:11px;color:var(--muted)}.insight{display:flex;gap:13px;align-items:center;margin-top:16px;background:var(--tint);border-radius:13px;padding:13px 16px;font-size:13px;line-height:1.7}.insight .dot{width:9px;height:9px;border-radius:50%;background:var(--teal);flex:none}.weekdetail{font-size:12px;color:var(--muted);padding-top:8px;min-height:24px}.period-warning{font-size:11px;color:var(--muted);line-height:1.7;margin-top:10px}
+.sectiongrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.tile{border:1px solid var(--line);border-radius:16px;padding:20px;background:var(--card)}.tile h3{margin:0;font-size:17px;letter-spacing:-.04em}.tile .mini{font-size:11px;color:var(--muted);margin:3px 0 13px}.highlights{display:flex;flex-direction:column;gap:8px}.highlight{width:100%;background:var(--bg);border:1px solid transparent;border-radius:11px;padding:12px;text-align:left;display:grid;grid-template-columns:1fr auto;gap:6px;color:var(--ink)}.highlight:hover,.highlight:focus{border-color:var(--teal)}.highlight strong{font-size:13px}.highlight small{display:block;color:var(--muted);font-size:11px;margin-top:3px}.highlight .value{font-size:16px;font-weight:900}.inline-detail{margin-top:10px;background:var(--tint);border-radius:10px;padding:12px;font-size:12px;line-height:1.9;white-space:normal;color:var(--ink)}.muted{color:var(--muted)}.nothing{font-size:12px;color:var(--muted);padding:24px;text-align:center;border:1px dashed var(--line);border-radius:10px}
+.collapse{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:12px 0;overflow:hidden}.collapse summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:800;padding:16px 18px}.collapse summary:after{content:'＋';font-size:18px;color:var(--muted)}.collapse[open] summary:after{content:'−'}.collapse-body{padding:0 18px 18px;font-size:12px;line-height:1.8;color:var(--muted)}.scroll{overflow-x:auto}.scroll table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap}th{font-size:11px;color:var(--muted);background:var(--bg)}td{font-size:12px;color:var(--ink)}.hint{font-size:11px;color:var(--muted);margin-top:15px;line-height:1.8}
+@media(max-width:850px){.nav{gap:8px;flex-wrap:wrap;justify-content:flex-end}.identity{grid-template-columns:1fr}.identity .lead strong{font-size:18px}.gridfilters{grid-template-columns:repeat(2,minmax(0,1fr))}.sectiongrid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:540px){.container{padding:12px 11px 60px}.topbar{align-items:flex-start}.brand{font-size:15px}.nav{font-size:11px;gap:8px}.nav a:nth-child(n+3){display:none}.intro{margin-top:19px;flex-wrap:wrap}.intro p{font-size:12px}.status{text-align:left;max-width:none}.identity{padding:22px 17px;border-radius:17px}.identity select{font-size:27px;min-width:0;width:100%}.filterbar{gap:7px}select.compact{min-width:110px}.kpis{gap:8px}.kpi{padding:13px}.kpi strong{font-size:24px}.surface{padding:16px}.gridfilters{grid-template-columns:1fr}.section-top{gap:12px}.chartbox{min-height:0}.insight{font-size:12px}}
+
+/* mobile v4: large tap targets, readable text, swipeable weekly graph */
+.quick-filter{display:flex;gap:7px;align-items:center;min-width:0}
+.chart-scroll-caption{display:none}
+.week-navigator{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:12px;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:9px 10px}
+.week-navigator button{border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font-size:12px;font-weight:800;min-height:42px;padding:8px 12px;white-space:nowrap}
+.week-navigator button:disabled{opacity:.35;cursor:not-allowed}
+.week-navigator .weekdetail{color:var(--ink);line-height:1.5;text-align:center;padding:0;font-size:12px;min-width:0}
+.date-caveat{margin:12px 0 0;border-top:1px solid var(--line);padding-top:9px}
+.date-caveat summary{font-size:12px;color:var(--muted);cursor:pointer;font-weight:700;list-style:revert}
+.date-caveat .period-warning{margin:8px 0 0}
+.mobile-dock{display:none}.mobile-record-list{display:none}
+.show-all{display:none;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:11px;border-radius:10px;font-size:12px;font-weight:800;width:100%;min-height:44px}
+.plot-point.is-selected circle:last-of-type{fill:#ffac3c!important;r:7}
+@media(max-width:640px){
+ html{-webkit-text-size-adjust:100%}body{overflow-x:hidden}
+ .container{width:100%;max-width:100%;padding:12px 12px calc(112px + env(safe-area-inset-bottom,0px))}
+ .topbar{padding-bottom:9px;align-items:center;flex-wrap:nowrap}
+ .brand{font-size:19px}.nav{gap:8px}.nav a{display:none!important}.theme{padding:9px 13px;min-height:42px}
+ .intro{margin:17px 0 14px;display:block}.intro h1{font-size:clamp(24px,6.8vw,30px);letter-spacing:-.055em;line-height:1.34;margin-top:7px}.intro p{font-size:12px;line-height:1.5}.eyebrow{font-size:10px}
+ .status{margin-top:9px;font-size:11px;text-align:left;max-width:100%;line-height:1.45}
+ .identity{padding:19px 17px 20px;gap:11px;border-radius:17px;grid-template-columns:minmax(0,1fr)}
+ .identity label{font-size:12px;margin-bottom:8px}.selector-wrap{width:100%;max-width:none}
+ .identity select{width:100%;height:68px;line-height:1.2;font-size:clamp(28px,8.5vw,38px);padding:11px 46px 11px 16px;border-radius:13px;touch-action:manipulation}
+ .selector-wrap:after{right:19px;bottom:20px;font-size:20px}
+ .identity .lead{font-size:13px;max-width:100%}.identity .lead small{display:none}.identity .lead strong{font-size:15px;font-weight:800}
+ .filterbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;margin:14px 0}
+ .quick-filter{display:flex;flex-direction:column;align-items:stretch;gap:5px}.quick-filter label{font-size:11px}
+ select.compact{width:100%;min-width:0;font-size:14px;min-height:46px;padding:10px 28px 10px 11px}
+ .filterbar #more{grid-column:1/-1;min-height:43px;text-align:center;font-size:13px;background:var(--card)}
+ .filters-panel{margin:0 0 12px;padding:13px}.gridfilters{grid-template-columns:1fr 1fr;gap:10px}.gridfilters .filter:first-child{grid-column:1/-1}
+ .filter select,.filter input{min-height:45px;font-size:14px}.actionrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actionrow .btn{font-size:12px;min-height:44px}
+ .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}.kpi{padding:14px 13px;border-radius:13px;min-width:0}
+ .kpi .tag{font-size:12px}.kpi strong{font-size:clamp(24px,7vw,32px);line-height:1.32;margin:7px 0 4px;letter-spacing:-.045em}
+ .kpi small{font-size:10px;line-height:1.35}.kpi:nth-child(n+3){padding:12px 13px}.kpi:nth-child(n+3) strong{font-size:22px}
+ .surface{padding:18px 14px;border-radius:16px;margin-bottom:12px}.section-top{display:block;margin-bottom:12px}.section-top h2{font-size:20px}.subtitle{font-size:11px;line-height:1.6}
+ .segmented{display:grid;grid-template-columns:1fr 1fr;width:100%;margin-top:13px}.segmented button{font-size:13px;min-height:42px}
+ .chart-scroll-caption{display:block;color:var(--muted);font-size:11px;margin:10px 0 8px;text-align:center}
+ .chartbox{min-height:0;max-width:100%;width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;border-radius:10px;background:var(--card);padding-bottom:4px;touch-action:pan-x pan-y;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+ .chartbox svg{height:255px;width:auto;max-width:none;min-width:420px;display:block}
+ .chartnotes{font-size:11px;margin-top:9px}.chartnotes .desktop-only{display:none}
+ .week-navigator{grid-template-columns:1fr 1fr;gap:7px;margin-top:11px;padding:8px}
+ .week-navigator .weekdetail{grid-row:1;grid-column:1/-1;text-align:left;font-size:12px;background:var(--card);border-radius:8px;padding:10px 12px;line-height:1.65;min-height:0;overflow-wrap:anywhere}
+ .week-navigator button{grid-row:2;min-height:44px;width:100%}
+ .insight{font-size:12px;line-height:1.55;padding:12px;margin-top:13px;align-items:flex-start}.insight .dot{margin-top:6px}
+ .sectiongrid{display:block;margin:0}.tile{padding:17px 14px;margin-bottom:12px;border-radius:16px}
+ .tile h3{font-size:17px}.tile .mini{font-size:11px}.highlight{padding:13px 12px;min-height:65px;grid-template-columns:minmax(0,1fr) auto;align-items:center}.highlight strong{font-size:14px}.highlight small{font-size:11px;line-height:1.45;overflow-wrap:anywhere}.highlight .value{font-size:17px;white-space:nowrap}.highlight span:first-child{min-width:0}
+ .highlights.mobile-collapsed>.highlight:nth-child(n+4){display:none}.show-all{display:block;margin-top:7px}
+ .inline-detail{overflow-wrap:anywhere;line-height:1.7;font-size:12px}
+ .collapse{margin:9px 0;border-radius:12px}.collapse summary{font-size:13px;min-height:54px;padding:15px}.collapse-body{padding:0 12px 16px}
+ .desktop-record-table{display:none}.mobile-record-list{display:block}.mobile-record{border:1px solid var(--line);background:var(--bg);border-radius:11px;padding:12px;margin-bottom:9px}
+ .mobile-record .rec-head{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:12px;font-weight:800}
+ .mobile-record .rec-score{font-size:16px;white-space:nowrap}.mobile-record .rec-body{font-size:12px;line-height:1.75;overflow-wrap:anywhere;margin-top:8px}.mobile-record .rec-date{font-size:11px;color:var(--muted)}
+ .mobile-dock{position:fixed;z-index:4500;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));bottom:0;left:0;right:0;padding:6px 8px calc(7px + env(safe-area-inset-bottom,0px));gap:4px;background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 22px rgba(0,0,0,.06)}
+ .mobile-dock a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:52px;border-radius:10px;color:var(--muted);font-size:11px;white-space:nowrap;text-decoration:none}
+ .mobile-dock a span{font-size:20px;line-height:1.25}.mobile-dock a b{font-size:10.5px;font-weight:800}
+ .mobile-dock a.current{color:var(--blue);background:var(--tint)}
+}
+@media(max-width:360px){.container{padding-left:9px;padding-right:9px}.identity select{font-size:27px}.kpi strong{font-size:24px}.filterbar{gap:7px}}
+
+/* v6: searchable player selection, stored preference and optional style metadata */
+.identity .player-search-wrap{max-width:470px;z-index:5}
+.identity .player-search-wrap:after{display:none}
+.identity .player-search-wrap #player-search{appearance:none;-webkit-appearance:none;width:100%;height:66px;padding:10px 18px;font-size:clamp(22px,3vw,30px);font-weight:900;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.55);border-radius:12px;outline-offset:3px}
+.identity .player-search-wrap #player-search::placeholder{font-size:clamp(15px,2.4vw,19px);font-weight:700;color:#d0edf4;opacity:1}
+.identity .player-search-wrap #player-search:focus{outline:2px solid white;background:rgba(0,0,0,.12)}
+.player-suggestions{position:absolute;z-index:30;top:69px;left:0;right:0;max-height:275px;overflow-y:auto;background:var(--card);border:1px solid var(--line);box-shadow:0 16px 35px rgba(8,29,45,.25);border-radius:13px;padding:5px}
+.player-suggestions[hidden]{display:none}.player-suggestions button{width:100%;border:0;background:transparent;border-radius:8px;display:flex;justify-content:space-between;align-items:center;padding:13px;text-align:left;color:var(--ink);font-size:16px;font-weight:800;min-height:48px}
+.player-suggestions button[aria-selected=true],.player-suggestions button:hover{background:var(--tint);color:var(--blue)}
+.player-suggestions .no-result{padding:16px;font-size:13px;color:var(--muted)}
+.identity .player-style{position:relative;z-index:1;font-size:12px;color:#d6f9fa;margin-top:9px;min-height:18px}
+.chart-key{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;font-size:12px;color:var(--muted);font-weight:700}
+.chart-key i{display:inline-block;width:20px;height:0;border-top:3px solid var(--teal);margin:0 5px 3px 0;vertical-align:middle}
+.chart-key i.secondary-line{border-top-color:#5a8ecb;border-top-style:dashed}
+.profile-management-hint{font-size:11px;color:var(--muted)}
+@media(max-width:540px){.identity .player-search-wrap #player-search{font-size:24px;min-height:64px}.player-suggestions{max-height:40vh}.chart-key{gap:7px;font-size:11px}}
+
+/* v7: an overlay detached to <body> so it cannot be clipped by the hero or covered by bottom dock */
+.player-suggestions{position:fixed!important;z-index:9500!important;left:0;top:0;right:auto;width:320px;max-height:260px;overflow-y:auto;overscroll-behavior:contain;box-shadow:0 20px 48px rgba(6,34,56,.32)}
+.player-suggestions button{min-height:48px}
+.identity{isolation:auto}
+.identity .lead{min-width:0}
+.kpi strong{font-size:clamp(23px,2.3vw,30px);letter-spacing:-.045em;white-space:normal;overflow-wrap:break-word}
+.kpi small{line-height:1.55;overflow-wrap:anywhere}
+.strong-card{padding:22px 24px}.strong-main{display:flex;justify-content:space-between;align-items:center;gap:20px}.strong-number{text-align:right;min-width:180px}.strong-number strong{display:block;font-size:26px;line-height:1.5;letter-spacing:-.05em;color:var(--blue)}.strong-number span{display:block;color:var(--muted);font-size:11px}.strong-bars{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:17px 0 12px}.strong-metric{background:var(--bg);border-radius:11px;padding:12px 14px}.strong-metric .row-top{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:800}.strong-metric .row-top span:last-child{color:var(--blue)}.strong-metric .bar{height:8px;background:var(--line);margin:9px 0 4px;border-radius:7px;overflow:hidden}.strong-metric .bar span{height:100%;display:block;background:var(--teal);border-radius:7px}.strong-metric small{color:var(--muted);font-size:11px}.strong-guide{font-size:12px;line-height:1.7;color:var(--muted)}.insight{align-items:flex-start}.insight .dot{margin-top:7px}.insight-title{font-size:11px;color:var(--blue);display:block;margin-bottom:4px}.insight p{font-size:13px;font-weight:800;line-height:1.7}.insight-proof{display:block;font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6}
+@media(max-width:700px){.strong-main{align-items:flex-start;flex-direction:column;gap:9px}.strong-number{min-width:0;text-align:left}.strong-number strong{font-size:23px}.strong-bars{grid-template-columns:1fr;gap:8px}.strong-card{padding:17px}.kpi strong{font-size:clamp(18px,5.4vw,26px)!important}.kpi .tag{font-size:11px}.identity .lead strong{font-size:17px}}
+@media(max-width:390px){.kpi strong{font-size:19px!important}.kpi small{font-size:10px}}.headline-proof{display:block;margin-top:9px;color:#d8f9fb;font-size:11px;line-height:1.6;font-weight:500}
+
+/* v8 · mobile readability and verifiable growth evidence */
+.milestone-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:11px}
+.milestone-strip>div{border:1px solid var(--line);background:var(--tint);border-radius:10px;padding:8px 5px;text-align:center;min-width:0}
+.milestone-strip b{display:block;font-size:20px;line-height:1.25;color:var(--green)}
+.milestone-strip small{display:block;font-size:10px;color:var(--muted);font-weight:700;line-height:1.5;margin-top:2px}
+.match-type{color:#b9f7e8;font-size:12px;font-weight:800;margin-top:6px}
+.evidence-chip{display:inline-block;vertical-align:middle;font-size:10px;font-weight:800;color:var(--green);background:var(--tint);padding:2px 6px;border-radius:999px;margin-left:4px}
+.highlight strong{line-height:1.55;overflow-wrap:anywhere}.highlight small{line-height:1.65}
+.not-yet{border-top:1px solid var(--line);margin-top:8px;padding:10px 3px 0;color:var(--muted)}
+.not-yet summary{font-size:12px;cursor:pointer;min-height:39px;display:flex;align-items:center;font-weight:700}
+.not-yet>div{display:flex;gap:7px;flex-wrap:wrap;padding:5px 0 10px}
+.not-yet>div span{border:1px solid var(--line);border-radius:12px;padding:5px 8px;font-size:11px}
+@media(max-width:640px){
+ .intro h1{font-size:clamp(25px,7vw,31px)}.identity .lead{margin-top:3px}
+ .identity .lead strong{font-size:15px;line-height:1.6}.match-type{font-size:11px;line-height:1.5}
+ .kpi small{font-size:11px;line-height:1.5}.kpi:first-child,.kpi:nth-child(2){padding:15px 14px}
+ .kpi:first-child strong{font-size:clamp(17px,5.2vw,22px)!important;line-height:1.6}
+ .kpi:nth-child(2) strong{font-size:clamp(18px,5.5vw,24px)!important}
+ .tile .highlight{grid-template-columns:minmax(0,1fr) auto;gap:9px}
+ .tile .highlight strong{font-size:13px;line-height:1.6}.tile .highlight small{font-size:11px;line-height:1.6}
+ .evidence-chip{font-size:9px;margin-left:2px}
+}
+</style>
+</head>
+<body><div class="container">
+<header class="topbar"><a href="index.html" class="brand">HOSU<span>OPEN</span></a><nav class="nav"><a href="index.html">경기 입력</a><a href="growth.html" class="active">성장 리포트</a><a href="h2h.html">개인 기록</a><a href="partner.html">파트너 기록</a><button id="theme" class="theme" aria-label="테마 전환">☾</button></nav></header>
+<div class="intro"><div><div class="eyebrow">THE GROWTH JOURNEY</div><h1>나의 테니스 성장 스토리</h1><p>승패를 넘어, 조금씩 달라진 나의 테니스를 기록합니다.</p></div><div class="status" id="status" aria-live="polite">경기 기록 연결 중...</div></div>
+<section class="identity"><div><label for="player-search">성장 스토리의 주인공 찾기</label><div class="selector-wrap player-search-wrap"><input id="player-search" type="search" autocomplete="off" placeholder="이름 입력해서 빠르게 검색" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="player-suggestions" aria-label="선수 이름 검색"><div id="player-suggestions" role="listbox" class="player-suggestions" hidden></div><select id="player" hidden aria-label="현재 선택된 선수"><option value="">기록 로딩 중</option></select><div id="player-style" class="player-style">주손·백핸드: 정보 미등록</div><div id="match-type" class="match-type" aria-live="polite">남자는 남복 · 여자는 여복만 분석합니다.</div></div></div><div class="lead"><small>PLAYER INSIGHT</small><strong id="headline">경기에서 발견한 변화가 여기에 나타납니다.</strong><span id="headline-proof" class="headline-proof">기록을 바탕으로 한줄평을 준비하고 있어요.</span></div></section>
+<div class="filterbar"><div class="quick-filter"><label for="season">조회 기간</label><select id="season" class="compact"><option value="all">전체 시즌</option><option value="v4">2026–27 겨울</option><option value="v3">2026 여름</option><option value="v2">2025–26 겨울</option><option value="v1">2025 여름</option></select></div><div class="quick-filter"><label for="format">경기 방식</label><select id="format" class="compact"><option value="6">6게임 경기</option><option value="4">4게임 경기</option></select></div><button id="more" class="more" aria-expanded="false" aria-controls="filters-panel">⚙ 상세 조건</button></div>
+<div class="filters-panel" id="filters-panel" hidden><div class="gridfilters"><div class="filter"><label for="partnerfilter">복식 파트너</label><select id="partnerfilter"><option value="">모든 파트너</option></select></div><div class="filter"><label for="from">시작일</label><input id="from" type="date"></div><div class="filter"><label for="to">종료일</label><input id="to" type="date"></div></div><div class="actionrow"><button id="reset" class="btn secondary">조건 초기화</button><button id="csv" class="btn secondary">경기 CSV</button><button id="sample" class="btn secondary">예시 보기</button><button id="reload" class="btn">실제 기록 다시 읽기</button></div></div>
+<div class="kpis"><div class="kpi"><span class="tag">같은 상대에게 달라진 점</span><strong id="level">—</strong><small id="levelnote">같은 네 선수가 다른 주에 다시 경기했을 때</small></div><div class="kpi"><span class="tag">익숙한 파트너와의 변화</span><strong id="growth">—</strong><small id="growthnote">상대가 달라도 비교한 경기 내용</small></div><div class="kpi"><span class="tag">최근 4주 경기</span><strong id="recent">—</strong><small id="recentnote">자동 기록된 경기일 우선</small></div><div class="kpi"><span class="tag">살펴본 경기</span><strong id="total">—</strong><small id="totalnote">해당 경기 방식 기준</small></div></div>
+<section class="strong-card surface" aria-labelledby="strong-title"><div class="strong-main"><div><div class="eyebrow">NEXT LEVEL · 강팀 도전</div><h2 id="strong-title">상대가 강해져도 얼마나 버텼을까?</h2><p class="subtitle" id="strong-sub">나와 파트너보다 경기 전 추정 레이팅이 높은 팀을 상대로 확보한 게임 수를 비교합니다.</p></div><div class="strong-number"><strong id="strong-value">—</strong><span id="strong-value-sub">강한 상대 경기 분석 중</span></div></div><div id="strong-bars" class="strong-bars"></div><p class="strong-guide" id="strong-guide">기록을 분석해 다음 목표를 알려드릴게요.</p></section>
+<section class="surface"><div class="section-top"><div><h2>주간 성장 발자국</h2><p class="subtitle">남복·여복 기록만 분석 · ① 같은 네 선수 재대결 ② 같은 파트너 간접 비교. 다른 성별 조합은 제외합니다.</p></div><div class="segmented"><button type="button" id="mode-growth" class="active" aria-pressed="true">개선 발자국</button><button type="button" id="mode-raw" aria-pressed="false">경기 득실</button></div></div><div class="chart-scroll-caption">← 좌우로 밀어 기록을 보고, 점을 누르면 해당 주의 개선 내역이 나와요 →</div><div class="chartbox" id="chart" tabindex="0" aria-label="주별 성장 그래프, 좌우 스크롤 가능"><div class="nothing">주간 기록을 계산하는 중...</div></div><div class="chart-key" id="chart-key"><span><i></i>1순위 · 직접 재대결</span><span><i class="secondary-line"></i>2순위 · 간접 참고</span></div><div class="chartnotes"><span id="chart-caption"></span><span class="desktop-only">점 선택 시 해당 주의 기록 표시</span></div><div class="week-navigator"><button type="button" id="week-prev" aria-label="이전 기록이 있는 주">← 이전 주</button><div class="weekdetail" id="week-detail" aria-live="polite"></div><button type="button" id="week-next" aria-label="다음 기록이 있는 주">다음 주 →</button></div><div id="week-evidence" class="inline-detail" hidden style="margin-top:10px"></div><details class="date-caveat"><summary>기록 날짜 정확도 안내</summary><p class="period-warning" id="date-warning">※ 기존 기록은 실제 경기일이 없으면 회차 최초 저장일로 대체됩니다.</p></details></section>
+<details class="collapse"><summary>주손 · 백핸드 유형별 경기 참고 통계</summary><div class="collapse-body"><p class="hint">선수 유형 데이터가 등록된 상대의 경기만 집계합니다. 유형별 경기 성적은 기술 숙련도를 증명하지 않습니다.</p><div id="style-summary" class="style-summary">선수 유형 정보를 불러오는 중입니다.</div></div></details>
+<div class="sectiongrid"><section class="tile"><h3>↗ 상대를 넘어서 만든 기록</h3><p class="mini">서로 다른 주에 재대결한 상대별 평균 개선 게임 수 순입니다. 같은 주 경기는 성장 비교에서 제외해요.</p><div id="rematch-milestones" class="milestone-strip" aria-live="polite"></div><div id="rematches" class="highlights"></div><div id="rematch-detail" class="inline-detail" hidden></div></section><section class="tile"><h3>◎ 함께 성장한 파트너</h3><p class="mini">같이 치른 비교 경기당 평균 개선폭이 큰 순서입니다. 1순위 직접 재대결, 2순위 상대 난이도 보정 기록을 사용해요.</p><div id="partners" class="highlights"></div><div id="partner-detail" class="inline-detail" hidden></div></section></div>
+<details class="collapse"><summary>재대결 비교 기준 설정</summary><div class="collapse-body"><label for="opmode">같은 상대를 어떻게 판단할까요?</label><div style="margin-top:8px"><select id="opmode" class="compact" style="width:100%;max-width:390px"><option value="individual">상대 선수 한 명이 같으면</option><option value="pair" selected>상대팀 두 명이 모두 같으면</option><option value="exact">상대팀 두 명 + 내 파트너도 같으면</option></select></div><p class="hint">비교는 서로 다른 주(월요일~일요일) 사이에서만 합니다. 같은 주 여러 경기는 그 주의 최고 성적 한 건으로 묶고, 같은 주 안에서의 기록 향상은 성장으로 계산하지 않습니다.</p></div></details>
+<details class="collapse"><summary>원본 경기 기록 · 내 스코어 확인</summary><div class="collapse-body"><div class="scroll desktop-record-table"><table><thead><tr><th>시즌 · 회차</th><th>날짜 / 출처</th><th>파트너</th><th>상대</th><th>스코어</th><th>득실</th></tr></thead><tbody id="matches"></tbody></table></div><div id="mobile-matches" class="mobile-record-list"></div><p class="hint">* ✓ = 자동 기록된 날짜/저장된 경기일, ~ = 최초 저장 시각 대체. 승패와 득실은 기록 그대로이며 성장 점수를 감점하지 않습니다. 이 화면은 읽기 전용입니다.</p></div></details>
+<details class="collapse"><summary>성장 발자국 계산 기준 · 해석 유의</summary><div class="collapse-body"><p><b>분석 경기:</b> 남성 네 명의 남자복식, 여성 네 명의 여자복식만 반영합니다. 혼합복식과 남녀가 섞인 잡복은 제외합니다. 여성 표기(*)와 시즌 선수 명부 성별을 참고하며, 성별 표기가 없는 선수는 기존 메인 프로그램과 동일하게 남성으로 간주하므로 등록 정보를 확인해 주세요.</p><p style="margin-top:8px"><b>플레이어 인사이트:</b> 점수·맞대결·강팀 상대 게임 확보·파트너 조합 등을 근거로 30개 문장 유형 중 한 가지를 선택합니다. 개선 근거가 부족한 경우에도 무리한 실력 상승을 판정하지 않습니다. 서브나 발리의 기술 향상은 별도 기술 기록 없이는 판단할 수 없습니다.</p><p style="margin-top:8px"><b>강팀 상대 경쟁력:</b> 경기 직전 추정 레이팅에서 상대팀이 우리 팀보다 40점 이상 높고, 양쪽 모두 이전 기록이 평균 3경기 이상일 때만 관찰합니다. 같은 경기 방식에서 확보한 게임 수를 초반·최근 동수로 비교하며, 상대 난이도와 표본 수를 함께 표시합니다. 공식 MMR이나 독립적인 개인 실력 측정은 아닙니다.</p><p style="margin-top:8px"><b>1순위(직접 비교):</b> 선수·파트너·상대 2명이 전부 같은 재대결이라도 서로 다른 주(월~일)에서 만났을 때만 성장 비교합니다. 같은 주 여러 경기는 해당 주의 최고 성적을 기준으로 묶고, 그 주 안에서 일어난 개선은 계산하지 않습니다. 이전 주까지의 최고 기록을 넘어서면 개선 게임 수를 누적합니다.</p><p style="margin-top:8px"><b>2순위(간접 비교):</b> 같은 파트너와 서로 다른 상대팀을 만난 기록을 비교합니다. 전체 경기 결과를 과거→현재 순서로 읽어 경기 <b>직전 추정 레이팅</b>을 만들고 예상 득실차와 실제 득실차의 차이를 이용합니다. 공식 호수오픈 MMR이 아니며 경기 전 데이터가 적으면 추정 오차가 큽니다. 1순위와 같은 경기는 2순위로 중복 계산하지 않습니다.</p><p style="margin-top:8px"><b>그래프:</b> 각 방식의 최고 개선 기록을 별도 선으로 누적하므로 내려가지 않습니다. 기록이 갱신되지 않았다는 사실은 실력이 정체했다는 뜻이 아닙니다. 두 선을 합산해 개인 순위를 만들지 않습니다.</p><p style="margin-top:8px"><b>중요:</b> 같은 선수들이 모두 함께 성장했다면 상대 경기 성적만으로는 절대적인 기술 향상을 확인할 수 없습니다. 선수 주손·백핸드 형태는 상대 유형별 분석에만 사용하며 실력 점수에 가산·감점하지 않습니다. 4게임과 6게임, 자동 기록된 경기일과 최초 저장일은 구분합니다. 기존 Firebase 경기 기록은 변경하지 않습니다.</p></div></details>
+</div>
+<nav class="mobile-dock" aria-label="모바일 바로가기"><a href="index.html"><span aria-hidden="true">🎾</span><b>경기 입력</b></a><a href="growth.html" class="current" aria-current="page"><span aria-hidden="true">📈</span><b>성장</b></a><a href="h2h.html"><span aria-hidden="true">👤</span><b>개인 기록</b></a><a href="partner.html"><span aria-hidden="true">🤝</span><b>파트너</b></a></nav>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js';
+import {getAuth,signInAnonymously} from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js';
+import {getFirestore,doc,getDoc} from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
+const firebaseConfig={apiKey:'AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU',authDomain:'tennis-plan-jibung.firebaseapp.com',projectId:'tennis-plan-jibung',storageBucket:'tennis-plan-jibung.appspot.com',messagingSenderId:'491083537160',appId:'1:491083537160:web:0c2ec53b1285aa1cdc6abd'};
+const SEASONS=[{id:'v4',name:'2026–27 겨울'},{id:'v3',name:'2026 여름'},{id:'v2',name:'2025–26 겨울'},{id:'v1',name:'2025 여름'}];
+const $=id=>document.getElementById(id);
+const safe=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const fmt=(v,d=1)=>Number.isFinite(v)?(v>0?'+':'')+v.toFixed(d):'—';
+const state={matches:[],eligibleMatches:[],genderMap:{},excludedMixed:0,sample:false,excluded:0,mode:'growth',weekPoints:[],selectedWeek:null,preRatings:new Map(),profiles:{},indirectEvents:[],directEvents:[]};
+const q=new URLSearchParams(location.search),prePlayer=q.get('player')||'',prePartner=q.get('partner')||'';
+const STORE_KEY='hosu.open.lastSelectedPlayer.v6';
+let savedPlayer='';try{savedPlayer=localStorage.getItem(STORE_KEY)||'';}catch(e){}
+if(['all','v1','v2','v3','v4'].includes(q.get('season'))) $('season').value=q.get('season');
+const weekStart=d=>{const t=new Date(d.getFullYear(),d.getMonth(),d.getDate());t.setDate(t.getDate()-(t.getDay()+6)%7);return t;};
+const keyDate=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+const shortDate=d=>`${d.getMonth()+1}/${d.getDate()}`;
+// A growth comparison requires different Monday–Sunday calendar weeks.
+// Within a week, keep only the strongest score as that week's baseline (never compare within the week).
+const weekOf=m=>m.date?keyDate(weekStart(m.date)):null;
+function bestPerWeek(matches){
+ const weeks=new Map();
+ for(const m of matches.filter(m=>m.date).slice().sort(byTime)){
+  const key=weekOf(m),prev=weeks.get(key);
+  if(!prev||m.margin>prev.margin)weeks.set(key,m);
+ }
+ return [...weeks.values()].sort(byTime);
+}
+const seasonOrder={v1:1,v2:2,v3:3,v4:4};
+const byTime=(a,b)=>((a.date?.getTime()??(seasonOrder[a.season]||0)*100000000)-(b.date?.getTime()??(seasonOrder[b.season]||0)*100000000))||(seasonOrder[a.season]||0)-(seasonOrder[b.season]||0)||(Number(a.round)-Number(b.round))||(a.idx-b.idx);
+function normalizeMatches(entries){const out=[];let excluded=0,starWomen=new Set();
+ for(const entry of entries) (entry.matches||[]).forEach((m,idx)=>{
+  if(!m.score||!Array.isArray(m.players)||m.players.length!==4||!/^\d+\s*-\s*\d+$/.test(m.score)){excluded++;return;}
+  const p=m.players.map(v=>String(v||'').replace(/\*/g,'').trim());if(p.some(v=>!v)){excluded++;return;}m.players.forEach((raw,i)=>{if(String(raw||'').includes('*'))starWomen.add(p[i]);});
+  const [a,b]=m.score.split('-').map(Number);if(a===b){excluded++;return;}
+  let date=null,exactDate=false;
+  try{if(typeof m.playedAt==='string' && /^\d{4}-\d{2}-\d{2}$/.test(m.playedAt)){const [y,mo,dd]=m.playedAt.split('-').map(Number);const candidate=new Date(y,mo-1,dd);if(candidate.getFullYear()===y&&candidate.getMonth()===mo-1&&candidate.getDate()===dd){date=candidate;exactDate=true;}}}catch(e){}
+  try{if(!date&&m.timestamp){const dt=typeof m.timestamp.toDate==='function'?m.timestamp.toDate():new Date(m.timestamp);if(!Number.isNaN(dt.getTime()))date=dt;}}catch(e){}
+  const id=`${entry.season}:${idx}`;const base={id,season:entry.season,round:m.round,idx,date,exactDate,format:m.isFourPoint?'4':'6'};
+  const add=(player,partner,opponents,own,opp)=>out.push({...base,player,partner,opponents,own,opp,margin:own-opp,win:own>opp,ownScore:`${own}-${opp}`});
+  add(p[0],p[1],[p[2],p[3]],a,b);add(p[1],p[0],[p[2],p[3]],a,b);add(p[2],p[3],[p[0],p[1]],b,a);add(p[3],p[2],[p[0],p[1]],b,a);
+ });
+ return {matches:out,excluded,starWomen:[...starWomen]};
+}
+// Gender classification follows the existing Hosu Open female '*' and isFemale roster convention.
+// All gender filtering precedes both the historical proxy-rating calculation and player analysis.
+function genderFor(name){return state.genderMap[name]===true?'여성':'남성';}
+function eligibleKind(m){const names=[m.player,m.partner,...m.opponents],women=names.filter(n=>state.genderMap[n]===true).length;return women===4?'여복':women===0?'남복':'제외';}
+function applyEligibleMatches(){state.eligibleMatches=state.matches.filter(m=>eligibleKind(m)!=='제외');state.excludedMixed=Math.round((state.matches.length-state.eligibleMatches.length)/4);state.preRatings=computePreRatings(state.eligibleMatches);}
+function getScope(){const sea=$('season').value,from=$('from').value,to=$('to').value;return state.eligibleMatches.filter(m=>(sea==='all'||sea===m.season)&&(!from||(m.date&&keyDate(m.date)>=from))&&(!to||(m.date&&keyDate(m.date)<=to)));}
+function playerNames(){const sea=$('season').value,from=$('from').value,to=$('to').value;return [...new Set(state.matches.filter(m=>(sea==='all'||sea===m.season)&&(!from||(m.date&&keyDate(m.date)>=from))&&(!to||(m.date&&keyDate(m.date)<=to))).map(m=>m.player))].sort((a,b)=>a.localeCompare(b,'ko'));}
+function playersRows(){let rows=getScope().filter(m=>m.player===$('player').value&&m.format===$('format').value);if($('partnerfilter').value)rows=rows.filter(m=>m.partner===$('partnerfilter').value);return rows.sort(byTime);}
+function paintProfile(){const n=$('player').value,pr=state.profiles[n]||{},h={right:'오른손잡이',left:'왼손잡이'},b={one:'원핸드 백핸드',two:'투핸드 백핸드'};
+ $('player-style').textContent=[h[pr.hand],b[pr.backhand]].filter(Boolean).join(' · ')||'주손·백핸드 정보 미등록 · 메인 > 선수 관리에서 등록';$('match-type').textContent=n?`${genderFor(n)} 선수 · ${genderFor(n)==='여성'?'여자복식':'남자복식'} 전용 성장 분석`:'남복·여복 전용 분석';}
+function choosePlayer(name,persist=true){const select=$('player');if(![...select.options].some(o=>o.value===name))return;
+ select.value=name;$('player-search').value=name;closeSuggestions();
+ if(persist&&!state.sample){try{localStorage.setItem(STORE_KEY,name);savedPlayer=name;}catch(e){}}
+ $('partnerfilter').value='';fillPartners();paintProfile();render();}
+function closeSuggestions(){const el=$('player-suggestions');el.hidden=true;$('player-search').setAttribute('aria-expanded','false');}
+// The dropdown is moved to body to escape .identity{overflow:hidden} and rendered above mobile dock.
+const suggestionPanel=$('player-suggestions');document.body.appendChild(suggestionPanel);
+function positionSuggestions(){if(suggestionPanel.hidden)return;const input=$('player-search'),r=input.getBoundingClientRect(),vp=window.visualViewport;
+ const bottom=vp?(vp.offsetTop+vp.height):window.innerHeight,top=vp?vp.offsetTop:0,safeBottom=window.innerWidth<=760?78:12;
+ const usableBelow=Math.max(0,bottom-safeBottom-r.bottom-7),usableAbove=Math.max(0,r.top-top-10);
+ const placeAbove=usableBelow<145&&usableAbove>usableBelow,usable=placeAbove?usableAbove:usableBelow;
+ const h=Math.max(80,Math.min(290,usable-8));
+ suggestionPanel.style.left=`${Math.max(8,r.left)}px`;suggestionPanel.style.width=`${Math.min(r.width,window.innerWidth-16)}px`;
+ suggestionPanel.style.maxHeight=`${h}px`;suggestionPanel.style.top=placeAbove?`${Math.max(top+4,r.top-h-6)}px`:`${r.bottom+6}px`;
+ suggestionPanel.style.right='auto';
+}
+let activeSuggestion=0;
+function showSuggestions(){const names=[...$('player').options].map(o=>o.value).filter(Boolean),needle=$('player-search').value.trim().toLocaleLowerCase();
+ const options=names.filter(n=>n.toLocaleLowerCase().includes(needle)).slice(0,28),el=$('player-suggestions');activeSuggestion=0;
+ el.innerHTML=options.length?options.map((n,i)=>`<button type="button" role="option" data-name="${safe(n)}" aria-selected="${i===0}">${safe(n)}</button>`).join(''):'<div class="no-result">일치하는 선수가 없어요.</div>';
+ el.hidden=false;$('player-search').setAttribute('aria-expanded','true');positionSuggestions();}
+function repopulate(){const names=playerNames(),last=state.sample?'가람':($('player').value||prePlayer||savedPlayer);
+ const select=$('player');select.innerHTML=names.length?names.map(n=>`<option value="${safe(n)}">${safe(n)}</option>`).join(''):'<option value="">기록 없음</option>';
+ if(names.includes(last))select.value=last;
+ $('player-search').value=select.value;closeSuggestions();fillPartners();paintProfile();render();}
+function fillPartners(){const p=$('player').value,all=getScope().filter(m=>m.player===p&&m.format===$('format').value),prev=$('partnerfilter').value||prePartner,names=[...new Set(all.map(m=>m.partner))].sort((a,b)=>a.localeCompare(b,'ko'));$('partnerfilter').innerHTML='<option value="">모든 파트너</option>'+names.map(n=>`<option value="${safe(n)}">${safe(n)}</option>`).join('');if(names.includes(prev))$('partnerfilter').value=prev;}
+// Historical pre-match proxy ratings, computed ONCE from every season, never using future matches.
+// Not the official Hosu Open MMR (which uses different weights/bonuses).
+function computePreRatings(allRows){
+ const rating=new Map(),games=new Map(),out=new Map();
+ const fixtures=new Map();for(const m of allRows)if(!fixtures.has(m.id))fixtures.set(m.id,m);
+ const get=name=>rating.get(name)??1500,played=name=>games.get(name)||0;
+ for(const m of [...fixtures.values()].sort(byTime)){
+  const team=[m.player,m.partner],enemy=m.opponents;
+  const own=(get(team[0])+get(team[1]))/2,opp=(get(enemy[0])+get(enemy[1]))/2;
+  const ownGames=(played(team[0])+played(team[1]))/2,oppGames=(played(enemy[0])+played(enemy[1]))/2;
+  const expected=1/(1+Math.pow(10,(opp-own)/400));
+  const base={team,enemy,preOwn:own,preOpp:opp,ownGames,oppGames,expected,estimateOnly:true};
+  out.set(m.id,base);
+  const k=m.format==='4'?13:20,delta=k*((m.win?1:0)-expected);
+  for(const n of team){rating.set(n,get(n)+delta);games.set(n,played(n)+1);}
+  for(const n of enemy){rating.set(n,get(n)-delta);games.set(n,played(n)+1);}
+ }
+ return out;
+}
+function enrich(rows){return rows.map(m=>{
+ const r=state.preRatings.get(m.id),onA=!r||r.team.includes(m.player),expected=r?(onA?r.expected:1-r.expected):0.5;
+ const expectedMargin=(expected*2-1)*(m.format==='4'?2.5:4);
+ return {...m,adjusted:m.margin-expectedMargin,preOwn:r?(onA?r.preOwn:r.preOpp):1500,preOpp:r?(onA?r.preOpp:r.preOwn):1500,
+  oppGames:r?(onA?r.oppGames:r.ownGames):0,ownGames:r?(onA?r.ownGames:r.oppGames):0,estimateConfidence:r&&r.oppGames>=3&&r.ownGames>=3?'보통':'낮음'};
+});}
+// Tier 1: the same four players on distinct Monday–Sunday calendar weeks only.
+// Multiple fixtures in one week are reduced to that week's best score, rather than being
+// compared against one another or counted as multiple growth milestones.
+function improvementEvents(rows){
+ const groups=new Map(),events=[];
+ rows.filter(m=>m.date).forEach(m=>{
+  const key=JSON.stringify([m.format,m.partner,[...m.opponents].sort()]);
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(m);
+ });
+ for(const [lineup,items] of groups){
+  const weeks=bestPerWeek(items);
+  if(weeks.length<2)continue;
+  let oldBest=weeks[0].margin,oldMatch=weeks[0];
+  for(const m of weeks.slice(1)){
+   const gain=Math.max(0,m.margin-oldBest);
+   if(gain>0){
+    events.push({id:m.id,match:m,gain,oldBest,newBest:m.margin,oldMatch,lineup});
+   }
+   if(m.margin>oldBest){oldBest=m.margin;oldMatch=m;}
+  }
+ }
+ return events.sort((a,b)=>byTime(a.match,b.match));
+}
+// Second-tier, same-partner (but different opposing pair) best adjusted margin improvements.
+// Direct-match eligible fixtures are excluded from indirect tracking to avoid duplicated evidence.
+function indirectImprovementEvents(rows){
+ const lineupRounds=new Map(),lineupKey=m=>JSON.stringify([m.partner,[...m.opponents].sort()]);
+ for(const m of rows){const key=lineupKey(m),v=lineupRounds.get(key)||new Set();v.add(`${m.season}:${m.round}`);lineupRounds.set(key,v);}
+ const directEligible=new Set([...lineupRounds].filter(([,r])=>r.size>1).map(([key])=>key));
+ const pairs=new Map(),events=[];
+ for(const m of rows.filter(m=>m.date).slice().sort(byTime)){
+  if(directEligible.has(lineupKey(m)))continue;
+  const rec=pairs.get(m.partner),round=`${m.season}:${m.round}`,opps=[...m.opponents].sort().join(' + ');
+  if(!rec){pairs.set(m.partner,{best:m.adjusted,round,opps,seen:new Set([round])});continue;}
+  const validRound=[...rec.seen].some(r=>r!==round),changedOpp=opps!==rec.opps;
+  const gain=validRound&&changedOpp?Math.max(0,m.adjusted-rec.best):0;
+  if(gain>0.05){events.push({id:m.id,match:m,gain,oldBest:rec.best,newBest:m.adjusted,estimateConfidence:m.estimateConfidence,oldOpps:rec.opps});}
+  if(m.adjusted>rec.best){rec.best=m.adjusted;rec.round=round;rec.opps=opps;}
+  rec.seen.add(round);
+ }
+ return events;
+}
+function weekSeries(rows,events,indirect){
+ const dated=rows.filter(m=>m.date).slice().sort(byTime);if(!dated.length)return [];
+ const keyed=new Map();dated.forEach(m=>{const d=weekStart(m.date),k=keyDate(d);if(!keyed.has(k))keyed.set(k,{date:d,key:k,games:[]});keyed.get(k).games.push(m);});
+ const additions=new Map();events.forEach(e=>{const k=keyDate(weekStart(e.match.date));if(!additions.has(k))additions.set(k,[]);additions.get(k).push(e);});
+ const indirectAdds=new Map();indirect.forEach(e=>{const key=keyDate(weekStart(e.match.date));if(!indirectAdds.has(key))indirectAdds.set(key,[]);indirectAdds.get(key).push(e);});
+ const weeks=[...keyed.values()].sort((a,b)=>a.date-b.date),start=weeks[0].date,finish=weeks[weeks.length-1].date;
+ const points=[];let accumulated=0,indirectAccumulated=0,achievements=0;
+ for(let d=new Date(start);d<=finish&&points.length<280;d.setDate(d.getDate()+7)){
+  const day=new Date(d),key=keyDate(day),current=keyed.get(key)?.games||[],earned=additions.get(key)||[];
+  const earnedIndirect=indirectAdds.get(key)||[];const indirectGain=earnedIndirect.reduce((t,e)=>t+e.gain,0);indirectAccumulated+=indirectGain;
+  const weekGain=earned.reduce((t,e)=>t+e.gain,0);accumulated+=weekGain;achievements+=earned.length;
+  const windowEnd=new Date(day);windowEnd.setDate(windowEnd.getDate()+7);
+  const windowStart=new Date(windowEnd);windowStart.setDate(windowStart.getDate()-28);
+  const history=dated.filter(m=>m.date>=windowStart&&m.date<windowEnd);
+  const rawValid=current.length>0&&history.length>=3;
+  points.push({date:day,key,weekGames:current.length,windowGames:history.length,valid:current.length>0,rawValid,raw:rawValid?history.reduce((t,m)=>t+m.margin,0)/history.length:null,earned,earnedIndirect,indirectGain,indirectIndex:indirectAccumulated,weekGain,achievements,index:accumulated});
+ }
+ return points;
+}
+function plotWeeks(){return state.weekPoints.map((p,i)=>((state.mode==='growth'?p.valid:p.rawValid)?i:-1)).filter(i=>i>=0);}
+function renderChart(weeks){
+ const el=$('chart'),mode=state.mode,growth=mode==='growth';$('chart-key').hidden=!growth;const plotted=weeks.filter(p=>growth?p.valid:p.rawValid),title=growth?'누적 최고기록 개선':'최근 4주 평균 경기 득실';
+ if(!weeks.length){$('week-prev').disabled=true;$('week-next').disabled=true;$('week-detail').textContent='주간 기록 없음';el.innerHTML='<div class="nothing">날짜가 있는 경기 기록이 없습니다.<br>회차 저장 시 자동 날짜 기록 여부를 확인해주세요.</div>';$('chart-caption').textContent='';return;}
+ if(!plotted.length){$('week-prev').disabled=true;$('week-next').disabled=true;$('week-detail').textContent='이 탭에서 비교할 기록이 없습니다.';el.innerHTML='<div class="nothing">경기 득실 그래프는 최근 28일 3경기 이상일 때 나타납니다.<br>개선 발자국 탭은 경기 기록이 있으면 표시합니다.</div>';$('chart-caption').textContent='';return;}
+ const mobile=window.innerWidth<=640,w=mobile?Math.max(440,Math.min(2300,weeks.length*49+95)):1060,h=mobile?280:300,l=mobile?50:65,r=mobile?18:24,top=26,bottom=48,pw=w-l-r,ph=h-top-bottom;
+ const val=p=>growth?p.index:p.raw,ys=plotted.map(val),min0=Math.min(...ys),max0=growth?Math.max(...ys,...plotted.map(p=>p.indirectIndex)):Math.max(...ys);let low,high;
+ if(growth){low=0;high=Math.max(4,Math.ceil((max0+1)/4)*4);}else{low=Math.floor((Math.min(min0,0)-1));high=Math.ceil(Math.max(max0,0)+1);}if(high===low)high=low+4;
+ const x=i=>l+(weeks.length===1?0.5:i/(weeks.length-1))*pw,y=v=>top+(high-v)/(high-low)*ph;
+ let paths=[],prev=null;weeks.forEach((p,i)=>{const ok=growth?p.valid:p.rawValid;if(ok){if(prev!==null)paths.push(`<path d="M${x(prev.i).toFixed(1)},${y(val(prev.p)).toFixed(1)} L${x(i).toFixed(1)},${y(val(p)).toFixed(1)}" stroke="${growth?'#10a69c':'#3092c5'}" stroke-width="3.7" fill="none" stroke-linecap="round" ${i-prev.i>1?'stroke-dasharray="6 8" opacity=".5"':''}/>`);prev={i,p};}});
+ let secondaryPaths=[],prevIndirect=null;
+ if(growth)weeks.forEach((p,i)=>{if(!p.valid)return;
+ if(prevIndirect!==null)secondaryPaths.push(`<path d="M${x(prevIndirect.i).toFixed(1)},${y(prevIndirect.p.indirectIndex).toFixed(1)} L${x(i).toFixed(1)},${y(p.indirectIndex).toFixed(1)}" stroke="#5a8ecb" stroke-width="2.8" stroke-dasharray="7 6" fill="none" stroke-linecap="round" ${i-prevIndirect.i>1?'opacity=".45"':''}/>`);
+ prevIndirect={i,p};});
+ const grids=Array.from({length:5},(_,i)=>{const v=low+(high-low)*i/4;return `<line x1="${l}" x2="${w-r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${l-12}" y="${y(v)+4}" text-anchor="end" font-size="13" font-family="sans-serif" fill="var(--muted)">${growth?v.toFixed(0):v.toFixed(1)}</text>`;}).join('');
+ let ticks=[];const every=Math.max(1,Math.ceil(weeks.length/6));for(let i=0;i<weeks.length;i+=every)ticks.push(i);if(ticks[ticks.length-1]!==weeks.length-1)ticks.push(weeks.length-1);
+ const labels=ticks.map(i=>`<text x="${x(i)}" y="${h-12}" text-anchor="middle" font-size="13" font-family="sans-serif" fill="var(--muted)">${shortDate(weeks[i].date)}</text>`).join('');
+ const dots=weeks.map((p,i)=>{const ok=growth?p.valid:p.rawValid;if(!ok)return '';const highlight=growth&&p.weekGain>0;return `<g class="plot-point" tabindex="0" role="button" data-week="${i}" aria-label="${safe(p.key)} ${title} ${val(p).toFixed(1)}"><circle cx="${x(i)}" cy="${y(val(p))}" r="19" fill="var(--card)" opacity=".85"/><circle cx="${x(i)}" cy="${y(val(p))}" r="${highlight?7:5}" fill="${highlight?'#0ba596':growth?'#9bb0be':p.windowGames<5?'#e4a954':'#3092c5'}" stroke="var(--card)" stroke-width="1.5"/><title>${safe(p.key)} · ${title} ${val(p).toFixed(1)} · 이번 주 ${p.weekGames}경기${growth?` · 직접 +${fmt(p.weekGain,0)}G / 간접 +${fmt(p.indirectGain)}G`:''}</title></g>`;}).join('');
+ const baseline=`<line x1="${l}" x2="${w-r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-dasharray="5 6" opacity=".65"/>`;
+ el.innerHTML=`<svg ${mobile?`style="width:${w}px;height:255px"`:``} viewBox="0 0 ${w} ${h}" role="img" aria-label="주간 ${title} 선 그래프">${grids}${baseline}${paths.join('')}${secondaryPaths.join('')}${dots}${labels}</svg>`;
+ el.querySelectorAll('[data-week]').forEach(node=>{const act=()=>{state.selectedWeek=Number(node.dataset.week);renderWeekDetail(weeks[state.selectedWeek]);if(mobile)el.scrollTo({left:Math.max(0,x(state.selectedWeek)-el.clientWidth/2),behavior:'smooth'});};node.addEventListener('click',act);node.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();act();}});});
+ $('chart-caption').textContent=growth?`${plotted.length}개 경기 주 · 실선=직접 재대결 · 점선=간접 참고 · 수평=신기록 없음 (퇴보 아님)`:`${plotted.length}개 관측 주 · 최근 28일 3경기 이상 기준 · 경기 결과일 뿐 실력 변화 판정 아님`;
+ if(state.selectedWeek===null||!weeks[state.selectedWeek]||(growth?!weeks[state.selectedWeek].valid:!weeks[state.selectedWeek].rawValid)){state.selectedWeek=weeks.indexOf(plotted[plotted.length-1]);if(mobile)requestAnimationFrame(()=>{el.scrollLeft=Math.max(0,el.scrollWidth-el.clientWidth);});}renderWeekDetail(weeks[state.selectedWeek]);
+}
+function renderWeekDetail(p){
+ const available=plotWeeks(),at=available.indexOf(state.selectedWeek);$('week-prev').disabled=at<=0;$('week-next').disabled=at<0||at>=available.length-1;
+ document.querySelectorAll('#chart .plot-point').forEach(el=>el.classList.toggle('is-selected',Number(el.dataset.week)===state.selectedWeek));
+ if(!p){$('week-detail').textContent='';$('week-evidence').hidden=true;return;}
+ $('week-detail').innerHTML=state.mode==='growth'?`<b>${safe(p.key)} 주</b><br>이번 주 ${p.weekGames}경기<br>① 직접 개선 <b>+${fmt(p.weekGain,0)}G</b> · 누적 ${fmt(p.index,0)}G<br>② 간접 참고 <b>+${fmt(p.indirectGain)}G</b> · 누적 ${fmt(p.indirectIndex)}G`:`<b>${safe(p.key)} 주</b><br>이번 주 ${p.weekGames}경기 · 최근 28일 ${p.windowGames}경기<br>원본 평균 득실 ${fmt(p.raw)}G <span class="muted">(성장 판정 아님)</span>`;
+ const ev=$('week-evidence');ev.hidden=state.mode!=='growth'||!(p.earned.length||p.earnedIndirect.length);
+ if(!ev.hidden)ev.innerHTML=p.earned.map(e=>`<div>↗ <b>${safe(e.match.partner)}</b> 선수와 함께 · 상대 <b>${safe(e.match.opponents.join(' · '))}</b><br>과거 최고 득실차 ${fmt(e.oldBest,0)}G → 이번 ${fmt(e.newBest,0)}G <b class="up">(+${e.gain}G)</b></div>`).join('<hr style="border:0;border-top:1px solid var(--line);margin:9px 0">')+(p.earnedIndirect.length?`<div style="margin-top:10px;font-weight:900">② 파트너 기준 · 상대 난이도 보정 (참고)</div>`+p.earnedIndirect.map(e=>`<div>↗ <b>${safe(e.match.partner)}</b> 선수와 · 상대 ${safe(e.match.opponents.join(' · '))}<br>당시 상대 추정 ${Math.round(e.match.preOpp)}점 · 보정 경기력 ${fmt(e.oldBest)} → ${fmt(e.newBest)}G <b>+${fmt(e.gain)}G</b> <small>(${e.estimateConfidence} 신뢰)</small></div>`).join('<hr style="border:0;border-top:1px solid var(--line);margin:9px 0">'):'');
+}
+function moveWeek(direction){const ids=plotWeeks(),at=ids.indexOf(state.selectedWeek),next=ids[Math.max(0,Math.min(ids.length-1,at+direction))];if(next===undefined)return;state.selectedWeek=next;renderWeekDetail(state.weekPoints[next]);const point=document.querySelector(`#chart [data-week="${next}"]`),box=$('chart');if(point){const cx=Number(point.querySelector('circle')?.getAttribute('cx'));if(Number.isFinite(cx))box.scrollTo({left:Math.max(0,cx-box.clientWidth/2),behavior:'smooth'});}}
+const groupKey=(m,mode)=>mode==='individual'?m.opponents:[mode==='pair'?[...m.opponents].sort().join(' + '):[...m.opponents].sort().join(' + ')+' | '+m.partner];
+function renderRematches(rows){
+ const mode=$('opmode').value,groups=new Map();
+ rows.forEach(m=>{const keys=groupKey(m,mode);keys.forEach(label=>{if(!groups.has(label))groups.set(label,[]);groups.get(label).push(m);});});
+ const results=[...groups].map(([label,items])=>{
+  const arr=items.slice().sort(byTime);
+  const weeklyBest=bestPerWeek(arr);
+  // Two or more games during one calendar week never form a growth comparison.
+  if(weeklyBest.length<2)return null;
+  const baseline=weeklyBest[0];
+  const best=weeklyBest.slice(1).sort((a,b)=>b.margin-a.margin)[0];
+  const gain=best.margin-baseline.margin;
+  if(gain<=0)return null;
+  // '누적 최고 개선' 대신 주 단위 재대결당 평균 신기록 개선 게임 수.
+  // 신기록이 없었던 재대결 주도 분모에 포함해 표본 편향을 줄인다.
+  let runningBest=baseline.margin,totalGain=0,improvedCount=0;
+  for(const m of weeklyBest.slice(1)){
+    const inc=Math.max(0,m.margin-runningBest);
+    if(inc>0){totalGain+=inc;improvedCount++;}
+    runningBest=Math.max(runningBest,m.margin);
+  }
+  const comparedWeeks=weeklyBest.length-1,avgGain=totalGain/comparedWeeks;
+  const type=!baseline.win&&best.win?'패배를 승리로':baseline.margin< -2&&best.margin>=-2?'접전까지 따라잡음':'이전 최고기록 경신';
+  return {label,arr,baseline,best,gain,type,comparedWeeks,improvedCount,avgGain};
+ }).filter(Boolean).sort((a,b)=>b.avgGain-a.avgGain||b.comparedWeeks-a.comparedWeeks||b.best.date-a.best.date);
+ const strip=$('rematch-milestones'),reversed=results.filter(g=>!g.baseline.win&&g.best.win).length,closer=results.filter(g=>g.baseline.margin < -2&&g.best.margin>=-2&&!g.best.win).length;
+ strip.innerHTML=`<div><b>${results.length}</b><small>기록 개선 상대팀</small></div><div><b>${reversed}</b><small>패배를 승리로</small></div><div><b>${closer}</b><small>접전까지 추격</small></div>`;
+ const el=$('rematches'),shown=results.slice(0,8);
+ el.innerHTML=shown.length?shown.map((g,i)=>`<button class="highlight" data-r="${i}"><span><strong>${safe(g.label)} <span class="evidence-chip">${safe(g.type)}</span></strong><small>${safe(g.baseline.ownScore)} → ${safe(g.best.ownScore)} · ${safe(rangeOf([g.baseline,g.best]))}<br>다른 주 재대결 ${g.comparedWeeks}회 · 최고기록 개선 ${g.improvedCount}회</small></span><span class="value up">+${g.avgGain.toFixed(1)}G<small style="display:block;color:var(--muted);font-size:10px;font-weight:500">재대결당 평균</small></span></button>`).join('')+(shown.length>3?`<button class="show-all" type="button" aria-expanded="false">추가 개선 기록 보기 (${shown.length-3})</button>`:''):'<div class="nothing">아직 다른 주에 만나 개선한 재대결 기록이 없어요.<br>같은 주에 여러 번 치른 경기끼리는 비교하지 않습니다.</div>';
+ el.classList.toggle('mobile-collapsed',shown.length>3);const more=el.querySelector('.show-all');if(more)more.addEventListener('click',()=>{const collapsed=el.classList.toggle('mobile-collapsed');more.textContent=collapsed?`추가 개선 기록 보기 (${shown.length-3})`:'접기';more.setAttribute('aria-expanded',String(!collapsed));});
+ $('rematch-detail').hidden=true;
+ el.querySelectorAll('[data-r]').forEach(btn=>btn.addEventListener('click',()=>{
+  const g=shown[Number(btn.dataset.r)],strict=mode==='exact',medium=mode==='pair';$('rematch-detail').hidden=false;
+  $('rematch-detail').innerHTML=`<b>상대 ${safe(g.label)}</b><br><b>${safe(g.type)} · ${safe(g.baseline.ownScore)} → ${safe(g.best.ownScore)} (최대 +${g.gain}게임)</b><br>재대결당 평균 개선 +${g.avgGain.toFixed(1)}게임 · 다른 주 재대결 ${g.comparedWeeks}회<br>${safe(rangeOf([g.baseline,g.best]))}<br>처음 파트너 <b>${safe(g.baseline.partner)}</b> · 개선 경기 파트너 <b>${safe(g.best.partner)}</b><br>개선 경기 상대 2명 <b>${safe(g.best.opponents.join(' · '))}</b><br><span class="muted">${strict?'같은 네 명의 재대결로 직접 비교할 수 있습니다.':medium?'상대팀 2명이 같지만 내 파트너가 달라질 수 있습니다.':'상대 선수 한 명이 같으며 나머지 조합은 달라질 수 있습니다.'} 월~일 기준 서로 다른 주의 경기를 비교했습니다. 최고 성과일 뿐 현재 개인 실력의 절대값은 아닙니다.</span>`;
+ }));
+}
+
+function renderPartners(rows,events=[],indirect=[]){
+ const groups=new Map();rows.forEach(m=>{if(!groups.has(m.partner))groups.set(m.partner,[]);groups.get(m.partner).push(m);});
+ const data=[...groups].map(([name,arr])=>{
+  const direct=events.filter(e=>e.match.partner===name),proxy=indirect.filter(e=>e.match.partner===name),directGain=direct.reduce((t,e)=>t+e.gain,0),proxyGain=proxy.reduce((t,e)=>t+e.gain,0);
+  const bestDirect=direct.slice().sort((a,b)=>b.gain-a.gain)[0],bestProxy=proxy.slice().sort((a,b)=>b.gain-a.gain)[0];
+  const tier=directGain>0?2:proxyGain>0?1:0;
+  // 같은 네 명의 재대결은 조합별 다른 주 재대결 수를 분모로 사용.
+  const exactGroups=new Map();
+  for(const m of arr){const key=JSON.stringify([m.format,[...m.opponents].sort()]);
+    if(!exactGroups.has(key))exactGroups.set(key,[]);exactGroups.get(key).push(m);}
+  let directComparisons=0;
+  for(const xs of exactGroups.values())directComparisons+=Math.max(0,bestPerWeek(xs).length-1);
+  // 간접 비교는 같은 파트너로 새 주에 다시 출전한 횟수를 비교 기회로 센다.
+  const partnerWeeks=new Set(arr.filter(m=>m.date).map(weekOf));
+  const proxyComparisons=Math.max(0,partnerWeeks.size-1);
+  const directAvg=directComparisons?directGain/directComparisons:0;
+  const proxyAvg=proxyComparisons?proxyGain/proxyComparisons:0;
+  return {name,arr,tier,direct,proxy,directGain,proxyGain,bestDirect,bestProxy,directComparisons,proxyComparisons,directAvg,proxyAvg};
+ }).sort((a,b)=>b.tier-a.tier||(b.tier===2?b.directAvg-a.directAvg:b.proxyAvg-a.proxyAvg)||(b.directComparisons-a.directComparisons));
+ const grown=data.filter(g=>g.tier>0).slice(0,8),unconfirmed=data.filter(g=>g.tier===0),el=$('partners');
+ el.innerHTML=grown.length?grown.map((g,i)=>{
+  const direct=g.tier===2,ev=direct?g.bestDirect:g.bestProxy,gain=direct?g.directAvg:g.proxyAvg,comps=direct?g.directComparisons:g.proxyComparisons;
+  const main=direct?`동일 4인 재대결 · 상대 ${safe(ev.match.opponents.join('·'))}`:`상대 난이도 보정 · 상대 ${safe(ev.match.opponents.join('·'))}`;
+  return `<button class="highlight" data-p="${i}"><span><strong>${safe(g.name)} <span class="evidence-chip">${direct?'직접 개선':'간접 참고'}</span></strong><small>${main}<br>${safe(rangeOf(g.arr))} · 비교 ${comps}주 · 개선 ${direct?g.direct.length:g.proxy.length}회</small></span><span class="value up">+${gain.toFixed(1)}G<small style="display:block;color:var(--muted);font-size:10px;font-weight:500">주당 평균</small></span></button>`;
+ }).join('')+(grown.length>3?`<button class="show-all" type="button" aria-expanded="false">추가 성장 파트너 보기 (${grown.length-3})</button>`:''):'<div class="nothing">아직 파트너와 새 최고기록을 만든 비교 경기가 부족해요.<br>패배나 보정 득실 하락을 실력 퇴보로 표시하지 않습니다.</div>';
+ if(unconfirmed.length)el.insertAdjacentHTML('beforeend',`<details class="not-yet"><summary>성장 비교 근거를 더 쌓을 파트너 ${unconfirmed.length}명</summary><div>${unconfirmed.map(g=>`<span>${safe(g.name)} · ${g.arr.length}경기</span>`).join('')}</div></details>`);
+ el.classList.toggle('mobile-collapsed',grown.length>3);const more=el.querySelector('.show-all');if(more)more.addEventListener('click',()=>{const collapsed=el.classList.toggle('mobile-collapsed');more.textContent=collapsed?`추가 성장 파트너 보기 (${grown.length-3})`:'접기';more.setAttribute('aria-expanded',String(!collapsed));});
+ $('partner-detail').hidden=true;el.querySelectorAll('[data-p]').forEach(btn=>btn.addEventListener('click',()=>{
+  const g=grown[Number(btn.dataset.p)],direct=g.tier===2,ev=direct?g.bestDirect:g.bestProxy;
+  $('partner-detail').hidden=false;
+  $('partner-detail').innerHTML=`<b>${safe($('player').value)} + ${safe(g.name)} · 함께 만든 최고 개선 기록</b><br>${direct?`직접 재대결 비교 ${g.directComparisons}주, 재대결당 평균 최고기록 개선 ${g.directAvg.toFixed(1)}게임 (누적 ${g.directGain.toFixed(1)}게임)`:`다른 주 간접 비교 ${g.proxyComparisons}회, 비교 주당 평균 보정 개선 ${g.proxyAvg.toFixed(1)}게임 (추정치, 누적 ${g.proxyGain.toFixed(1)}게임)`}<br>대표 개선 경기 · <b>${safe(ev.match.ownScore)}</b> / 상대 <b>${safe(ev.match.opponents.join(' · '))}</b><br>비교 기간 · ${safe(rangeOf(g.arr))}<br><span class="muted">${direct?'같은 네 명의 재대결 성과입니다.':'추정 레이팅을 반영한 간접 참고 기록이며 실제 성장량과 같지는 않습니다.'} 새 기록이 없어도 실력 저하라고 판단하지 않습니다.</span>`;
+ }));
+}
+
+function renderStyleSummary(rows){
+ const group={left:[],right:[],one:[],two:[]};
+ rows.forEach(m=>{const pr=m.opponents.map(n=>state.profiles[n]||{});
+  if(pr.some(p=>p.hand==='left'))group.left.push(m);
+  else if(pr.every(p=>p.hand==='right'))group.right.push(m);
+  if(pr.some(p=>p.backhand==='one'))group.one.push(m);
+  else if(pr.every(p=>p.backhand==='two'))group.two.push(m);
+ });
+ const labels={left:'왼손잡이 상대 포함',right:'상대 모두 오른손',one:'원핸드 상대 포함',two:'상대 모두 투핸드'},el=$('style-summary');
+ el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px">'+Object.keys(group).map(k=>{
+  const a=group[k],wins=a.filter(m=>m.win).length;
+  return `<div style="border:1px solid var(--line);border-radius:10px;padding:11px"><b>${labels[k]}</b><div>${a.length}경기${a.length?` · 승률 ${Math.round(wins/a.length*100)}%`:''}</div></div>`;
+ }).join('')+'</div>';
+}
+
+// v7: interpret match records, not tennis technique. 30 deterministic one-line judgement types.
+const avg=(arr,fn)=>arr.length?arr.reduce((t,v)=>t+fn(v),0)/arr.length:0;
+const countWins=arr=>arr.filter(m=>m.win).length;
+const month=d=>d?`${d.getFullYear()}.${d.getMonth()+1}`:'날짜 미확인';
+const rangeOf=arr=>{if(!arr.length)return '비교 기간 없음';const a=arr[0].date,b=arr[arr.length-1].date;if(!a||!b)return `${month(a)} → ${month(b)}`;const days=Math.abs(Math.round((b.getTime()-a.getTime())/86400000));const stamp=d=>`${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}`;return `${stamp(a)} → ${stamp(b)}${days>0?` · ${days}일 간격`:''}`;};
+const compactG=n=>`${Math.abs(n).toFixed(1)}게임`;
+function strongOpponentReport(rows){
+ const all=rows.filter(m=>(m.preOpp-m.preOwn)>=40&&m.ownGames>=3&&m.oppGames>=3).slice().sort(byTime);
+ const n=all.length,k=Math.min(5,Math.floor(n/2)),early=k>=2?all.slice(0,k):[],late=k>=2?all.slice(-k):[];
+ const earlyOwn=avg(early,m=>m.own),lateOwn=avg(late,m=>m.own),earlyGap=avg(early,m=>m.preOpp-m.preOwn),lateGap=avg(late,m=>m.preOpp-m.preOwn);
+ return {all,n,early,late,k,earlyOwn,lateOwn,earlyGap,lateGap,delta:k>=2?lateOwn-earlyOwn:null,recentWins:countWins(late)};
+}
+function partnerComparisons(rows){
+ const groups=new Map();rows.forEach(m=>{if(!groups.has(m.partner))groups.set(m.partner,[]);groups.get(m.partner).push(m);});
+ return [...groups].map(([partner,arr])=>{arr.sort(byTime);const k=Math.min(6,Math.floor(arr.length/2)),a=k>=2?arr.slice(0,k):[],b=k>=2?arr.slice(-k):[];
+ return {partner,n:arr.length,first:a,last:b,early:avg(a,m=>m.adjusted),late:avg(b,m=>m.adjusted),earlyOpp:avg(a,m=>m.preOpp),lateOpp:avg(b,m=>m.preOpp),delta:k>=2?avg(b,m=>m.adjusted)-avg(a,m=>m.adjusted):null};
+ }).sort((a,b)=>(b.delta??-999)-(a.delta??-999));
+}
+function insightFacts(rows,events,indirect,strong,partners){
+ const n=rows.length,k=Math.min(8,Math.floor(n/2)),early=k>=3?rows.slice(0,k):[],late=k>=3?rows.slice(-k):[];
+ const recent=rows.slice(-Math.min(n,5)),prev=rows.slice(-Math.min(10,n),-Math.min(5,n));
+ const close=rows.filter(m=>Math.abs(m.margin)<=2),rematches=new Map(),partnersSet=new Set(rows.map(m=>m.partner));
+ rows.forEach(m=>m.opponents.forEach(opp=>{if(!rematches.has(opp))rematches.set(opp,[]);rematches.get(opp).push(m);}));
+ const rivals=[...rematches].map(([name,items])=>{const arr=bestPerWeek(items);return {name,arr,change:arr.length>=2?arr.at(-1).margin-arr[0].margin:0};}).filter(r=>r.arr.length>=2);
+ const rivalBest=rivals.slice().sort((a,b)=>b.change-a.change)[0],direct=events.slice().sort((a,b)=>b.gain-a.gain)[0],bestPartner=partners.find(p=>p.delta!==null);
+ const left=rows.filter(m=>m.opponents.some(o=>state.profiles[o]?.hand==='left'));
+ const one=rows.filter(m=>m.opponents.some(o=>state.profiles[o]?.backhand==='one'));
+ return {rows,n,events,indirect,strong,partners,early,late,recent,prev,close,rivals,rivalBest,direct,bestPartner,left,one,partnersSet,
+  adjChange:k>=3?avg(late,m=>m.adjusted)-avg(early,m=>m.adjusted):null,
+  marginChange:k>=3?avg(late,m=>m.margin)-avg(early,m=>m.margin):null,
+  winChange:k>=3?countWins(late)/late.length-countWins(early)/early.length:null,
+  earlyOpp:avg(early,m=>m.preOpp),lateOpp:avg(late,m=>m.preOpp),
+  span:rangeOf(rows),period:rangeOf([...early.slice(0,1),...late.slice(-1)]),
+  recentClose:recent.filter(m=>Math.abs(m.margin)<=2).length,
+  closeWon:close.filter(m=>m.win).length,
+  closeLost:close.filter(m=>!m.win).length};
+}
+const playerInsightRules=[
+ {id:'01',when:c=>c.direct&&c.direct.oldMatch.margin<0&&c.direct.match.win,say:c=>`예전에는 졌던 동일한 네 선수의 대결을 승리로 바꿨어요.`,proof:c=>`${rangeOf([c.direct.oldMatch,c.direct.match])} · ${c.direct.oldMatch.ownScore} → ${c.direct.match.ownScore}`},
+ {id:'02',when:c=>c.direct&&c.direct.gain>=2&&!c.direct.match.win,say:c=>`같은 상대팀에게 아직 승리하진 못했지만, 게임 차이를 ${c.direct.gain}게임이나 좁혔어요.`,proof:c=>`${rangeOf([c.direct.oldMatch,c.direct.match])} · ${c.direct.oldMatch.ownScore} → ${c.direct.match.ownScore}`},
+ {id:'03',when:c=>c.direct&&c.direct.gain>=1,say:c=>`같은 네 선수가 다시 만난 경기에서 이전 최고 성적을 넘어섰어요.`,proof:c=>`${rangeOf([c.direct.oldMatch,c.direct.match])} · 득실차 ${fmt(c.direct.oldBest,0)} → ${fmt(c.direct.newBest,0)}게임`},
+ {id:'04',when:c=>c.strong.delta!==null&&c.strong.delta>=1.3&&c.strong.k>=2,say:c=>`우리보다 강했던 상대에게도 최근에는 경기당 ${compactG(c.strong.delta)} 더 따냈어요.`,proof:c=>`${rangeOf([...c.strong.early.slice(0,1),...c.strong.late.slice(-1)])} · 초반 ${c.strong.earlyOwn.toFixed(1)} → 최근 ${c.strong.lateOwn.toFixed(1)}게임 (추정 난이도)`},
+ {id:'05',when:c=>c.strong.delta!==null&&c.strong.lateGap-c.strong.earlyGap>=35&&c.strong.delta>=-0.3,say:c=>`상대의 추정 실력은 더 높아졌지만, 강팀에게 얻는 게임 수는 지켜냈어요.`,proof:c=>`상대 우위 ${Math.round(c.strong.earlyGap)} → ${Math.round(c.strong.lateGap)}점 · 게임 확보 ${c.strong.earlyOwn.toFixed(1)} → ${c.strong.lateOwn.toFixed(1)}`},
+ {id:'06',when:c=>c.strong.all.some(m=>m.win),say:c=>`우리 팀보다 강한 것으로 추정된 조합을 이겨낸 경험이 있어요.`,proof:c=>{const m=c.strong.all.filter(m=>m.win).slice(-1)[0];return `${month(m.date)} · ${m.ownScore} 승리 · 상대 우위 추정 ${Math.round(m.preOpp-m.preOwn)}점`}},
+ {id:'07',when:c=>c.strong.all.filter(m=>m.margin>=-2).length>=2,say:c=>`강팀으로 추정된 상대와 두 차례 이상 접전을 만들었어요.`,proof:c=>`${c.strong.all.filter(m=>m.margin>=-2).length}경기 · 상대 우위 40점 이상(추정)`},
+ {id:'08',when:c=>c.bestPartner&&c.bestPartner.delta>=1&&c.bestPartner.lateOpp-c.bestPartner.earlyOpp>=35,say:c=>`${c.bestPartner.partner} 선수와 호흡할 때, 더 강한 상대를 만나면서도 보정 성적이 좋아졌어요.`,proof:c=>`${rangeOf([...c.bestPartner.first.slice(0,1),...c.bestPartner.last.slice(-1)])} · 경기당 보정 득실 ${fmt(c.bestPartner.delta)}게임 변화`},
+ {id:'09',when:c=>c.bestPartner&&c.bestPartner.delta>=1.5,say:c=>`${c.bestPartner.partner} 선수와 함께한 최근 경기 내용이 초반보다 좋아졌어요.`,proof:c=>`${rangeOf([...c.bestPartner.first.slice(0,1),...c.bestPartner.last.slice(-1)])} · 상대 난이도 보정 평균 ${fmt(c.bestPartner.delta)}게임`},
+ {id:'10',when:c=>c.bestPartner&&c.bestPartner.lateOpp-c.bestPartner.earlyOpp>=40&&c.bestPartner.delta>=-0.2,say:c=>`${c.bestPartner.partner} 선수와 상대 수준을 높이면서도 접전 경쟁력을 유지했어요.`,proof:c=>`상대 추정 레이팅 ${Math.round(c.bestPartner.earlyOpp)} → ${Math.round(c.bestPartner.lateOpp)} · 경기당 보정 변화 ${fmt(c.bestPartner.delta)}게임`},
+ {id:'11',when:c=>c.rivalBest&&c.rivalBest.change>0&&c.rivalBest.arr[0].margin<0&&c.rivalBest.arr.at(-1).win,say:c=>`${c.rivalBest.name} 선수를 다시 만났을 때는 패배를 승리로 바꿨어요.`,proof:c=>`${rangeOf([c.rivalBest.arr[0],c.rivalBest.arr.at(-1)])} · 파트너·상대 1명 변동 가능`},
+ {id:'12',when:c=>c.rivalBest&&c.rivalBest.change>=2,say:c=>`${c.rivalBest.name} 선수를 상대할 때 첫 대결보다 게임 차이가 좁혀졌어요.`,proof:c=>`첫 ${c.rivalBest.arr[0].ownScore} → 최근 ${c.rivalBest.arr.at(-1).ownScore} · 파트너·상대 조합 변동 가능`},
+ {id:'13',when:c=>c.adjChange!==null&&c.adjChange>=1.6,say:c=>`최근 경기들은 상대 난이도를 고려해도 예전보다 경쟁력이 높아졌어요.`,proof:c=>`${c.period} · 초반/최근 각 ${c.early.length}경기, 보정 득실 ${fmt(c.adjChange)}게임`},
+ {id:'14',when:c=>c.marginChange!==null&&c.marginChange>=2,say:c=>`최근에는 한 경기에서 주고받는 게임 차이가 초반보다 줄어들었어요.`,proof:c=>`${c.period} · 평균 득실차 ${fmt(avg(c.early,m=>m.margin))} → ${fmt(avg(c.late,m=>m.margin))}게임`},
+ {id:'15',when:c=>c.recent.length>=4&&c.recentClose>=4,say:c=>`최근 다섯 경기 중 접전이 많아, 승부를 끝까지 이어가는 모습이 기록됐어요.`,proof:c=>`최근 ${c.recent.length}경기 중 ${c.recentClose}경기에서 게임 차 2 이내`},
+ {id:'16',when:c=>c.close.length>=6&&c.closeWon>=4,say:c=>`팽팽한 승부에서 승리를 가져온 기록이 적지 않아요.`,proof:c=>`2게임 차 이내 접전 ${c.close.length}경기 중 ${c.closeWon}승`},
+ {id:'17',when:c=>c.recent.length===5&&countWins(c.recent)>=4,say:c=>`최근 다섯 경기에서 좋은 승리 흐름을 만들고 있어요.`,proof:c=>`${rangeOf(c.recent)} · ${countWins(c.recent)}승 ${c.recent.length-countWins(c.recent)}패`},
+ {id:'18',when:c=>c.winChange!==null&&c.winChange>=.3,say:c=>`최근 구간의 승률이 초반 구간보다 높아졌어요.`,proof:c=>`${c.period} · ${Math.round(countWins(c.early)/c.early.length*100)}% → ${Math.round(countWins(c.late)/c.late.length*100)}% (파트너·상대 차이 주의)`},
+ {id:'19',when:c=>c.early.length>=3&&c.lateOpp-c.earlyOpp>=55&&c.adjChange>=-.2,say:c=>`더 높은 추정 레이팅의 상대를 만나면서도 경기 경쟁력을 지켜냈어요.`,proof:c=>`${c.period} · 상대팀 평균 추정 ${Math.round(c.earlyOpp)} → ${Math.round(c.lateOpp)}`},
+ {id:'20',when:c=>c.strong.all.length>=3&&avg(c.strong.all.slice(-3),m=>m.own)>=3.8,say:c=>`최근 강팀으로 추정된 상대에게도 평균 4게임 가까이 확보하고 있어요.`,proof:c=>`강팀 상대 최근 3경기 · 경기당 ${avg(c.strong.all.slice(-3),m=>m.own).toFixed(1)}게임`},
+ {id:'21',when:c=>c.indirect.length>=3,say:c=>`같은 파트너와 여러 상대를 만나면서 이전보다 나은 보정 경기 기록을 반복했어요.`,proof:c=>`서로 다른 상대 조합의 개선 단서 ${c.indirect.length}건 · 추정 난이도 반영`},
+ {id:'22',when:c=>c.indirect.length>=1,say:c=>`같은 파트너와 다른 상대를 만나 최고 보정 성적을 한 번 더 넘어섰어요.`,proof:c=>{const e=c.indirect.at(-1);return `${month(e.match.date)} · ${e.match.partner} 선수와 경기당 추정 보정 ${fmt(e.gain)}게임`}},
+ {id:'23',when:c=>c.partnersSet.size>=5&&c.n>=12&&countWins(c.rows)/c.n>=.5,say:c=>`여러 복식 파트너와 조합을 바꿔 가며 절반 이상 승리를 만들었어요.`,proof:c=>`${c.partnersSet.size}명과 호흡 · ${c.n}경기 ${countWins(c.rows)}승`},
+ {id:'24',when:c=>c.partners.some(p=>p.n>=5&&countWins(p.last)>=Math.ceil(p.last.length*.6)),say:c=>{const p=c.partners.find(p=>p.n>=5&&countWins(p.last)>=Math.ceil(p.last.length*.6));return `${p.partner} 선수와 최근 여러 경기에서 꾸준히 승리를 만들었어요.`},proof:c=>{const p=c.partners.find(p=>p.n>=5&&countWins(p.last)>=Math.ceil(p.last.length*.6));return `${rangeOf(p.last)} · 최근 비교 ${p.last.length}경기 ${countWins(p.last)}승`}},
+ {id:'25',when:c=>c.rivals.length>=3,say:c=>`다양한 상대와 재대결을 이어가며 비교할 수 있는 경험을 쌓았어요.`,proof:c=>`다시 만난 상대 ${c.rivals.length}명 · 결과는 상대/파트너 조합에 좌우될 수 있음`},
+ {id:'26',when:c=>c.left.length>=3&&countWins(c.left)>=Math.ceil(c.left.length*.6),say:c=>`왼손잡이가 포함된 상대팀과도 좋은 승부 기록을 남겼어요.`,proof:c=>`왼손잡이 포함 ${c.left.length}경기 중 ${countWins(c.left)}승 · 상대 유형 참고`},
+ {id:'27',when:c=>c.one.length>=3&&countWins(c.one)>=Math.ceil(c.one.length*.6),say:c=>`원핸드 백핸드 선수가 포함된 팀과도 승리를 쌓았어요.`,proof:c=>`원핸드 상대 포함 ${c.one.length}경기 ${countWins(c.one)}승 · 상대 유형 참고`},
+ {id:'28',when:c=>c.closeLost>=3,say:c=>`패배한 경기 중에서도 몇 게임 차까지 따라간 접전이 여럿 있어요.`,proof:c=>`2게임 차 이내 패배 ${c.closeLost}경기 · 다음엔 접전을 승리로 바꿔보세요`},
+ {id:'29',when:c=>c.n>=10,say:c=>`여러 주에 걸친 경기 기록이 쌓여서 이제 변화의 흐름을 비교할 토대가 생겼어요.`,proof:c=>`${c.span} · ${c.n}경기, 조합별 재대결과 상대 수준을 함께 살펴보세요`},
+ {id:'30',when:c=>true,say:c=>`아직 비교할 경기가 적지만, 다음 대결부터는 변화의 근거가 쌓일 거예요.`,proof:c=>`${c.n}경기 기록됨 · 같은 파트너/상대 재대결 또는 강팀 상대 기록이 늘면 분석이 구체화됩니다`}
+];
+function selectPlayerInsight(rows,events,indirect,strong,partners){const c=insightFacts(rows,events,indirect,strong,partners);const rule=playerInsightRules.find(r=>r.when(c));return {id:rule.id,text:rule.say(c),proof:rule.proof(c)};}
+function renderStrongOpponent(strong,format){
+ const bar=$('strong-bars'),unit=format==='4'?4:6;
+ if(strong.n===0){$('strong-value').textContent='비교 준비 중';$('strong-value-sub').textContent='기준 충족 강팀 경기 0건';bar.innerHTML='<div class="nothing" style="grid-column:1/-1">강팀을 상대해도 지는 게 퇴보는 아닙니다. 경기 전 추정 레이팅과 누적 대국이 충분한 경기만 따로 모아요.</div>';$('strong-guide').textContent='다음 목표 · 경기 전 상대 추정 레이팅이 우리보다 40점 이상 높고, 양 팀의 기존 기록이 충분한 경기를 쌓아보세요.';return;}
+ const latest=strong.all.slice(-Math.min(4,strong.n)),avgLatest=avg(latest,m=>m.own);$('strong-value').textContent=`${avgLatest.toFixed(1)}게임 확보`;
+ $('strong-value-sub').textContent=`강팀으로 추정된 최근 ${latest.length}경기 평균 (최대 ${unit}게임 기준)`;
+ if(strong.delta===null){bar.innerHTML=`<div class="strong-metric"><div class="row-top"><span>현재 강팀 상대 평균</span><span>${avgLatest.toFixed(1)} / ${unit}게임</span></div><div class="bar"><span style="width:${Math.min(100,avgLatest/unit*100)}%"></span></div><small>유효한 강팀 경기 총 ${strong.n}건 · 초반/최근 각 2경기 이상 필요</small></div>`;$('strong-guide').textContent=`다음 목표 · 유사한 강팀 경기를 ${Math.max(0,4-strong.n)}경기 더 기록하면 초반과 최근 확보 게임 수를 비교할 수 있어요.`;return;}
+ const renderBar=(label,arr,value,gap)=>`<div class="strong-metric"><div class="row-top"><span>${label} · ${arr.length}경기</span><span>${value.toFixed(1)} / ${unit}게임</span></div><div class="bar"><span style="width:${Math.max(0,Math.min(100,value/unit*100))}%"></span></div><small>${rangeOf(arr)} · 상대 우위 추정 평균 ${Math.round(gap)}점</small></div>`;
+ bar.innerHTML=renderBar('초반',strong.early,strong.earlyOwn,strong.earlyGap)+renderBar('최근',strong.late,strong.lateOwn,strong.lateGap);
+ const difference=strong.delta>=0?`초반보다 경기당 ${compactG(strong.delta)} 더 확보`:`최근 기록은 초반보다 경기당 ${compactG(strong.delta)} 적게 확보`;
+ const hard=strong.lateGap>strong.earlyGap+20?`최근에는 상대 추정 우위도 평균 ${Math.round(strong.lateGap-strong.earlyGap)}점 커졌어요. `:'';
+ const nextGoal=strong.lateOwn>=unit-.5?'강팀 상대 접전·승리 기록을 꾸준히 이어가기':`강팀 상대 경기에서 평균 ${Math.min(unit,Math.ceil(strong.lateOwn+.5))}게임 확보하기`;
+ $('strong-guide').textContent=`관찰 · ${difference}. ${hard}경기 결과의 변화일 뿐 실력 퇴보 판정은 아니에요. 다음 목표 · ${nextGoal}.`;
+}
+
+function render(){
+ const rows=enrich(playersRows()),events=improvementEvents(rows),indirect=indirectImprovementEvents(rows),weeks=weekSeries(rows,events,indirect),valid=weeks.filter(p=>p.valid),last=valid[valid.length-1],player=$('player').value;
+ state.weekPoints=weeks;state.directEvents=events;state.indirectEvents=indirect;state.selectedWeek=null;
+ const sum=events.reduce((t,e)=>t+e.gain,0),matchesLast=rows.filter(m=>m.date&&last&&m.date>=new Date(last.date.getTime()-21*86400000)&&m.date<new Date(last.date.getTime()+7*86400000)).length;
+ const strong=strongOpponentReport(rows),partners=partnerComparisons(rows),story=selectPlayerInsight(rows,events,indirect,strong,partners);
+ $('total').textContent=rows.length+'경기';$('totalnote').textContent=(genderFor(player)==='여성'?'여복':'남복')+' · '+$('format').value+'게임 · '+rangeOf(rows);
+ const bestDirect=events.slice().sort((a,b)=>b.gain-a.gain)[0];
+ $('level').className=bestDirect?'up':'';
+ if(bestDirect){$('level').textContent=`${bestDirect.oldMatch.ownScore} → ${bestDirect.match.ownScore}`;$('levelnote').textContent=`상대 ${bestDirect.match.opponents.join(' · ')} · 파트너 ${bestDirect.match.partner} · ${rangeOf([bestDirect.oldMatch,bestDirect.match])} · ${bestDirect.gain}게임 개선`;}else{$('level').textContent='재대결 대기';$('levelnote').textContent='같은 네 선수가 서로 다른 주에 다시 만나 최고 기록을 개선하면 표시해요. 같은 주 재경기는 비교에서 제외합니다.';}
+ const partnerBest=partners.find(p=>p.delta!==null&&p.delta>0.15);
+ $('growth').className=partnerBest?'up':'';
+ if(partnerBest){$('growth').textContent=`평균 +${partnerBest.delta.toFixed(1)}게임`;$('growthnote').textContent=`${partnerBest.partner} 선수와 ${rangeOf([...partnerBest.first.slice(0,1),...partnerBest.last.slice(-1)])} · 상대 난이도 보정 추정`;}
+ else if(partners.some(p=>p.delta!==null)){$('growth').textContent='최근 구간 비교 중';$('growthnote').textContent='같은 파트너의 여러 경기 결과가 달라졌어요. 하락=퇴보는 아닙니다.';}
+ else if(indirect.length){const e=indirect.slice().sort((a,b)=>b.gain-a.gain)[0];$('growth').textContent=`접전력 +${e.gain.toFixed(1)}게임`;$('growthnote').textContent=`${e.match.partner} 선수와 ${month(e.match.date)} · 추정 보정 참고`;}
+ else{$('growth').textContent='비교 기록 대기';$('growthnote').textContent='같은 파트너로 서로 다른 상대와 4경기 이상 만나면 비교할 수 있어요.';}
+ $('recent').textContent=last?`${matchesLast}경기`:'—';$('recentnote').textContent=last?`${shortDate(last.date)} 주를 끝으로 최근 28일`:'기간 및 날짜 확인';
+ $('headline').textContent=rows.length?story.text:'남복·여복에 해당하는 기록이 없어요. 동성복식 경기부터 성장 분석을 시작할게요.';
+ $('headline-proof').textContent=rows.length?`근거 · ${story.proof}`:'상대와 파트너 기록을 바탕으로 분석합니다.';
+ renderStrongOpponent(strong,$('format').value);
+ renderStyleSummary(rows);
+ const dates=rows.filter(m=>m.date),realDates=rows.filter(m=>m.exactDate),uniqueWeeks=new Set(dates.map(m=>keyDate(weekStart(m.date))));
+ $('date-warning').textContent=`※ 남복·여복만 집계. 총 ${rows.length}경기 중 자동·실제 경기일 확인 ${realDates.length}경기 · 날짜 확인 ${dates.length}경기 · 기록 주 ${uniqueWeeks.size}주. 성장 재대결은 월요일~일요일을 한 주로 봅니다. 같은 주 여러 경기는 그 주 최고 성적만 비교 기준으로 사용합니다. 신규 저장 경기는 저장 시 날짜가 자동 기록됩니다. 과거 기록에 날짜가 없으면 최초 저장일을 대신 사용하므로 실제 경기일과 다를 수 있습니다.`;
+ renderChart(weeks);renderRematches(rows);renderPartners(rows,events,indirect);
+ $('matches').innerHTML=rows.length?rows.slice().reverse().map(m=>`<tr><td>${safe(m.season)} · ${safe(m.round)}회차</td><td>${m.date?safe(keyDate(m.date))+(m.exactDate?' ✓':' ~'):'—'}</td><td>${safe(m.partner)}</td><td>${safe(m.opponents.join(' / '))}</td><td>${safe(m.ownScore)}</td><td class="${m.margin>0?'up':m.margin<0?'down':''}">${fmt(m.margin,0)}</td></tr>`).join(''):'<tr><td colspan="6">기록 없음</td></tr>';
+ const recentRows=rows.slice().reverse();$('mobile-matches').innerHTML=recentRows.length?recentRows.slice(0,30).map(m=>`<article class="mobile-record"><div class="rec-head"><span>${safe(m.season)} · ${safe(m.round)}회</span><strong class="rec-score ${m.margin>0?'up':m.margin<0?'down':''}">${safe(m.ownScore)} (${fmt(m.margin,0)}G)</strong></div><div class="rec-date">${m.date?safe(keyDate(m.date))+(m.exactDate?' · 기록된 경기일':' · 최초 저장일 대체'):'날짜 없음'}</div><div class="rec-body">파트너 <b>${safe(m.partner)}</b><br>상대 ${safe(m.opponents.join(' · '))}</div></article>`).join('')+(recentRows.length>30?`<div class="hint">최신 30경기 표시 · 전체 ${recentRows.length}경기는 CSV 내보내기로 확인</div>`:''):'<div class="nothing">경기 기록이 없습니다.</div>';
+}
+function setStatus(t,error=false){$('status').textContent=t;$('status').classList.toggle('error',error);}
+let firebaseApp=null,db=null,auth=null;
+async function load(){setStatus('2026–27 겨울시즌을 포함한 기록 불러오는 중...');$('reload').disabled=true;
+ try{if(!firebaseApp){firebaseApp=initializeApp(firebaseConfig);db=getFirestore(firebaseApp);auth=getAuth(firebaseApp);}
+  const timeout=(ms)=>new Promise((_,reject)=>setTimeout(()=>reject(new Error('네트워크 응답 시간 초과')),ms));
+  await Promise.race([signInAnonymously(auth),timeout(12000)]);
+  const rankedPromise=Promise.race([Promise.allSettled(SEASONS.map(v=>getDoc(doc(db,'league','data','rankings',v.id)))),timeout(8500)]).catch(e=>{console.warn('명부 성별 병렬 로드 실패',e);return [];});
+  const docs=await Promise.race([Promise.all(SEASONS.map(v=>getDoc(doc(db,'league','data','schedule',v.id)))),timeout(18000)]);
+  const entries=SEASONS.map((v,i)=>({season:v.id,matches:docs[i].exists()?(docs[i].data().matches||[]):[]}));const result=normalizeMatches(entries);
+  state.matches=result.matches;state.sample=false;state.excluded=result.excluded;
+  const gender={};
+  try{
+   const ranked=await rankedPromise;
+   for(const r of ranked){if(r.status!=='fulfilled'||!r.value.exists())continue;for(const pl of (r.value.data().players||[])){
+    const name=String(pl.name||'').replace(/\*/g,'').trim();if(!name||typeof pl.isFemale!=='boolean')continue;
+    if(!(name in gender)||pl.isFemale===true)gender[name]=pl.isFemale;
+   }}
+  }catch(e){console.warn('시즌 선수 성별 로딩에 실패하여 여성 * 표시를 사용합니다.',e);}
+  for(const name of result.starWomen)gender[name]=true;
+  state.genderMap=gender;applyEligibleMatches();
+  try{const ps=await Promise.race([getDoc(doc(db,'league','data','playerProfiles','global')),timeout(6500)]);state.profiles=ps.exists()?(ps.data().profiles||{}):{};}catch(e){console.warn('선수 스타일 메타데이터 로드 실패 (경기 분석 유지)',e);state.profiles={};}
+  repopulate();const male=new Set(state.eligibleMatches.filter(m=>eligibleKind(m)==='남복').map(m=>m.id)).size,female=new Set(state.eligibleMatches.filter(m=>eligibleKind(m)==='여복').map(m=>m.id)).size;setStatus(`남복 ${male}경기 · 여복 ${female}경기 · 혼복/잡복 ${state.excludedMixed}경기 제외`);
+ }catch(e){console.error('호수오픈 성장 기록 불러오기 실패',e);setStatus(`연결 오류: ${e.message} · 예시 모드를 선택할 수 있습니다.`,true);if(!state.matches.length){$('player').innerHTML='<option value="">연결 대기</option>';render();}}
+ finally{$('reload').disabled=false;}}
+function sampleMatches(){const fixtures=[];const members=['가람','보라','다온','나래','하늘','이든','서아','윤슬','재희','찬우'];for(let w=0;w<13;w++)for(let j=0;j<4;j++){
+ const date=new Date(2026,5,1+w*7+j%2),p1='가람',p2=members[1+(w+j)%9],p3=members[1+(w*2+j+3)%9],p4=members[1+(w*3+j+5)%9];if(new Set([p1,p2,p3,p4]).size<4)continue;
+ const v=Math.max(-5,Math.min(5,Math.round(-3+w*.48+2*Math.sin((w+j)*1.9))));const a=v>=0?6:6+v,b=v>0?6-v:(v===0?5:6);
+ fixtures.push({season:'v3',matches:[{round:w+1,players:[p1,p2,p3,p4],score:`${a}-${b}`,isFourPoint:false,timestamp:date.toISOString()}]});
+ }
+ return normalizeMatches([{season:'v3',matches:fixtures.flatMap(x=>x.matches)}]).matches;}
+$('more').addEventListener('click',()=>{const panel=$('filters-panel'),open=panel.hidden;panel.hidden=!open;$('more').setAttribute('aria-expanded',String(open));});
+$('player-search').addEventListener('focus',showSuggestions);
+$('player-search').addEventListener('input',showSuggestions);
+$('player-search').addEventListener('keydown',e=>{
+ const el=$('player-suggestions'),buttons=[...el.querySelectorAll('button[data-name]')];
+ if(e.key==='Escape'){closeSuggestions();return;}
+ if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+  e.preventDefault();if(el.hidden){showSuggestions();return;}
+  activeSuggestion=(activeSuggestion+(e.key==='ArrowDown'?1:-1)+buttons.length)%Math.max(buttons.length,1);
+  buttons.forEach((b,i)=>b.setAttribute('aria-selected',String(i===activeSuggestion)));buttons[activeSuggestion]?.scrollIntoView({block:'nearest'});
+ }else if(e.key==='Enter'){
+  e.preventDefault();const exact=[...$('player').options].find(o=>o.value===$('player-search').value.trim());
+  const chosen=exact?.value||buttons[activeSuggestion]?.dataset.name;if(chosen)choosePlayer(chosen);
+ }
+});
+$('player-suggestions').addEventListener('click',e=>{const button=e.target.closest('button[data-name]');if(button)choosePlayer(button.dataset.name);});
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('.player-search-wrap')&&!e.target.closest('#player-suggestions'))closeSuggestions();});
+window.addEventListener('scroll',positionSuggestions,true);window.addEventListener('resize',positionSuggestions);
+if(window.visualViewport){visualViewport.addEventListener('resize',positionSuggestions);visualViewport.addEventListener('scroll',positionSuggestions);}
+$('player-search').addEventListener('blur',()=>{setTimeout(()=>{if($('player-suggestions').hidden)$('player-search').value=$('player').value;},160);});
+$('season').addEventListener('change',repopulate);$('format').addEventListener('change',()=>{fillPartners();render();});
+['from','to'].forEach(id=>$(id).addEventListener('change',repopulate));
+['partnerfilter','opmode'].forEach(id=>$(id).addEventListener('change',render));
+$('reset').addEventListener('click',()=>{$('season').value='all';$('format').value='6';$('opmode').value='pair';$('partnerfilter').value='';$('from').value='';$('to').value='';repopulate();});
+$('week-prev').addEventListener('click',()=>moveWeek(-1));$('week-next').addEventListener('click',()=>moveWeek(1));
+$('mode-growth').addEventListener('click',()=>setMode('growth'));
+$('mode-raw').addEventListener('click',()=>setMode('raw'));
+function setMode(mode){state.mode=mode;$('mode-growth').classList.toggle('active',mode==='growth');$('mode-raw').classList.toggle('active',mode==='raw');$('mode-growth').setAttribute('aria-pressed',String(mode==='growth'));$('mode-raw').setAttribute('aria-pressed',String(mode==='raw'));state.selectedWeek=null;renderChart(state.weekPoints);}
+$('reload').addEventListener('click',load);
+$('sample').addEventListener('click',()=>{state.matches=sampleMatches();state.genderMap={};applyEligibleMatches();state.profiles={};state.sample=true;$('season').value='all';$('format').value='6';$('from').value='';$('to').value='';$('partnerfilter').value='';repopulate();choosePlayer('가람',false);setStatus('예시 모드: 가람 등의 가상 경기 기록');});
+$('csv').addEventListener('click',()=>{const arr=enrich(playersRows());if(!arr.length){setStatus('내보낼 기록이 없습니다.',true);return;}const quote=v=>{let t=String(v??'');if(/^[=+\-@\t\r]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"';};const byId=new Map(improvementEvents(arr).map(e=>[e.id,e.gain])),byIndirect=new Map(indirectImprovementEvents(arr).map(e=>[e.id,e.gain]));const rows=[['시즌','저장일','회차','선수','파트너','상대1','상대2','방식','스코어','원본득실','경기전추정상대레이팅','상대난이도보정득실','직접최고기록개선G','간접최고기록개선G'],...arr.map(m=>[m.season,m.date?keyDate(m.date):'',m.round,m.player,m.partner,...m.opponents,m.format,m.ownScore,m.margin,Math.round(m.preOpp),m.adjusted.toFixed(2),byId.get(m.id)||0,(byIndirect.get(m.id)||0).toFixed(2)])],csv='\uFEFF'+rows.map(r=>r.map(quote).join(',')).join('\r\n'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=`hosu_growth_${$('player').value||'player'}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2500);});
+let theme='light';try{theme=localStorage.getItem('theme')||'light';}catch(e){}document.documentElement.dataset.theme=theme;$('theme').textContent=theme==='dark'?'☀':'☾';
+$('theme').addEventListener('click',()=>{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('theme',t);}catch(e){}$('theme').textContent=t==='dark'?'☀':'☾';});
+window.addEventListener('resize',()=>{if(state.weekPoints.length)renderChart(state.weekPoints);});
+load();
+</script></body></html>
