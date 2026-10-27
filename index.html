@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="light"> <!-- 기본 테마: 2026 여름 (Light - Ocean Blue) -->
+<html lang="ko" data-theme="light"> <!-- 기본 테마: 2026-27 겨울 (Light - Ocean Blue) -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -315,9 +315,6 @@
         html:not([data-theme="light"]) .autocomplete-bar button { color: #0f172a; }
     
 
-.round-date-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 15px;margin:7px 0 2px;color:var(--text-secondary-color);font-weight:700;font-size:.85rem}
-.round-date-row input[type=date]{max-width:170px;min-width:145px;font-size:.9rem;padding:7px 9px;border-radius:8px;background:var(--surface-color);border:1px solid var(--border-color);color:var(--text-color)}
-.round-date-row span{font-size:.75rem;font-weight:400}
 .growth-cta{border:1px solid var(--border-color);border-radius:16px;padding:23px;margin:0 0 25px;background:var(--surface-color);display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;box-shadow:0 8px 24px var(--shadow-color)}
 .growth-cta h2{margin:0 0 7px;font-size:1.35rem;border:0;padding:0;color:var(--primary-color)}
 .growth-cta p{margin:0;font-size:.95rem;line-height:1.65;color:var(--text-secondary-color)}
@@ -346,16 +343,22 @@
  #schedule-section .input-group{margin-bottom:9px}#schedule-section .btn{min-height:44px}
  #schedule-container .round-group-content{padding:10px 5px 4px;max-width:100%;overflow:hidden}
  #schedule-container details summary{padding:13px 10px;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
- .round-date-row{padding:9px 7px;display:grid;grid-template-columns:auto minmax(145px,1fr);gap:7px;align-items:center;font-size:12px}
- .round-date-row label{white-space:nowrap}.round-date-row input[type=date]{width:100%;min-width:0;max-width:none;min-height:44px;font-size:16px}
- .round-date-row span{grid-column:1/-1;font-size:11px;line-height:1.4}
- #schedule-container .table-wrapper{max-height:none;width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
- #schedule-container table.schedule-table{min-width:630px;width:630px;table-layout:fixed}
- #schedule-container table.schedule-table th,#schedule-container table.schedule-table td{padding:8px 4px;font-size:13px;white-space:nowrap}
- #schedule-container table.schedule-table input.player-input{width:94px;max-width:none;min-width:94px;height:42px;font-size:16px;padding:7px 6px;border-radius:7px}
- #schedule-container table.schedule-table input.score-input{width:66px;max-width:none;min-width:66px;height:42px;font-size:16px;padding:7px 2px}
- #schedule-container .schedule-table input[type=checkbox]{width:19px;height:19px;margin:auto}
- #schedule-container .table-wrapper:before{content:'↔ 표를 좌우로 밀면 이름과 스코어를 모두 볼 수 있어요';display:block;position:sticky;left:0;width:max-content;max-width:100%;font-size:11px;font-weight:700;color:var(--text-secondary-color);margin:5px 0 6px}
+ #schedule-container .table-wrapper{max-height:none;width:100%;overflow-x:visible;overflow-y:visible}
+ /* 스마트폰: 한 줄의 P1/P2/vs/P3/P4/점수/4점이 모두 보이는 예전 컴팩트 구성 */
+ #schedule-container table.schedule-table{width:100%;min-width:0;max-width:100%;table-layout:fixed;border-collapse:collapse}
+ #schedule-container table.schedule-table th,#schedule-container table.schedule-table td{box-sizing:border-box;padding:6px 1px;font-size:clamp(10px,2.6vw,12px);overflow:hidden;white-space:nowrap}
+ #schedule-container table.schedule-table th:nth-child(1),#schedule-container table.schedule-table td:nth-child(1),
+ #schedule-container table.schedule-table th:nth-child(2),#schedule-container table.schedule-table td:nth-child(2),
+ #schedule-container table.schedule-table th:nth-child(4),#schedule-container table.schedule-table td:nth-child(4),
+ #schedule-container table.schedule-table th:nth-child(5),#schedule-container table.schedule-table td:nth-child(5){width:15%}
+ #schedule-container table.schedule-table th:nth-child(3),#schedule-container table.schedule-table td:nth-child(3){width:7%;font-size:10px}
+ #schedule-container table.schedule-table th:nth-child(6),#schedule-container table.schedule-table td:nth-child(6){width:23%}
+ #schedule-container table.schedule-table th:nth-child(7),#schedule-container table.schedule-table td:nth-child(7){width:10%}
+ #schedule-container table.schedule-table input.player-input{display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;height:42px;font-size:clamp(11px,3.1vw,14px);padding:4px 1px;border-radius:5px;text-align:center;text-overflow:clip}
+ #schedule-container table.schedule-table input.score-input{display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;height:42px;font-size:16px;padding:4px 0;text-align:center;border-radius:5px}
+ #schedule-container .schedule-table input[type=checkbox]{width:18px;height:18px;margin:auto}
+ #schedule-container .round-group-content{overflow:visible;max-width:100%}
+ #schedule-container .round-group-content>details{overflow:visible}
  #ranking-table{width:max-content;min-width:900px}#ranking-table td,#ranking-table th{padding:10px 8px;font-size:12px}
  #ranking-table input.ranking-player{min-width:96px;max-width:140px;font-size:13px}
  #ranking-table input.readonly{font-size:12px}
@@ -386,7 +389,7 @@
     <div class="container">
 
         <h1>호수 오픈</h1>
-        <div class="growth-cta"><div><h2>🎾 호수오픈 · 성장 스토리</h2><p>누가 1등인지보다, 같은 상대에게 얼마나 따라붙었는지 · 같은 파트너와 얼마나 좋아졌는지를 기록합니다.<br>기존 경기 입력과 MMR, 지난 시즌 기록은 그대로 보존합니다.</p></div><a class="growth-link" href="growth.html?season=all">내 성장 기록 보기</a></div>
+        <div class="growth-cta"><div><h2>🎾 호수오픈 · 2026/27 겨울시즌</h2><p>누가 1등인지보다, 같은 상대에게 얼마나 따라붙었는지 · 같은 파트너와 얼마나 좋아졌는지를 기록합니다.<br>기존 경기 입력과 MMR, 지난 시즌 기록은 그대로 보존합니다.</p></div><a class="growth-link" href="growth.html?season=all">내 성장 기록 보기</a></div>
         <div class="section" id="schedule-section">
             <h2 id="schedule-title">경기 일정</h2>
             <div class="input-group">
@@ -414,7 +417,8 @@
             <p class="growth-legacy-note">순위표는 삭제하지 않습니다. 지난 기록 확인과 데이터 호환을 위한 보존 영역이며, 새로운 메인 평가는 개인 성장 기록입니다.</p>
             
             <div class="season-tabs" id="season-tabs-container">
-                <button class="tab-btn active" data-view="v3">2026 여름시즌</button>
+                <button class="tab-btn active" data-view="v4">2026/27 겨울시즌</button>
+                <button class="tab-btn" data-view="v3">2026 여름시즌</button>
                 <button class="tab-btn" data-view="v2">2025/26 겨울시즌</button>
                 <button class="tab-btn" data-view="v1">2025 여름시즌</button>
                 <button class="tab-btn" data-view="alltime">통합기록</button>
@@ -536,10 +540,11 @@
         
         const BASE_COLLECTION = 'league';
         
+        const SEASON_V4 = 'v4'; // 2026.11.01 시작 (신규 DB 공간)
         const SEASON_V3 = 'v3'; 
         const SEASON_V2 = 'v2'; 
         const SEASON_V1 = 'v1'; 
-        const CURRENT_SEASON_VERSION = SEASON_V3; 
+        const CURRENT_SEASON_VERSION = SEASON_V4; 
 
         // 글로벌 변수 재설정 (동적 필터링을 위한 데이터 보존)
         let currentFilter = 'all', sortKey = 'mmr', sortOrder = 'desc';
@@ -547,7 +552,7 @@
         let currentRenderedData = [];  // 현재 화면/필터에 맞게 동적으로 계산되어 렌더링된 데이터
         let allMatchesData = [];
         let currentPotw = null;
-        let activeView = 'v3'; 
+        let activeView = CURRENT_SEASON_VERSION; 
         let scheduleUnsubscribe = null;
         let rankingUnsubscribe = null;
         let currentActiveInput = null; 
@@ -580,7 +585,10 @@
             const rankingTitleEl = document.getElementById('ranking-main-title');
             const scheduleTitleEl = document.getElementById('schedule-title');
             
-            if (view === SEASON_V3) {
+            if (view === SEASON_V4) {
+                rankingTitleEl.innerHTML = '2026/27 겨울시즌 순위표';
+                scheduleTitleEl.innerHTML = '2026/27 겨울시즌 경기 일정 · 11월 1일 개막 · 1회부터 (저장 시 날짜 자동 기록)';
+            } else if (view === SEASON_V3) {
                 rankingTitleEl.innerHTML = '2026 여름시즌 순위표';
                 scheduleTitleEl.innerHTML = '2026 여름시즌 경기 일정';
             } else if (view === SEASON_V2) {
@@ -594,6 +602,18 @@
                 scheduleTitleEl.innerHTML = '통합기록 경기 일정';
             }
         };
+
+        // v4 최초 조회: 지난 여름 명부만 읽기 전용으로 승계, 경기 실적은 0부터 시작.
+        // 실제 v4 랭킹 문서 생성은 기존 '순위 업데이트' 버튼을 눌렀을 때만 발생.
+        const prepareWinterRoster = (previousPlayers = []) => previousPlayers
+            .filter(p => p && p.name)
+            .map(p => ({
+                name: p.name, isFemale: !!p.isFemale, mmr: 1500,
+                wins: 0, losses: 0, championships: 0, totalSets: 0, gameDiff: 0,
+                winRate: 0, avgGameDiff: '0.00', closeMatchWinRate: '0%',
+                dominantWins: '0%', dominantLosses: '0%', bestPartner: '기록 없음',
+                recentForm: [], streakCount: 0, streakIsWin: false, lastGameTimestamp: null
+            }));
 
         const updateAutocompleteSuggestions = (filterText) => {
             const bar = document.getElementById('autocomplete-bar');
@@ -1034,7 +1054,6 @@
                     const roundData = savedRounds.get(i);
                     const isSaved = !!roundData;
                     const savedDate = roundData?.timestamp ? new Date(roundData.timestamp).toLocaleDateString('ko-KR') : '';
-                    const actualDate = /^\d{4}-\d{2}-\d{2}$/.test(roundData?.playedAt || '') ? roundData.playedAt : '';
                     const champions = roundData?.champions?.map(name => `<span class="champion-name">${name}</span>`).join(', ') || '없음';
                     
                     let tableContent = '';
@@ -1064,7 +1083,6 @@
                     roundsHtml += `
                     <details class="${isSaved ? 'saved-round' : 'empty-round lazy-round'}">
                         <summary>${i}회${isSaved ? `<span class="saved-indicator">💾</span><span class="saved-info">[${savedDate}, 우승: ${champions}]</span>` : ''}</summary>
-                        <div class="round-date-row"><label for="round-played-${i}">📅 실제 경기일</label><input type="date" id="round-played-${i}" class="round-played-at" value="${actualDate}" aria-label="${i}회 실제 경기일"><span>선택 입력 · 주간 성장 분석용 · 기존 저장일 유지</span></div>
                         ${tableContent}
                         <button class="btn save-all-btn admin-btn" style="margin: 10px 15px;">저장하기</button>
                     </details>`;
@@ -1110,21 +1128,35 @@
                 const scheduleDocRef = doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION);
                 const scheduleDoc = await getDoc(scheduleDocRef);
                 const existingTimestamps = new Map();
-                const existingPlayedDates = new Map();
-                if (scheduleDoc.exists()) {
-                    (scheduleDoc.data().matches || []).forEach(match => {
-                        if (!existingTimestamps.has(match.round)) existingTimestamps.set(match.round, match.timestamp);
-                        if (match.playedAt && !existingPlayedDates.has(match.round)) existingPlayedDates.set(match.round, match.playedAt);
-                    });
-                }
+                const scoredRoundDates = new Map();
+                const previousRows = scheduleDoc.exists() ? (scheduleDoc.data().matches || []) : [];
+                previousRows.forEach(match => {
+                    if (!existingTimestamps.has(match.round) && match.timestamp) existingTimestamps.set(match.round, match.timestamp);
+                    // 점수가 최초로 기록된 회차의 날짜를 보존하며, 수정 저장일로 덮어쓰지 않습니다.
+                    if (/^\d+\s*-\s*\d+$/.test(String(match.score || '')) && !scoredRoundDates.has(match.round)) {
+                        scoredRoundDates.set(match.round, match.playedAt || match.timestamp || null);
+                    }
+                });
                 const batch = writeBatch(db);
                 const scheduleData = [];
                 document.querySelectorAll('.schedule-table').forEach(table => {
                     const roundId = parseInt(table.getAttribute('data-round-id'));
-                    const roundTimestamp = existingTimestamps.get(roundId) || new Date().toISOString();
-                    const input = table.closest('details')?.querySelector('.round-played-at');
-                    const enteredDate = input ? input.value : (existingPlayedDates.get(roundId) || null);
-                    const playedAt = enteredDate && /^\d{4}-\d{2}-\d{2}$/.test(enteredDate) ? enteredDate : null;
+                    const now = new Date();
+                    const nowIso = now.toISOString();
+                    const toLocalDay = value => {
+                        const d = new Date(value);
+                        return Number.isNaN(d.getTime()) ? null :
+                          [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
+                    };
+                    const isScoredNow = [...table.querySelectorAll('tbody tr')].some(row =>
+                        /^\d+\s*-\s*\d+$/.test(row.querySelector('.score')?.value?.trim() || '') &&
+                        ['player1','player2','player3','player4'].every(cls => row.querySelector('.' + cls)?.value?.trim()));
+                    const priorScoredDate = scoredRoundDates.get(roundId);
+                    // 회차의 실제 첫 스코어 저장 날짜: 수동 입력 없이 오늘로 자동 입력.
+                    const playedAt = priorScoredDate ? toLocalDay(priorScoredDate)
+                        : isScoredNow ? toLocalDay(now)
+                        : (existingTimestamps.has(roundId) ? toLocalDay(existingTimestamps.get(roundId)) : toLocalDay(now));
+                    const roundTimestamp = existingTimestamps.get(roundId) || nowIso;
                     table.querySelectorAll('tbody tr').forEach(row => {
                         const players = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
                         const score = row.querySelector('.score').value.trim();
@@ -1256,7 +1288,7 @@
             });
             rankingBody.querySelectorAll('.ranking-player').forEach(input => input.addEventListener('click', () => {
                 const playerName = encodeURIComponent(input.value.trim().replace(/\*/g, ''));
-                if (playerName) window.location.href = `h2h.html?season=${CURRENT_SEASON_VERSION}&player=${playerName}`;
+                if (playerName) window.location.href = `h2h.html?season=${activeView}&player=${playerName}`;
             }));
         };
 
@@ -1556,15 +1588,16 @@
             updateRankingBtn.disabled = true; updateRankingBtn.textContent = '계산 중...';
             showToast('전체 순위를 다시 계산합니다. 잠시만 기다려주세요...');
             return new Promise(async (resolve) => {
-                const [scheduleDoc, rankingsDoc, rankV1, rankV2] = await Promise.all([
+                const [scheduleDoc, rankingsDoc, rankV1, rankV2, rankV3] = await Promise.all([
                     getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION)),
                     getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION)),
                     getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V1)),
-                    getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V2))
+                    getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V2)),
+                    getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V3))
                 ]);
 
                 const globalGenderMap = {};
-                [rankV1, rankV2, rankingsDoc].forEach(snap => {
+                [rankV1, rankV2, rankV3, rankingsDoc].forEach(snap => {
                     if (snap.exists() && snap.data().players) {
                         snap.data().players.forEach(p => {
                             if (p.isFemale) globalGenderMap[p.name] = true;
@@ -1573,15 +1606,17 @@
                 });
 
                 const allMatchesFromDB = scheduleDoc.exists() ? scheduleDoc.data().matches : [];
-                const currentRankingPlayers = (rankingsDoc.exists() && rankingsDoc.data().players) ? rankingsDoc.data().players : [];
+                const savedWinterPlayers = (rankingsDoc.exists() && rankingsDoc.data().players) ? rankingsDoc.data().players : [];
+                const currentRankingPlayers = savedWinterPlayers.length ? savedWinterPlayers :
+                    prepareWinterRoster(rankV3.exists() ? (rankV3.data().players || []) : []);
                 
                 const initialPlayersMap = {};
                 currentRankingPlayers.forEach(p => {
                     initialPlayersMap[p.name] = { 
                         name: p.name, 
                         isFemale: p.isFemale || globalGenderMap[p.name] || false, 
-                        championships: p.championships || 0,
-                        lastGameTimestamp: p.lastGameTimestamp || null 
+                        championships: 0,
+                        lastGameTimestamp: null 
                     };
                 });
 
@@ -1915,7 +1950,9 @@
             });
         }
 
+        let viewLoadVersion = 0;
         const loadViewData = async () => {
+            const requestVersion = ++viewLoadVersion;
             if (scheduleUnsubscribe) scheduleUnsubscribe();
             if (rankingUnsubscribe) rankingUnsubscribe();
             updateRankingTitleAndCountdown(activeView);
@@ -1935,9 +1972,16 @@
                     }
                 }, (error) => console.error("Schedule onSnapshot failed:", error));
                 
-                rankingUnsubscribe = onSnapshot(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION), (docSnap) => {
+                rankingUnsubscribe = onSnapshot(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION), async (docSnap) => {
                     const data = docSnap.exists() ? docSnap.data() : {};
-                    const dbPlayers = data.players || [];
+                    let dbPlayers = data.players || [];
+                    if (dbPlayers.length === 0) {
+                        try {
+                            const previous = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V3));
+                            if (activeView !== CURRENT_SEASON_VERSION) return;
+                            dbPlayers = prepareWinterRoster(previous.exists() ? (previous.data().players || []) : []);
+                        } catch (e) { console.warn('이전 시즌 선수 명부를 불러오지 못했습니다:', e); }
+                    }
                     
                     currentGlobalGenderMap = {};
                     currentInitialPlayersMap = {};
@@ -1952,7 +1996,11 @@
                     });
 
                     if (currentFilter === 'all') {
-                        updateRankingTable(dbPlayers, data.potw || null, true); 
+                        const displayPlayers = (!docSnap.exists() && allMatchesData.length)
+                            ? calculateRankingFromMatches(allMatchesData, Object.fromEntries(dbPlayers.map(p=>[p.name,p])),
+                                Object.fromEntries(dbPlayers.map(p=>[p.name,!!p.isFemale])), 'all')
+                            : dbPlayers;
+                        updateRankingTable(displayPlayers, data.potw || null, true); 
                     } else {
                         allPlayersData = dbPlayers; 
                         const dynamicRankings = calculateRankingFromMatches(allMatchesData, currentInitialPlayersMap, currentGlobalGenderMap, currentFilter);
@@ -1969,11 +2017,12 @@
                 adminButtons.forEach(btn => btn.style.display = 'none');
                 
                 try {
-                    if (activeView === SEASON_V1 || activeView === SEASON_V2) {
+                    if (activeView === SEASON_V1 || activeView === SEASON_V2 || activeView === SEASON_V3) {
                         const schedSnap = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', activeView));
                         const rankSnap = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', activeView));
+                        if (requestVersion !== viewLoadVersion) return;
                         
-                        const scheduleData = (schedSnap.exists() && schedSnap.data().matches) ? schedSnap.data().matches : [];
+                        const scheduleData = (schedSnap.exists() && Array.isArray(schedSnap.data().matches)) ? schedSnap.data().matches : [];
                         const rankData = rankSnap.exists() ? rankSnap.data() : {};
                         
                         const globalGenderMapPast = {};
@@ -1989,8 +2038,11 @@
                         currentGlobalGenderMap = globalGenderMapPast;
                         currentInitialPlayersMap = initialPlayersMap;
 
-                        const previousRankings = calculateRankingFromMatches(scheduleData, initialPlayersMap, currentGlobalGenderMap, 'all');
-                        applyDecayToRankings(previousRankings);
+                        // 과거 시즌은 당시 저장한 순위표를 그대로 열람한다.
+                        // 2025 경기들을 현재 시각(2026)에 재계산/휴면 감점하면 당시 순위가 달라지므로 금지.
+                        const storedPlayers = Array.isArray(rankData.players) ? rankData.players : [];
+                        const previousRankings = storedPlayers.length > 0 ? storedPlayers.map(p => ({...p}))
+                            : calculateRankingFromMatches(scheduleData, initialPlayersMap, currentGlobalGenderMap, 'all');
 
                         allMatchesData = scheduleData; 
                         allPlayersData = previousRankings; 
@@ -2000,56 +2052,40 @@
                         if (currentFilter === 'all') {
                             updateRankingTable(previousRankings, rankData.potw || null, true); 
                         } else {
-                            const dynamicRankings = calculateRankingFromMatches(allMatchesData, currentInitialPlayersMap, currentGlobalGenderMap, currentFilter);
-                            applyDecayToRankings(dynamicRankings);
+                            const dynamicRankings = previousRankings.filter(p =>
+                                currentFilter === 'female' ? !!p.isFemale : !p.isFemale);
                             updateRankingTable(dynamicRankings, rankData.potw || null, false);
                         }
                         
-                        triggerNewsGeneration(allMatchesData, allPlayersData); 
+                        // 과거 시즌 뉴스 생성은 탭 전환의 핵심 기능이 아니므로 생략해 화면 렌더링 지연을 줄임.
 
                     } else if (activeView === 'alltime') {
-                        const schedSnapV1 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V1));
-                        const schedSnapV2 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V2));
-                        const schedSnapV3 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', SEASON_V3));
-                        
-                        const rankSnapV1 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V1));
-                        const rankSnapV2 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V2));
-                        const rankSnapV3 = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', SEASON_V3));
-                        
-                        const matchesV1 = (schedSnapV1.exists() && schedSnapV1.data().matches) ? schedSnapV1.data().matches : [];
-                        const matchesV2 = (schedSnapV2.exists() && schedSnapV2.data().matches) ? schedSnapV2.data().matches : [];
-                        const matchesV3 = (schedSnapV3.exists() && schedSnapV3.data().matches) ? schedSnapV3.data().matches : [];
-                        const allMatches = [...matchesV1, ...matchesV2, ...matchesV3];
-                        
-                        const playersV1 = (rankSnapV1.exists() && rankSnapV1.data().players) ? rankSnapV1.data().players : [];
-                        const playersV2 = (rankSnapV2.exists() && rankSnapV2.data().players) ? rankSnapV2.data().players : [];
-                        const playersV3 = (rankSnapV3.exists() && rankSnapV3.data().players) ? rankSnapV3.data().players : [];
-                        
+                        const seasonIds = [SEASON_V1, SEASON_V2, SEASON_V3, SEASON_V4];
+                        const [scheduleSnaps, rankingSnaps] = await Promise.all([
+                            Promise.all(seasonIds.map(id => getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', id)))),
+                            Promise.all(seasonIds.map(id => getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', id))))
+                        ]);
+                        if (requestVersion !== viewLoadVersion) return;
+                        // 통산 재계산에서 각 시즌의 '1회'가 같은 회차로 합쳐지지 않도록 식별자를 분리.
+                        const allMatches = scheduleSnaps.flatMap((snap,i) => (snap.exists() ? (snap.data().matches || []) : [])
+                            .map(m => ({...m, round: (i+1)*1000 + Number(m.round || 0)})));
+                        const allSeasonPlayers = rankingSnaps.map(snap => snap.exists() ? (snap.data().players || []) : []);
                         const globalGenderMapAllTime = {};
-                        [...playersV1, ...playersV2, ...playersV3].forEach(p => {
+                        allSeasonPlayers.forEach(players => players.forEach(p => {
                             if (p.isFemale) globalGenderMapAllTime[p.name] = true;
-                        });
-
+                        }));
                         const initialPlayersMap = {};
-                        [...playersV1, ...playersV2, ...playersV3].forEach(p => {
-                            if (!initialPlayersMap[p.name]) {
-                                initialPlayersMap[p.name] = { name: p.name, isFemale: p.isFemale || globalGenderMapAllTime[p.name] || false, championships: 0 };
-                            }
-                            if (playersV3.find(p3 => p3.name === p.name)) {
-                                initialPlayersMap[p.name].isFemale = playersV3.find(p3 => p3.name === p.name).isFemale;
-                            } else if (playersV2.find(p2 => p2.name === p.name)) {
-                                initialPlayersMap[p.name].isFemale = playersV2.find(p2 => p2.name === p.name).isFemale;
-                            }
-                        });
-                        
+                        allSeasonPlayers.forEach(players => players.forEach(p => {
+                            initialPlayersMap[p.name] = {name:p.name,
+                                isFemale:globalGenderMapAllTime[p.name] || !!p.isFemale,
+                                championships:0, lastGameTimestamp:null};
+                        }));
                         const champCounts = {};
-                        [...playersV1, ...playersV2, ...playersV3].forEach(p => {
+                        allSeasonPlayers.forEach(players => players.forEach(p => {
                             champCounts[p.name] = (champCounts[p.name] || 0) + (p.championships || 0);
-                        });
-                        Object.keys(initialPlayersMap).forEach(name => {
-                            initialPlayersMap[name].championships = champCounts[name] || 0;
-                        });
-                        
+                        }));
+                        Object.values(initialPlayersMap).forEach(p => p.championships = champCounts[p.name] || 0);
+
                         currentGlobalGenderMap = globalGenderMapAllTime;
                         currentInitialPlayersMap = initialPlayersMap;
 
@@ -2062,7 +2098,9 @@
                         allMatchesData = allMatches; 
                         allPlayersData = allTimeRankings; 
                         
-                        processAndRenderSchedule(allMatches);
+                        // 통산은 순위만 통합하고, 경기 일정은 시즌별 회차를 선택해서 열람.
+                        document.getElementById('schedule-container').innerHTML =
+                            '<p style="padding:16px;line-height:1.75">통산 기록에서는 시즌별 1회차가 서로 달라 통합 경기표를 표시하지 않습니다. 위의 시즌 탭을 선택해 경기 일정을 확인하세요.</p>';
                         
                         if (currentFilter === 'all') {
                             updateRankingTable(allTimeRankings, null, true);
@@ -2224,6 +2262,9 @@
                 
                 if (currentFilter === 'all') {
                     updateRankingTable(allPlayersData, currentPotw, false);
+                } else if ([SEASON_V1, SEASON_V2, SEASON_V3].includes(activeView)) {
+                    // 보관 시즌은 원본 랭킹에 성별 조건만 적용 (과거 MMR 재계산 안 함).
+                    updateRankingTable(allPlayersData.filter(p => currentFilter === 'female' ? !!p.isFemale : !p.isFemale), currentPotw, false);
                 } else {
                     const dynamicRankings = calculateRankingFromMatches(allMatchesData, currentInitialPlayersMap, currentGlobalGenderMap, currentFilter);
                     applyDecayToRankings(dynamicRankings);
@@ -2317,6 +2358,12 @@
             document.getElementById('hof-link').href = `hall_of_fame.html?season=${CURRENT_SEASON_VERSION}`;
             document.getElementById('partner-link').href = `partner.html?season=${CURRENT_SEASON_VERSION}`;
             
+            const initialSeason = new URLSearchParams(window.location.search).get('season');
+            if ([SEASON_V1,SEASON_V2,SEASON_V3,SEASON_V4,'alltime'].includes(initialSeason)) {
+                activeView = initialSeason;
+                document.querySelectorAll('#season-tabs-container .tab-btn').forEach(b =>
+                    b.classList.toggle('active', b.dataset.view === activeView));
+            }
             if (app) {
                 try {
                     await signInAnonymously(auth); 
