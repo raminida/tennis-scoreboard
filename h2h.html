@@ -178,10 +178,121 @@
  .mobile-dock a span{font-size:20px;line-height:1.25}.mobile-dock a b{font-size:10.5px;font-weight:800}
  .mobile-dock a.current{color:var(--primary-color);background:var(--bg-color)}
 }
+
+/* 통일된 6개 페이지 모바일 하단 메뉴 */
+.mobile-dock{display:none}
+@media (max-width:700px){
+ html,body{max-width:100%;overflow-x:hidden}
+ body{padding-bottom:calc(94px + env(safe-area-inset-bottom,0px))!important}
+ .mobile-dock{position:fixed!important;z-index:4500!important;display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:2px!important;bottom:0;left:0;right:0;padding:5px 5px calc(6px + env(safe-area-inset-bottom,0px))!important;background:var(--card,var(--surface-color,var(--surface,#ffffff)))!important;border-top:1px solid var(--line,var(--border-color,var(--border,#dce5ed)))!important;box-shadow:0 -4px 16px rgba(10,45,71,.11);box-sizing:border-box}
+ .mobile-dock a{display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:2px!important;min-width:0!important;min-height:56px!important;padding:4px 0!important;border-radius:9px!important;text-align:center!important;text-decoration:none!important;white-space:nowrap!important;color:var(--muted,var(--text-secondary-color,var(--text-sec,#667889)))!important}
+ .mobile-dock a span{font-size:19px!important;line-height:1.15!important}
+ .mobile-dock a b{font-size:clamp(8px,2.5vw,10px)!important;letter-spacing:-.035em!important;line-height:1.3!important;font-weight:800!important}
+ .mobile-dock a.current{color:var(--blue,var(--primary-color,var(--primary,#087ca5)))!important;background:var(--tint,var(--summary-bg,rgba(2,132,199,.1)))!important}
+}
+
+
+/* HOSU UI 2026 — unified clean design */
+:root {
+ --bg-color:#eef5f8;--surface-color:#fff;--primary-color:#087d9b;--primary-variant-color:#056880;
+ --text-color:#162f43;--text-secondary-color:#65798a;--border-color:#dfebf0;--shadow-color:rgba(24,60,78,.065);
+ --bg:#eef5f8;--surface:#fff;--primary:#087d9b;--primary-variant:#056880;--text:#162f43;--text-sec:#65798a;--border:#dfebf0;
+ --ink:#162f43;--muted:#65798a;--card:#fff;--line:#dfebf0;--blue:#087d9b;--tint:#e4f4f6;--gold:#d6a858;
+}
+html[data-theme=dark]{
+ --bg-color:#0c1c2c;--surface-color:#172a3d;--primary-color:#7cdbdf;--primary-variant-color:#66c5d0;
+ --text-color:#edf5f9;--text-secondary-color:#afc0cc;--border-color:#30485b;--shadow-color:rgba(0,0,0,.2);
+ --bg:#0c1c2c;--surface:#172a3d;--primary:#7cdbdf;--primary-variant:#66c5d0;--text:#edf5f9;--text-sec:#afc0cc;--border:#30485b;
+ --ink:#edf5f9;--muted:#afc0cc;--card:#172a3d;--line:#30485b;--blue:#7cdbdf;--tint:#1e404e;
+}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{background:var(--bg-color)!important;color:var(--text-color)!important;font-family:'Noto Sans KR',sans-serif!important;line-height:1.52;min-width:0;margin:0;padding:18px 18px 102px}
+.container{max-width:1100px!important;width:100%;margin:0 auto;min-width:0;overflow:visible}
+h1,h2,h3{font-family:'Noto Sans KR',sans-serif!important;letter-spacing:-.045em}h1{font-size:clamp(28px,3.8vw,38px)!important;font-weight:900!important}h2{color:var(--text-color)!important;border:0!important;padding:0!important;font-size:clamp(18px,2.1vw,23px)!important;margin:0 0 20px!important;line-height:1.35}
+.page-hero{padding:29px 30px;background:linear-gradient(118deg,#103c5c 0%,#006d89 55%,#0e9d92 110%);color:#fff;border-radius:22px;margin:4px 0 20px;min-width:0;overflow:hidden;position:relative}
+.page-hero:after{content:'↗';position:absolute;font-size:180px;line-height:1;right:12px;top:0;color:#fff;opacity:.06;pointer-events:none;font-weight:900}
+.page-hero .eyebrow{display:block;color:#b5f5e9;font-size:11px;letter-spacing:.16em;font-weight:900;margin-bottom:8px}
+.page-hero h1{color:#fff!important;background:none!important;-webkit-text-fill-color:#fff!important;text-align:left!important;padding:0!important;margin:0 0 5px!important;text-shadow:none!important}
+.page-hero p{font-size:13px;margin:0;color:#dbf5fa;line-height:1.6;max-width:720px}
+.page-hero .hero-action{display:inline-block;margin-top:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.45);color:#fff!important;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:800;font-size:12px;position:relative;z-index:1}
+.profile-header{background:var(--surface-color)!important;border:1px solid var(--border-color);border-radius:20px!important;padding:22px!important;box-shadow:0 8px 25px var(--shadow-color)!important;margin:0 0 18px!important;text-align:left!important;min-width:0}
+.profile-header .player-name{font-size:clamp(27px,3.8vw,38px)!important;color:var(--text-color)!important;text-align:left;margin:16px 0 3px!important}
+.profile-header .achievement-badges-container{justify-content:flex-start;margin-top:10px!important}
+.profile-chooser{max-width:none!important;margin:0!important;text-align:left}
+.profile-chooser-row{max-width:600px}
+#profile-player-search{border:1.5px solid #9ecbd0!important;background:var(--surface-color)!important;color:var(--text-color)!important;font-size:17px!important;height:51px!important;box-shadow:0 0 0 4px rgba(0,155,158,.05)}
+#profile-show-btn{background:#007f8c!important;color:white!important;min-height:51px!important;padding:0 21px!important}
+#profile-chooser-tip{margin:7px 0!important;font-size:11px!important}
+.season-tabs{display:flex!important;gap:7px!important;max-width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:thin;padding:0 0 7px!important;margin:0 0 19px!important;border:0!important}
+.season-tabs .tab-btn{border:1px solid var(--border-color)!important;border-radius:100px!important;background:var(--surface-color)!important;color:var(--text-secondary-color)!important;padding:9px 15px!important;font-family:inherit!important;font-size:12px!important;font-weight:800;white-space:nowrap;min-height:41px;flex:0 0 auto;transition:.2s}
+.season-tabs .tab-btn.active{background:var(--primary-color)!important;color:var(--surface-color)!important;border-color:var(--primary-color)!important}
+.section,.season-section{background:var(--surface-color)!important;border:1px solid var(--border-color)!important;border-radius:19px!important;box-shadow:0 8px 24px var(--shadow-color)!important;padding:24px!important;margin:0 0 17px!important;min-width:0;overflow:visible}
+.stat-grid,.stats-grid,.growth-mini-grid,.records-grid,.awards-grid{gap:10px!important;margin-bottom:18px!important}
+.stat-card,.stat-box,.growth-mini-card,.record-card,.award-card{background:var(--surface-color)!important;border:1px solid var(--border-color)!important;border-radius:15px!important;padding:17px!important;text-align:left!important;box-shadow:none!important;min-width:0;overflow-wrap:anywhere}
+.stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.stat-title,.growth-mini-card span,.record-title,.award-title,.stat-box h3{color:var(--text-secondary-color)!important;font-size:12px!important;font-weight:750!important;margin:0 0 7px!important}
+.stat-value,.growth-mini-card strong,.record-value,.record-player,.award-winner,.stat-box p{color:var(--text-color)!important;font-weight:900!important;font-size:clamp(18px,2.1vw,26px)!important;letter-spacing:-.04em;overflow-wrap:anywhere}
+.record-value,.award-value,.stat-card .stat-value{font-variant-numeric:tabular-nums}
+.record-player,.award-winner{color:var(--primary-color)!important}.record-value{margin-top:8px;color:var(--text-color)!important}
+.growth-cta{background:linear-gradient(100deg,#e4f4f6,#f6fbfc)!important;border:1px solid #cde6e7!important;border-radius:16px!important;margin:0 0 16px!important;padding:16px 19px!important;box-shadow:none!important;gap:12px!important}
+html[data-theme=dark] .growth-cta{background:linear-gradient(100deg,#183a48,#1a3446)!important;border-color:#355567!important}
+.growth-cta h2{font-size:16px!important;margin:0 0 3px!important;color:var(--text-color)!important}.growth-cta p{display:none!important}
+.growth-cta .growth-link,.btn,.chart-control button,#search-btn,#reset-btn{font-family:inherit!important;border-radius:10px!important;font-weight:800!important;font-size:13px!important;min-height:42px!important;padding:10px 16px!important;text-decoration:none;cursor:pointer}
+.btn,.growth-cta .growth-link,#search-btn{background:var(--primary-color)!important;border:1px solid var(--primary-color)!important;color:var(--surface-color)!important}
+html[data-theme=dark] .btn,html[data-theme=dark] .growth-cta .growth-link{color:#0e2630!important}
+.btn.secondary,#reset-btn{background:var(--surface-color)!important;border:1px solid var(--border-color)!important;color:var(--text-color)!important}
+.growth-legacy-note{display:none!important}
+input,select{font-family:inherit!important}select,input[type=text],input[type=search]{border:1px solid var(--border-color)!important;border-radius:10px!important;background:var(--surface-color)!important;color:var(--text-color)!important;min-height:46px;padding:10px 12px;font-size:14px}
+.input-group{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto auto!important;gap:8px!important;align-items:stretch!important}
+#player1,#player2{width:100%!important;max-width:none!important;min-width:0!important}
+.ranking-filter{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 17px}.filter-btn{background:var(--surface-color)!important;border:1px solid var(--border-color)!important;border-radius:30px!important;color:var(--text-secondary-color)!important;padding:10px 13px!important;font-family:inherit;font-weight:800;font-size:12px!important;min-height:42px}
+.filter-btn.active{background:var(--primary-color)!important;color:var(--surface-color)!important;border-color:var(--primary-color)!important}
+.table-wrapper{border:1px solid var(--border-color);border-radius:12px;overflow-x:auto!important;max-width:100%;-webkit-overflow-scrolling:touch}
+table{min-width:650px;border-collapse:collapse;width:100%}th,td{border-bottom:1px solid var(--border-color)!important;white-space:nowrap;padding:12px!important;text-align:center;font-size:12px!important}
+th{background:var(--bg-color)!important;color:var(--text-secondary-color)!important;font-weight:900!important;position:sticky;top:0}tbody tr:hover{background:rgba(13,150,150,.04)}
+#chemistry-table tbody tr{cursor:pointer}
+.chart-control{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;text-align:left!important}
+.chart-control select{min-width:180px!important;max-width:300px;width:100%;border-radius:11px!important}
+#mmrChart,#mmr-chart{max-width:100%!important;width:100%!important;display:block}
+#mmr-chart-container{min-width:0;overflow:hidden}
+.awards-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.records-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+#toast{z-index:7000!important}
+.mobile-dock{font-family:'Noto Sans KR',sans-serif}
+@media(max-width:700px){
+ body{padding:10px 10px calc(101px + env(safe-area-inset-bottom,0px))!important;overflow-x:hidden}
+ .container{padding:0!important;width:100%;max-width:100%;overflow-x:clip}
+ .page-hero{padding:22px 19px;border-radius:17px;margin:3px 0 13px}.page-hero h1{font-size:27px!important}.page-hero p{font-size:12px}.page-hero .hero-action{font-size:11px;margin-top:10px;padding:9px 12px}
+ .profile-header{padding:16px!important;border-radius:16px!important;margin-bottom:12px!important}
+ .section,.season-section{padding:16px!important;border-radius:16px!important;margin-bottom:12px!important}
+ h2{font-size:19px!important;margin-bottom:15px!important}
+ .season-tabs{margin-bottom:12px!important;padding-bottom:5px!important;gap:6px!important}
+ .season-tabs .tab-btn{padding:9px 12px!important;font-size:11px!important;min-height:39px}
+ .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important;margin-bottom:12px!important}
+ .stat-card,.stat-box,.growth-mini-card,.record-card,.award-card{padding:12px!important;border-radius:12px!important}
+ .stat-value,.record-value,.growth-mini-card strong,.award-winner{font-size:20px!important}
+ .growth-cta{padding:13px!important;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px!important}
+ .growth-cta h2{font-size:14px!important}.growth-cta .growth-link{font-size:11px!important;min-height:38px!important}
+ .input-group{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ .input-group #player1,.input-group #player2{grid-row:1;min-height:46px;font-size:14px}
+ .input-group #search-btn,.input-group #reset-btn{grid-row:2;width:100%!important;max-width:none!important;margin:0!important}
+ .records-grid,.awards-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ .chart-control{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;text-align:left}
+ .chart-control label{grid-column:1/-1;margin:0!important;font-size:12px}.chart-control select{min-width:0!important;max-width:100%;width:100%!important}
+ .chart-control button{font-size:12px;padding:10px!important}
+ #mmrChart{max-height:270px!important;min-height:0!important}
+ .h2h-controls{align-items:stretch;gap:8px}.h2h-controls label{font-size:12px}.h2h-result{font-size:15px!important}
+ .mobile-dock{z-index:4500!important}
+}
+@media(max-width:360px){.page-hero h1{font-size:25px!important}.record-player,.award-winner{font-size:17px!important}.stat-title{font-size:11px!important}.season-tabs .tab-btn{font-size:10px!important}}
+
+/* 기록 배지: 기존 업적색은 유지하되 작은 칩으로 통일 */
+.achievement-badge{border-radius:999px!important;box-shadow:none!important;font-size:11px!important;padding:6px 10px!important;font-weight:800!important}
+.achievement-badges-container{gap:6px!important}
+@media(max-width:700px){.achievement-badge{padding:6px 8px!important;font-size:10px!important}}
 </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container"><div class="page-hero"><span class="eyebrow">HOSU OPEN · PLAYER PROFILE</span><h1>나의 테니스 기록</h1><p>시즌별 전적 · 라이벌 · 파트너</p></div>
         <div class="profile-header">
             <div class="profile-chooser" id="profile-chooser">
                 <label for="profile-player-search">선수 선택 · 이름 검색</label>
@@ -193,12 +304,12 @@
                 <!-- JS로 채워짐 -->
             </div>
         </div>
-        <div class="season-tabs">
-            <button class="tab-btn active" data-view="v4">2026/27 겨울시즌</button>
+        <div class="season-tabs"><button class="tab-btn active" data-view="alltime">통산 기록</button>
+            <button class="tab-btn" data-view="v4">2026/27 겨울시즌</button>
             <button class="tab-btn" data-view="v3">2026 여름시즌</button>
             <button class="tab-btn" data-view="v2">2025-26 겨울시즌</button>
             <button class="tab-btn" data-view="v1">2025 여름시즌</button>
-            <button class="tab-btn" data-view="alltime">통산 기록</button>
+            
         </div>
 
         <div class="stat-grid">
@@ -211,7 +322,7 @@
         </div>
 
         <div class="growth-cta"><div><h2>내 경기력이 어떻게 변했을까?</h2><p>상대와 다시 만난 경기, 파트너 호흡, 점수 차 변화를 보고 싶은 경우</p></div><a id="growth-profile-link" class="growth-link" href="growth.html">상세 성장 스토리 보기</a></div>
-        <div class="section" id="profile-growth-section"><h2>🌱 개인 성장 스냅샷 (6게임 기준)</h2><p class="growth-legacy-note">동일 경기 방식에서 초반과 최근 득실차를 비교합니다. 승패와 MMR의 대체 지표가 아닙니다.</p><div id="profile-growth-summary" class="growth-mini-grid"><div>경기를 불러오는 중...</div></div></div>
+        <div class="section" id="profile-growth-section"><h2>성장 기록 요약</h2><p class="growth-legacy-note">동일 경기 방식에서 초반과 최근 득실차를 비교합니다. 승패와 MMR의 대체 지표가 아닙니다.</p><div id="profile-growth-summary" class="growth-mini-grid"><div>경기를 불러오는 중...</div></div></div>
         <div class="section">
             <h2>상대전적 (H2H)</h2>
             <div class="h2h-controls">
@@ -222,7 +333,7 @@
         </div>
 
         <div class="section">
-            <h2>관계도 (천적 & 맛집)</h2>
+            <h2>상대별 맞대결</h2>
             <div class="stat-grid" id="relationship-grid">
                 <div class="stat-card">
                     <div class="stat-title">👿 천적 (3경기 이상)</div>
@@ -253,7 +364,7 @@
         </div>
 
         <div class="section">
-            <h2>최근 10경기 MMR 변동</h2>
+            <h2>최근 경기 MMR 흐름</h2>
             <canvas id="mmrChart"></canvas>
         </div>
 
@@ -261,11 +372,10 @@
              <a id="main-link" href="index.html" class="btn">메인으로 돌아가기</a>
         </div>
     </div>
-    <nav class="mobile-dock" aria-label="모바일 바로가기"><a href="index.html"><span aria-hidden="true">🎾</span><b>경기 입력</b></a><a href="growth.html" id="dock-growth"><span aria-hidden="true">📈</span><b>성장</b></a><a href="h2h.html" class="current" aria-current="page"><span aria-hidden="true">👤</span><b>개인 기록</b></a><a href="partner.html" id="dock-partner"><span aria-hidden="true">🤝</span><b>파트너</b></a></nav>
+    <nav class="mobile-dock" aria-label="호수오픈 모바일 메뉴"><a href="index.html"><span aria-hidden="true">🎾</span><b>경기입력</b></a><a id="dock-growth" href="growth.html"><span aria-hidden="true">📈</span><b>성장</b></a><a href="h2h.html" class="current" aria-current="page"><span aria-hidden="true">👤</span><b>개인기록</b></a><a id="dock-partner" href="partner.html"><span aria-hidden="true">🤝</span><b>파트너</b></a><a href="dash.html"><span aria-hidden="true">📊</span><b>대시보드</b></a><a href="hall_of_fame.html"><span aria-hidden="true">🏆</span><b>명예전당</b></a></nav>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
@@ -280,7 +390,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const analytics = getAnalytics(app);
 
 // 성장 분석 핵심 함수는 페이지 자체에 포함합니다. 별도 JS 파일 불필요.
 /* 호수오픈 성장 분석 공통 로직. Firestore 쓰기 없음. */
@@ -416,7 +525,7 @@ function sampleMatches() {
         const SEASON_V3 = 'v3';
         const SEASON_V2 = 'v2';
         const SEASON_V1 = 'v1';
-        let activeView = SEASON_V4; 
+        let activeView = 'alltime'; 
         
         let mmrChartInstance = null;
 
@@ -878,6 +987,7 @@ function sampleMatches() {
         const renderMMRChart = (playerHistory) => {
             const ctx = document.getElementById('mmrChart')?.getContext('2d');
             if (!ctx) return;
+            if (typeof Chart === 'undefined') return; // 차트 CDN 장애여도 다른 기록은 표시
             
             if (mmrChartInstance) {
                 mmrChartInstance.destroy(); 
@@ -979,11 +1089,12 @@ function sampleMatches() {
             }
 
             try {
-                const rankingSnaps = await Promise.all(rankingDocs);
-                const scheduleSnaps = await Promise.all(scheduleDocs);
+                const fallbackSnap={exists:()=>false,data:()=>({players:[],matches:[]})};
+                const rankingSnaps = (await Promise.allSettled(rankingDocs)).map(r=>r.status==='fulfilled'?r.value:fallbackSnap);
+                const scheduleSnaps = (await Promise.allSettled(scheduleDocs)).map(r=>r.status==='fulfilled'?r.value:fallbackSnap);
 
-                const allPlayers = rankingSnaps.flatMap(snap => snap.exists() ? snap.data().players : []);
-                const allMatches = scheduleSnaps.flatMap(snap => snap.exists() ? snap.data().matches : []);
+                const allPlayers = rankingSnaps.flatMap(snap => snap.exists() ? (snap.data().players || []) : []);
+                const allMatches = scheduleSnaps.flatMap(snap => snap.exists() ? (snap.data().matches || []) : []);
                 // 기존 H2H 계산과 독립적인 읽기 전용 성장 요약.
                 const seasonIds = activeView === 'alltime' ? ['v1','v2','v3','v4'] : [activeView];
                 const sourceBySeason = scheduleSnaps.map((snap,i)=>({season:seasonIds[i],matches:snap.exists()?(snap.data().matches||[]):[]}));
@@ -1165,7 +1276,7 @@ function sampleMatches() {
                if([...document.getElementById('profile-name-list').options].some(o=>o.value===entered))commit();
              });
              document.getElementById('profile-player-search').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commit();}});
-             if(chosenPlayer){savePlayer(chosenPlayer);document.getElementById('dock-growth').href=`growth.html?player=${encodeURIComponent(chosenPlayer)}`;document.getElementById('dock-partner').href=`partner.html?player=${encodeURIComponent(chosenPlayer)}`;}
+             if(chosenPlayer){savePlayer(chosenPlayer);document.getElementById('dock-growth') && (document.getElementById('dock-growth').href=`growth.html?player=${encodeURIComponent(chosenPlayer)}`);document.getElementById('dock-partner') && (document.getElementById('dock-partner').href=`partner.html?player=${encodeURIComponent(chosenPlayer)}`);}
              try {
                 await signInAnonymously(auth);
                 // 명단 읽기 실패 여부와 관계없이 URL/저장 선택 선수를 표시할 수 있음.
@@ -1173,7 +1284,7 @@ function sampleMatches() {
                 loadProfileNameChoices();
              } catch(e) {
                  console.error("Auth failed", e);
-                 document.getElementById('profile-chooser-tip').textContent='로그인에 실패했습니다. 인터넷 연결을 확인해 주세요.';
+                 document.getElementById('profile-chooser-tip').textContent='데이터 연결에 실패했습니다. 페이지를 새로고침해 주세요.';
              }
 
              document.querySelectorAll('.tab-btn').forEach(btn => {
